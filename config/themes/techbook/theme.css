@@ -76,10 +76,44 @@ h1 {
   margin-top: 0;
   margin-bottom: 20pt;
   padding-bottom: 10pt;
-  border-bottom: 2px solid var(--color-heading);
+  border-bottom: 1px solid var(--color-heading);
   break-before: page;
   counter-increment: chapter;
   counter-reset: section subsection subsubsection figure table equation;
+}
+
+h1::before {
+  content: counter(chapter) ". ";
+}
+
+/* 表紙（タイトルページ）の h1 には番号を付けない */
+[role="doc-cover"] h1,
+section[role="doc-cover"] h1,
+.cover h1,
+body.cover h1 {
+  counter-increment: none;
+  counter-reset: none;
+  border-bottom: none;
+  break-before: auto;
+  font-size: 32pt;
+  text-align: center;
+  margin-top: 40%;
+}
+
+[role="doc-cover"] h1::before,
+section[role="doc-cover"] h1::before,
+.cover h1::before,
+body.cover h1::before {
+  content: none !important;
+}
+
+/* 表紙の著者名 */
+.cover p,
+body.cover p {
+  text-align: center;
+  font-size: 14pt;
+  margin-top: 20pt;
+  text-indent: 0;
 }
 
 /* まえがきなど番号不要の章 */
@@ -283,7 +317,7 @@ th {
   font-family: var(--font-gothic);
   font-weight: bold;
   text-align: center;
-  border-bottom: 1pt solid #666;
+  border-bottom: 0.5pt solid #666;
 }
 
 /* ゼブラストライプ（偶数行に背景色） */
@@ -520,4 +554,119 @@ nav#toc a::after {
 nav[role="doc-toc"] h2::before {
   content: none !important;
   counter-increment: none;
+}
+
+/* 目次の章節項番号 */
+nav[role="doc-toc"] > ol {
+  counter-reset: toc-chapter;
+}
+
+/* まえがき以外の章（data-section-level="1"）にカウンターを適用 */
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])) {
+  counter-increment: toc-chapter;
+  counter-reset: toc-section;
+}
+
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])) > a::before {
+  content: counter(toc-chapter) ". ";
+}
+
+/* まえがきの子セクションには番号を付けない */
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="preface"]) li[data-section-level="2"] > a::before,
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="preface"]) li[data-section-level="3"] > a::before {
+  content: none;
+}
+
+/* 通常の章のセクション */
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])) li[data-section-level="2"] {
+  counter-increment: toc-section;
+  counter-reset: toc-subsection;
+}
+
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])) li[data-section-level="2"] > a::before {
+  content: counter(toc-chapter) "." counter(toc-section) ". ";
+}
+
+/* 通常の章のサブセクション */
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])) li[data-section-level="3"] {
+  counter-increment: toc-subsection;
+}
+
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])) li[data-section-level="3"] > a::before {
+  content: counter(toc-chapter) "." counter(toc-section) "." counter(toc-subsection) ". ";
+}
+
+/* 奥付（コロフォン） */
+.colophon,
+body.colophon {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 100vh;
+  padding-bottom: 20mm;
+}
+
+.colophon h1,
+body.colophon h1 {
+  font-size: 14pt;
+  border-bottom: 1px solid var(--color-heading);
+  padding-bottom: 6pt;
+  margin-bottom: 12pt;
+  margin-top: 0;
+  break-before: page;
+  counter-increment: none;
+}
+
+.colophon h1::before,
+body.colophon h1::before {
+  content: none !important;
+}
+
+.colophon table,
+body.colophon table {
+  width: auto;
+  margin: 0 0 12pt 0;
+  font-size: 9pt;
+}
+
+.colophon th,
+.colophon td,
+body.colophon th,
+body.colophon td {
+  border: none;
+  border-bottom: none;
+  padding: 4pt 8pt 4pt 0;
+  text-align: left;
+  vertical-align: top;
+  background-color: transparent;
+}
+
+.colophon th,
+body.colophon th {
+  font-weight: normal;
+  width: 5em;
+  border-bottom: none;
+}
+
+.colophon p,
+body.colophon p {
+  font-size: 8pt;
+  text-indent: 0;
+  margin: 6pt 0;
+  color: #666;
+}
+
+/* 奥付ページのヘッダー・フッターを非表示 */
+@page colophon {
+  @top-center {
+    content: none;
+  }
+  @bottom-center {
+    content: none;
+  }
+}
+
+.colophon,
+body.colophon {
+  page: colophon;
 }

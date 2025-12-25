@@ -2,17 +2,17 @@ import { VFM } from '@vivliostyle/vfm';
 import { spectroscope } from '@u1f992/rehype-spectroscope';
 
 export default {
-  title: '書籍タイトル',
-  author: '著者名',
   language: 'ja',
   size: 'A5',
   theme: ['./config/themes/techbook/theme.css'],
   entry: [
+    'src/chapters/cover.md',
     'src/chapters/00-preface.md',
-    { rel: 'contents', theme: './config/themes/techbook/theme.css' },
+    'src/chapters/toc.html',
     'src/chapters/01-introduction.md',
     'src/chapters/02-advanced.md',
     'src/chapters/03-math-and-figures.md',
+    'src/chapters/99-colophon.md',
   ],
   output: [
     'dist/book.pdf',
@@ -29,7 +29,6 @@ export default {
     hardLineBreaks: false,
   },
   toc: {
-    title: '目次',
-    depth: 3,
+    sectionDepth: 3,
   },
 };
