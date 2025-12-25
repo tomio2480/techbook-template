@@ -1,15 +1,17 @@
 {
   "name": "techbook-template",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Vivliostyle を使用した技術書自動組版テンプレート",
   "private": true,
+  "type": "module",
   "scripts": {
-    "build": "vivliostyle build && node scripts/add-line-numbers.js && vivliostyle build && node scripts/add-line-numbers.js --restore",
+    "build": "vivliostyle build && node scripts/add-line-numbers.mjs && vivliostyle build && node scripts/add-line-numbers.mjs --restore",
     "preview": "vivliostyle preview",
     "clean": "rimraf dist src/chapters/*.html"
   },
   "devDependencies": {
     "@vivliostyle/cli": "^8.0.0",
+    "@u1f992/rehype-spectroscope": "github:u1f992/rehype-spectroscope#v0.1.0",
     "rimraf": "^5.0.0"
   },
   "engines": {

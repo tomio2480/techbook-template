@@ -1,14 +1,16 @@
 #!/usr/bin/env node
 /**
  * コードブロックに行番号を追加するスクリプト
- * VFM で生成された HTML の <pre><code> ブロックを処理し、
- * 行番号付きの形式に変換する
- *
- * また、vivliostyle.config.js を更新して HTML を直接参照するようにする
+ * 生成された HTML の <pre class="language-xxx"> に line-numbers クラスを追加し、
+ * .line-numbers-rows 要素を挿入する
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const chaptersDir = path.join(__dirname, '..', 'src', 'chapters');
 const configPath = path.join(__dirname, '..', 'vivliostyle.config.js');
@@ -22,31 +24,24 @@ function processHtmlFiles() {
     let content = fs.readFileSync(filePath, 'utf-8');
 
     // 既に処理済みの場合はスキップ
-    if (content.includes('with-line-numbers')) {
+    if (content.includes('line-numbers-rows')) {
       console.log(`Already processed: ${file}`);
       continue;
     }
 
-    // <pre class="language-xxx"><code class="language-xxx">...</code></pre> を処理
+    // <pre class="language-xxx"> を <pre class="language-xxx line-numbers"> に変更し、
+    // 行番号を追加
     content = content.replace(
-      /<pre class="language-([^"]+)"><code class="language-[^"]+">([\s\S]*?)<\/code><\/pre>/g,
-      (match, lang, code) => {
-        // HTML エンティティをデコードせずにそのまま行分割
+      /<pre class="language-([^"]+)"([^>]*)><code class="language-[^"]+">([\s\S]*?)<\/code><\/pre>/g,
+      (match, lang, attrs, code) => {
+        // コードの行数をカウント
         const lines = code.split('\n');
-        // 最後の空行を除去
-        if (lines[lines.length - 1] === '') {
-          lines.pop();
-        }
+        const lineCount = lines[lines.length - 1] === '' ? lines.length - 1 : lines.length;
 
-        const lineNumbersHtml = lines.map((_, i) =>
-          `<span class="line-number">${i + 1}</span>`
-        ).join('\n');
+        // 行番号の span を生成
+        const lineNumbersRows = Array.from({ length: lineCount }, () => '<span></span>').join('');
 
-        const codeLines = lines.map(line =>
-          `<span class="code-line">${line}</span>`
-        ).join('\n');
-
-        return `<pre class="language-${lang} with-line-numbers"><div class="line-numbers">${lineNumbersHtml}</div><code class="language-${lang}">${codeLines}</code></pre>`;
+        return `<pre class="language-${lang} line-numbers"${attrs}><code class="language-${lang}">${code}</code><span class="line-numbers-rows">${lineNumbersRows}</span></pre>`;
       }
     );
 

@@ -1,4 +1,7 @@
-module.exports = {
+import { VFM } from '@vivliostyle/vfm';
+import { spectroscope } from '@u1f992/rehype-spectroscope';
+
+export default {
   title: '書籍タイトル',
   author: '著者名',
   language: 'ja',
@@ -14,6 +17,14 @@ module.exports = {
   output: [
     'dist/book.pdf',
   ],
+  documentProcessor: (opts, meta) =>
+    VFM(opts, meta).use(spectroscope, {
+      languages: [
+        'javascript', 'typescript', 'python', 'rust', 'go', 'bash',
+        'json', 'yaml', 'markup', 'css', 'markdown', 'c', 'cpp'
+      ],
+      plugins: ['line-numbers'],
+    }),
   vfm: {
     math: true,
     hardLineBreaks: false,

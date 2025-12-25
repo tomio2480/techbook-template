@@ -84,12 +84,28 @@ h1 {
 
 /* まえがきなど番号不要の章 */
 section[data-preface] h1,
-.preface h1 {
+.preface h1,
+body.preface h1 {
   counter-increment: none;
+  counter-reset: none;
 }
 
 section[data-preface] h1::before,
-.preface h1::before {
+.preface h1::before,
+body.preface h1::before {
+  content: none !important;
+}
+
+/* まえがきの h2, h3, h4 にも番号を付けない */
+section[data-preface] h2::before,
+.preface h2::before,
+body.preface h2::before,
+section[data-preface] h3::before,
+.preface h3::before,
+body.preface h3::before,
+section[data-preface] h4::before,
+.preface h4::before,
+body.preface h4::before {
   content: none !important;
 }
 
@@ -169,8 +185,8 @@ a:hover {
 }
 
 /* コードブロック */
-pre {
-  background-color: #ffffff;
+pre[class*="language-"] {
+  background-color: var(--color-code-bg);
   border: 1px solid #ccc;
   border-radius: 4px;
   margin: 12pt 0;
@@ -179,52 +195,53 @@ pre {
   font-size: 9pt;
   line-height: 1.6;
   page-break-inside: avoid;
-  display: flex;
-  padding: 0;
+  padding: 10pt 12pt;
+  position: relative;
 }
 
-/* 行番号付きコードブロック */
-pre.with-line-numbers {
-  display: flex;
-  flex-direction: row;
+/* 行番号付きコードブロック（Prism line-numbers プラグイン形式） */
+pre[class*="language-"].line-numbers {
+  padding-left: 3.5em;
+  counter-reset: linenumber;
 }
 
-pre.with-line-numbers .line-numbers {
-  background-color: #e8e8e8;
-  padding: 10pt 8pt;
-  text-align: right;
-  color: #666;
-  font-size: 8pt;
-  user-select: none;
+pre[class*="language-"].line-numbers > code {
+  position: relative;
+  white-space: inherit;
+}
+
+.line-numbers-rows {
+  position: absolute;
+  pointer-events: none;
+  top: 10pt;
+  left: 0;
+  width: 3em;
+  letter-spacing: -1px;
   border-right: 1px solid #ccc;
-  min-width: 2.5em;
+  background-color: #e8e8e8;
+  user-select: none;
+  height: calc(100% - 20pt);
 }
 
-pre.with-line-numbers .line-numbers .line-number {
+.line-numbers-rows > span {
   display: block;
+  counter-increment: linenumber;
 }
 
-pre.with-line-numbers code {
-  background-color: var(--color-code-bg);
-  padding: 10pt 12pt;
+.line-numbers-rows > span::before {
+  content: counter(linenumber);
+  color: #666;
   display: block;
-  flex: 1;
+  padding-right: 0.8em;
+  text-align: right;
+  font-size: 8pt;
+}
+
+pre[class*="language-"] code {
+  background-color: transparent;
+  padding: 0;
+  display: block;
   white-space: pre;
-  overflow-x: auto;
-}
-
-pre.with-line-numbers code .code-line {
-  display: block;
-}
-
-/* 行番号なしのコードブロック（フォールバック） */
-pre:not(.with-line-numbers) code {
-  background-color: var(--color-code-bg);
-  padding: 10pt 12pt;
-  display: block;
-  flex: 1;
-  white-space: pre;
-  overflow-x: auto;
 }
 
 code {
