@@ -166,12 +166,44 @@ pre {
   border: 1px solid var(--color-border);
   border-radius: 4px;
   padding: 12pt;
+  padding-left: 3.5em;
   margin: 12pt 0;
   overflow-x: auto;
   font-family: 'Source Code Pro', 'Consolas', 'Monaco', monospace;
   font-size: 9pt;
   line-height: 1.5;
   page-break-inside: avoid;
+  position: relative;
+  counter-reset: line;
+}
+
+pre code {
+  background-color: transparent;
+  padding: 0;
+  display: block;
+}
+
+/* 行番号表示 */
+pre code .line,
+pre code > span {
+  display: block;
+  position: relative;
+}
+
+pre code .line::before,
+pre code > span::before {
+  counter-increment: line;
+  content: counter(line);
+  position: absolute;
+  left: -3em;
+  width: 2.5em;
+  text-align: right;
+  color: #999;
+  font-size: 8pt;
+  user-select: none;
+  border-right: 1px solid #ddd;
+  padding-right: 0.5em;
+  margin-right: 0.5em;
 }
 
 code {
@@ -182,9 +214,13 @@ code {
   border-radius: 2px;
 }
 
-pre code {
-  background-color: transparent;
-  padding: 0;
+/* インラインコードには行番号なし */
+:not(pre) > code {
+  display: inline;
+}
+
+:not(pre) > code::before {
+  content: none;
 }
 
 /* テーブル */
@@ -197,30 +233,59 @@ table {
   counter-increment: table;
 }
 
+/* 縦罫線なし、横罫線のみ */
 th, td {
-  border: 1px solid var(--color-border);
+  border: none;
+  border-bottom: 1px solid #999;
   padding: 6pt 8pt;
   vertical-align: top;
 }
 
-/* 見出し行はセンタリング */
+/* 見出し行はセンタリング、下線を太く */
 th {
-  background-color: var(--color-code-bg);
+  background-color: transparent;
   font-family: var(--font-gothic);
   font-weight: bold;
   text-align: center;
+  border-bottom: 2px solid #666;
+}
+
+/* ゼブラストライプ（偶数行に背景色） */
+tr:nth-child(even) td {
+  background-color: #f5f5f5;
+}
+
+tr:nth-child(odd) td {
+  background-color: #ffffff;
+}
+
+/* 最終行の下線をなくす */
+tr:last-child td {
+  border-bottom: none;
 }
 
 td {
   text-align: left;
 }
 
+/* 数値列用クラス（Markdownでは手動指定が必要） */
+td.num,
+td[data-align="right"] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 表の凡例（表の上に配置、章番号付き通し番号） */
 caption {
   caption-side: top;
   text-align: left;
   font-family: var(--font-gothic);
   font-weight: bold;
   margin-bottom: 6pt;
+}
+
+caption::before {
+  content: "表" counter(chapter) "-" counter(table) " ";
 }
 
 /* 画像・図 */
@@ -289,16 +354,25 @@ hr {
 }
 
 /* 数式 */
-.math-display {
+.math-display,
+.math.display,
+p > .math-display {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 12pt 0;
   counter-increment: equation;
   position: relative;
 }
 
-.math-display::after {
+.math-display::after,
+.math.display::after {
   content: "(" counter(chapter) "-" counter(equation) ")";
   position: absolute;
   right: 0;
+  font-family: var(--font-mincho);
   font-size: 10pt;
+  color: var(--color-text);
 }
 
 /* 目次 */
