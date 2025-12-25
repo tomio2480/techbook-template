@@ -38,8 +38,8 @@ function processHtmlFiles() {
         const lines = code.split('\n');
         const lineCount = lines[lines.length - 1] === '' ? lines.length - 1 : lines.length;
 
-        // 行番号の span を生成
-        const lineNumbersRows = Array.from({ length: lineCount }, () => '<span></span>').join('');
+        // 行番号の span を生成（番号を直接テキストとして挿入）
+        const lineNumbersRows = Array.from({ length: lineCount }, (_, i) => `<span>${i + 1}</span>`).join('');
 
         return `<pre class="language-${lang} line-numbers"${attrs}><code class="language-${lang}">${code}</code><span class="line-numbers-rows">${lineNumbersRows}</span></pre>`;
       }

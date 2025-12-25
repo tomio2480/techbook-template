@@ -23,7 +23,6 @@ export default {
         'javascript', 'typescript', 'python', 'rust', 'go', 'bash',
         'json', 'yaml', 'markup', 'css', 'markdown', 'c', 'cpp'
       ],
-      plugins: ['line-numbers'],
     }),
   vfm: {
     math: true,

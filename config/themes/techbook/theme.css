@@ -199,42 +199,44 @@ pre[class*="language-"] {
   position: relative;
 }
 
-/* 行番号付きコードブロック（Prism line-numbers プラグイン形式） */
+/* 行番号付きコードブロック */
 pre[class*="language-"].line-numbers {
-  padding-left: 3.5em;
-  counter-reset: linenumber;
+  padding-left: 3.8em;
+  position: relative;
 }
 
 pre[class*="language-"].line-numbers > code {
-  position: relative;
-  white-space: inherit;
+  display: block;
+  white-space: pre;
 }
 
-.line-numbers-rows {
+pre[class*="language-"].line-numbers > .line-numbers-rows {
   position: absolute;
   pointer-events: none;
-  top: 10pt;
+  top: 0;
   left: 0;
   width: 3em;
-  letter-spacing: -1px;
-  border-right: 1px solid #ccc;
-  background-color: #e8e8e8;
+  padding-top: 10pt;
+  padding-bottom: 10pt;
+  border-right: 1px solid #999;
+  background-color: #e0e0e0;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
   user-select: none;
-  height: calc(100% - 20pt);
+  font-family: 'Source Code Pro', 'Consolas', 'Monaco', monospace;
+  font-size: 9pt;
+  line-height: 1.6;
+  box-sizing: border-box;
 }
 
-.line-numbers-rows > span {
+pre[class*="language-"].line-numbers > .line-numbers-rows > span {
   display: block;
-  counter-increment: linenumber;
-}
-
-.line-numbers-rows > span::before {
-  content: counter(linenumber);
-  color: #666;
-  display: block;
-  padding-right: 0.8em;
+  color: #333;
+  padding-right: 0.6em;
   text-align: right;
-  font-size: 8pt;
+  font-size: 9pt;
+  line-height: 1.6;
 }
 
 pre[class*="language-"] code {
@@ -264,7 +266,6 @@ table {
   margin: 12pt 0;
   font-size: 9pt;
   page-break-inside: avoid;
-  counter-increment: table;
 }
 
 /* 縦罫線なし、横罫線のみ（細め） */
@@ -299,17 +300,47 @@ tr:last-child td {
   border-bottom: none;
 }
 
-/* 表の凡例（表の上に配置、セクション番号付き通し番号） */
+/* 表の凡例（表の上に配置） */
 caption {
   caption-side: top;
-  text-align: left;
-  font-family: var(--font-gothic);
-  font-weight: bold;
+  text-align: center;
+  font-family: var(--font-mincho);
   margin-bottom: 6pt;
 }
 
-caption::before {
-  content: "表" counter(chapter) "." counter(section) "." counter(subsection) "." counter(subsubsection) "-" counter(table) " ";
+/* 表の直前の段落をキャプション風にスタイリング */
+p + table {
+  margin-top: 0;
+}
+
+/* 表の前のキャプション段落（表N: で始まる段落） */
+p:has(+ table) {
+  text-align: center;
+  font-family: var(--font-mincho);
+  margin-bottom: 6pt;
+  text-indent: 0;
+  counter-increment: table;
+}
+
+/* 表番号：所属セクションに応じた形式 */
+/* 章直下（section.level1 > table）*/
+section.level1 > p:has(+ table)::before {
+  content: "表" counter(chapter) ".-" counter(table) ": ";
+}
+
+/* h2直下（section.level2 > table）*/
+section.level2 > p:has(+ table)::before {
+  content: "表" counter(chapter) "." counter(section) ".-" counter(table) ": ";
+}
+
+/* h3直下（section.level3 > table）*/
+section.level3 > p:has(+ table)::before {
+  content: "表" counter(chapter) "." counter(section) "." counter(subsection) ".-" counter(table) ": ";
+}
+
+/* h4直下（section.level4 > table）*/
+section.level4 > p:has(+ table)::before {
+  content: "表" counter(chapter) "." counter(section) "." counter(subsection) "." counter(subsubsection) ".-" counter(table) ": ";
 }
 
 /* 画像・図 */
@@ -327,14 +358,31 @@ figure img {
 
 figcaption {
   font-size: 9pt;
-  font-family: var(--font-gothic);
-  color: #666;
+  font-family: var(--font-mincho);
+  color: #333;
   margin-top: 6pt;
   text-align: center;
 }
 
-figcaption::before {
-  content: "図" counter(chapter) "." counter(section) "." counter(subsection) "." counter(subsubsection) "-" counter(figure) ": ";
+/* 図番号：所属セクションに応じた形式 */
+/* 章直下（section.level1 > figure）*/
+section.level1 > figure > figcaption::before {
+  content: "図" counter(chapter) ".-" counter(figure) ": ";
+}
+
+/* h2直下（section.level2 > figure）*/
+section.level2 > figure > figcaption::before {
+  content: "図" counter(chapter) "." counter(section) ".-" counter(figure) ": ";
+}
+
+/* h3直下（section.level3 > figure）*/
+section.level3 > figure > figcaption::before {
+  content: "図" counter(chapter) "." counter(section) "." counter(subsection) ".-" counter(figure) ": ";
+}
+
+/* h4直下（section.level4 > figure）*/
+section.level4 > figure > figcaption::before {
+  content: "図" counter(chapter) "." counter(section) "." counter(subsection) "." counter(subsubsection) ".-" counter(figure) ": ";
 }
 
 /* 引用 */
@@ -377,9 +425,8 @@ hr {
   font-size: 9pt;
 }
 
-/* 数式 */
-.math-display,
-.math.display {
+/* 数式 - ブロック数式を含む段落 */
+p:has(> .math.display) {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -387,16 +434,41 @@ hr {
   counter-increment: equation;
   position: relative;
   width: 100%;
+  text-indent: 0;
 }
 
-.math-display::after,
-.math.display::after {
-  content: "(" counter(chapter) "." counter(section) "." counter(subsection) "." counter(subsubsection) "-" counter(equation) ")";
+/* 数式番号：所属セクションに応じた形式 */
+section.level1 > p:has(> .math.display)::after,
+section.level1 > section.level2 > p:has(> .math.display)::after {
+  content: "(" counter(chapter) "." counter(section) ".-" counter(equation) ")";
   position: absolute;
   right: 0;
   font-family: var(--font-mincho);
   font-size: 10pt;
   color: var(--color-text);
+}
+
+section.level3 > p:has(> .math.display)::after {
+  content: "(" counter(chapter) "." counter(section) "." counter(subsection) ".-" counter(equation) ")";
+  position: absolute;
+  right: 0;
+  font-family: var(--font-mincho);
+  font-size: 10pt;
+  color: var(--color-text);
+}
+
+section.level4 > p:has(> .math.display)::after {
+  content: "(" counter(chapter) "." counter(section) "." counter(subsection) "." counter(subsubsection) ".-" counter(equation) ")";
+  position: absolute;
+  right: 0;
+  font-family: var(--font-mincho);
+  font-size: 10pt;
+  color: var(--color-text);
+}
+
+/* 数式 span 自体のスタイル */
+.math.display {
+  display: inline-block;
 }
 
 /* 目次 */
