@@ -7,6 +7,7 @@ module.exports = {
   entry: [
     'src/chapters/00-preface.md',
     'src/chapters/01-introduction.md',
+    'src/chapters/02-advanced.md',
   ],
   output: [
     'dist/book.pdf',
