@@ -39,7 +39,7 @@
 }
 
 html {
-  font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic', sans-serif;
+  font-family: 'Noto Sans CJK JP', 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', sans-serif;
   font-size: var(--font-size-base);
   line-height: var(--line-height);
   color: var(--color-text);
@@ -54,7 +54,7 @@ body {
 
 /* 見出し */
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', 'Yu Gothic', sans-serif;
+  font-family: 'Noto Sans CJK JP', 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', sans-serif;
   font-weight: bold;
   color: var(--color-heading);
   line-height: 1.4;
