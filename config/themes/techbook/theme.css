@@ -79,7 +79,7 @@ h1 {
   border-bottom: 2px solid var(--color-heading);
   break-before: page;
   counter-increment: chapter;
-  counter-reset: section subsection figure table equation;
+  counter-reset: section subsection subsubsection figure table equation;
 }
 
 /* まえがきなど番号不要の章 */
@@ -101,7 +101,7 @@ h2 {
   padding-left: 10pt;
   border-left: 4px solid var(--color-heading);
   counter-increment: section;
-  counter-reset: subsection;
+  counter-reset: subsection subsubsection figure table equation;
 }
 
 h2::before {
@@ -114,16 +114,24 @@ h3 {
   margin-top: 18pt;
   margin-bottom: 8pt;
   counter-increment: subsection;
+  counter-reset: subsubsection figure table equation;
 }
 
 h3::before {
   content: counter(chapter) "." counter(section) "." counter(subsection) ". ";
 }
 
+/* h4 - サブサブセクション番号 */
 h4 {
   font-size: 11pt;
   margin-top: 14pt;
   margin-bottom: 6pt;
+  counter-increment: subsubsection;
+  counter-reset: figure table equation;
+}
+
+h4::before {
+  content: counter(chapter) "." counter(section) "." counter(subsection) "." counter(subsubsection) ". ";
 }
 
 /* 段落 */
@@ -162,48 +170,61 @@ a:hover {
 
 /* コードブロック */
 pre {
-  background-color: var(--color-code-bg);
-  border: 1px solid var(--color-border);
+  background-color: #ffffff;
+  border: 1px solid #ccc;
   border-radius: 4px;
-  padding: 12pt;
-  padding-left: 3.5em;
   margin: 12pt 0;
   overflow-x: auto;
   font-family: 'Source Code Pro', 'Consolas', 'Monaco', monospace;
   font-size: 9pt;
-  line-height: 1.5;
+  line-height: 1.6;
   page-break-inside: avoid;
-  position: relative;
-  counter-reset: line;
-}
-
-pre code {
-  background-color: transparent;
+  display: flex;
   padding: 0;
-  display: block;
 }
 
-/* 行番号表示 */
-pre code .line,
-pre code > span {
-  display: block;
-  position: relative;
+/* 行番号付きコードブロック */
+pre.with-line-numbers {
+  display: flex;
+  flex-direction: row;
 }
 
-pre code .line::before,
-pre code > span::before {
-  counter-increment: line;
-  content: counter(line);
-  position: absolute;
-  left: -3em;
-  width: 2.5em;
+pre.with-line-numbers .line-numbers {
+  background-color: #e8e8e8;
+  padding: 10pt 8pt;
   text-align: right;
-  color: #999;
+  color: #666;
   font-size: 8pt;
   user-select: none;
-  border-right: 1px solid #ddd;
-  padding-right: 0.5em;
-  margin-right: 0.5em;
+  border-right: 1px solid #ccc;
+  min-width: 2.5em;
+}
+
+pre.with-line-numbers .line-numbers .line-number {
+  display: block;
+}
+
+pre.with-line-numbers code {
+  background-color: var(--color-code-bg);
+  padding: 10pt 12pt;
+  display: block;
+  flex: 1;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+pre.with-line-numbers code .code-line {
+  display: block;
+}
+
+/* 行番号なしのコードブロック（フォールバック） */
+pre:not(.with-line-numbers) code {
+  background-color: var(--color-code-bg);
+  padding: 10pt 12pt;
+  display: block;
+  flex: 1;
+  white-space: pre;
+  overflow-x: auto;
 }
 
 code {
@@ -214,13 +235,9 @@ code {
   border-radius: 2px;
 }
 
-/* インラインコードには行番号なし */
+/* インラインコード */
 :not(pre) > code {
   display: inline;
-}
-
-:not(pre) > code::before {
-  content: none;
 }
 
 /* テーブル */
@@ -233,12 +250,13 @@ table {
   counter-increment: table;
 }
 
-/* 縦罫線なし、横罫線のみ */
+/* 縦罫線なし、横罫線のみ（細め） */
 th, td {
   border: none;
-  border-bottom: 1px solid #999;
+  border-bottom: 0.5pt solid #aaa;
   padding: 6pt 8pt;
-  vertical-align: top;
+  vertical-align: middle;
+  text-align: center;
 }
 
 /* 見出し行はセンタリング、下線を太く */
@@ -247,7 +265,7 @@ th {
   font-family: var(--font-gothic);
   font-weight: bold;
   text-align: center;
-  border-bottom: 2px solid #666;
+  border-bottom: 1pt solid #666;
 }
 
 /* ゼブラストライプ（偶数行に背景色） */
@@ -264,18 +282,7 @@ tr:last-child td {
   border-bottom: none;
 }
 
-td {
-  text-align: left;
-}
-
-/* 数値列用クラス（Markdownでは手動指定が必要） */
-td.num,
-td[data-align="right"] {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-
-/* 表の凡例（表の上に配置、章番号付き通し番号） */
+/* 表の凡例（表の上に配置、セクション番号付き通し番号） */
 caption {
   caption-side: top;
   text-align: left;
@@ -285,7 +292,7 @@ caption {
 }
 
 caption::before {
-  content: "表" counter(chapter) "-" counter(table) " ";
+  content: "表" counter(chapter) "." counter(section) "." counter(subsection) "." counter(subsubsection) "-" counter(table) " ";
 }
 
 /* 画像・図 */
@@ -310,7 +317,7 @@ figcaption {
 }
 
 figcaption::before {
-  content: "図" counter(chapter) "-" counter(figure) ": ";
+  content: "図" counter(chapter) "." counter(section) "." counter(subsection) "." counter(subsubsection) "-" counter(figure) ": ";
 }
 
 /* 引用 */
@@ -355,19 +362,19 @@ hr {
 
 /* 数式 */
 .math-display,
-.math.display,
-p > .math-display {
+.math.display {
   display: flex;
   justify-content: center;
   align-items: center;
   margin: 12pt 0;
   counter-increment: equation;
   position: relative;
+  width: 100%;
 }
 
 .math-display::after,
 .math.display::after {
-  content: "(" counter(chapter) "-" counter(equation) ")";
+  content: "(" counter(chapter) "." counter(section) "." counter(subsection) "." counter(subsubsection) "-" counter(equation) ")";
   position: absolute;
   right: 0;
   font-family: var(--font-mincho);
