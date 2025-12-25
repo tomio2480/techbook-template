@@ -36,10 +36,12 @@
   --color-link: #0066cc;
   --color-code-bg: #f5f5f5;
   --color-border: #ddd;
+  --font-mincho: 'Noto Serif CJK JP', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  --font-gothic: 'Noto Sans CJK JP', 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
 }
 
 html {
-  font-family: 'Noto Sans CJK JP', 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+  font-family: var(--font-mincho);
   font-size: var(--font-size-base);
   line-height: var(--line-height);
   color: var(--color-text);
@@ -50,17 +52,25 @@ html {
 body {
   margin: 0;
   padding: 0;
+  counter-reset: chapter figure table equation;
 }
 
-/* 見出し */
+/* 太字強調はゴシック体 */
+strong, b {
+  font-family: var(--font-gothic);
+  font-weight: bold;
+}
+
+/* 見出し（ゴシック体） */
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Noto Sans CJK JP', 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+  font-family: var(--font-gothic);
   font-weight: bold;
   color: var(--color-heading);
   line-height: 1.4;
   page-break-after: avoid;
 }
 
+/* 章見出し（h1）- 章カウンターをリセット */
 h1 {
   font-size: 24pt;
   margin-top: 0;
@@ -68,20 +78,46 @@ h1 {
   padding-bottom: 10pt;
   border-bottom: 2px solid var(--color-heading);
   break-before: page;
+  counter-increment: chapter;
+  counter-reset: section subsection figure table equation;
 }
 
+/* まえがきなど番号不要の章 */
+section[data-preface] h1,
+.preface h1 {
+  counter-increment: none;
+}
+
+section[data-preface] h1::before,
+.preface h1::before {
+  content: none !important;
+}
+
+/* h2 - セクション番号 */
 h2 {
   font-size: 16pt;
   margin-top: 24pt;
   margin-bottom: 12pt;
   padding-left: 10pt;
   border-left: 4px solid var(--color-heading);
+  counter-increment: section;
+  counter-reset: subsection;
 }
 
+h2::before {
+  content: counter(chapter) "." counter(section) ". ";
+}
+
+/* h3 - サブセクション番号 */
 h3 {
   font-size: 13pt;
   margin-top: 18pt;
   margin-bottom: 8pt;
+  counter-increment: subsection;
+}
+
+h3::before {
+  content: counter(chapter) "." counter(section) "." counter(subsection) ". ";
 }
 
 h4 {
@@ -158,32 +194,41 @@ table {
   margin: 12pt 0;
   font-size: 9pt;
   page-break-inside: avoid;
+  counter-increment: table;
 }
 
 th, td {
   border: 1px solid var(--color-border);
   padding: 6pt 8pt;
-  text-align: left;
   vertical-align: top;
 }
 
+/* 見出し行はセンタリング */
 th {
   background-color: var(--color-code-bg);
+  font-family: var(--font-gothic);
   font-weight: bold;
+  text-align: center;
+}
+
+td {
+  text-align: left;
 }
 
 caption {
   caption-side: top;
   text-align: left;
+  font-family: var(--font-gothic);
   font-weight: bold;
   margin-bottom: 6pt;
 }
 
-/* 画像 */
+/* 画像・図 */
 figure {
   margin: 16pt 0;
   text-align: center;
   page-break-inside: avoid;
+  counter-increment: figure;
 }
 
 figure img {
@@ -193,9 +238,14 @@ figure img {
 
 figcaption {
   font-size: 9pt;
+  font-family: var(--font-gothic);
   color: #666;
   margin-top: 6pt;
   text-align: center;
+}
+
+figcaption::before {
+  content: "図" counter(chapter) "-" counter(figure) ": ";
 }
 
 /* 引用 */
@@ -204,7 +254,7 @@ blockquote {
   padding: 10pt 15pt;
   background-color: #fafafa;
   border-left: 4px solid #ccc;
-  font-style: italic;
+  font-style: normal;
 }
 
 blockquote p {
@@ -238,30 +288,66 @@ hr {
   font-size: 9pt;
 }
 
+/* 数式 */
+.math-display {
+  counter-increment: equation;
+  position: relative;
+}
+
+.math-display::after {
+  content: "(" counter(chapter) "-" counter(equation) ")";
+  position: absolute;
+  right: 0;
+  font-size: 10pt;
+}
+
 /* 目次 */
+nav[role="doc-toc"],
 nav#toc {
   break-before: page;
   margin-bottom: 20pt;
 }
 
+nav[role="doc-toc"] h2,
 nav#toc h2 {
   border-left: none;
   padding-left: 0;
 }
 
+nav[role="doc-toc"] h2::before,
+nav#toc h2::before {
+  content: none;
+}
+
+nav[role="doc-toc"] ol,
 nav#toc ol {
   list-style: none;
   padding-left: 0;
 }
 
+nav[role="doc-toc"] li,
 nav#toc li {
   margin-bottom: 6pt;
 }
 
+nav[role="doc-toc"] ol ol,
+nav#toc ol ol {
+  padding-left: 1.5em;
+  margin-top: 4pt;
+}
+
+nav[role="doc-toc"] a,
 nav#toc a {
   color: var(--color-text);
 }
 
+nav[role="doc-toc"] a::after,
 nav#toc a::after {
   content: leader('.') target-counter(attr(href url), page);
+}
+
+/* 目次ページのh2番号を非表示 */
+nav[role="doc-toc"] h2::before {
+  content: none !important;
+  counter-increment: none;
 }

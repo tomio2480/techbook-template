@@ -6,6 +6,7 @@ module.exports = {
   theme: ['./config/themes/techbook/theme.css'],
   entry: [
     'src/chapters/00-preface.md',
+    { rel: 'contents', theme: './config/themes/techbook/theme.css' },
     'src/chapters/01-introduction.md',
     'src/chapters/02-advanced.md',
     'src/chapters/03-math-and-figures.md',
@@ -16,5 +17,9 @@ module.exports = {
   vfm: {
     math: true,
     hardLineBreaks: false,
+  },
+  toc: {
+    title: '目次',
+    depth: 3,
   },
 };

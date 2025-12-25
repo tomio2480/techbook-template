@@ -1,85 +1,86 @@
 @charset "UTF-8";
 
 /* コードハイライト用スタイル */
-/* Vivliostyle の Prism.js 互換テーマ */
+/* 背景色 #f5f5f5 に対してコントラスト比 4.5:1 以上を確保 */
 
 /* トークン共通 */
 .token {
   font-family: 'Source Code Pro', 'Consolas', 'Monaco', monospace;
 }
 
-/* コメント */
+/* コメント - 濃いグレー緑 */
 .token.comment,
 .token.prolog,
 .token.doctype,
 .token.cdata {
-  color: #6a9955;
+  color: #5a7a3a;
   font-style: italic;
 }
 
-/* 演算子・句読点 */
+/* 句読点 - 黒に近いグレー */
 .token.punctuation {
-  color: #333;
+  color: #333333;
 }
 
+/* 演算子 */
 .token.operator {
-  color: #d4d4d4;
+  color: #555555;
 }
 
 /* 名前空間 */
 .token.namespace {
-  opacity: 0.7;
+  opacity: 0.8;
 }
 
-/* プロパティ・タグ・定数・シンボル */
+/* プロパティ・タグ・定数・シンボル - 濃い青 */
 .token.property,
 .token.tag,
 .token.constant,
 .token.symbol,
 .token.deleted {
-  color: #569cd6;
+  color: #0055aa;
 }
 
-/* 論理値・数値 */
+/* 論理値・数値 - 濃い緑 */
 .token.boolean,
 .token.number {
-  color: #b5cea8;
+  color: #116611;
 }
 
-/* セレクタ・属性名・文字列・文字・組込み */
+/* セレクタ・属性名・文字列・文字・組込み - 濃い茶/オレンジ */
 .token.selector,
 .token.attr-name,
 .token.string,
 .token.char,
 .token.builtin,
 .token.inserted {
-  color: #ce9178;
+  color: #aa4400;
 }
 
-/* 演算子・エンティティ・URL */
+/* エンティティ・URL */
 .token.entity,
 .token.url,
 .language-css .token.string,
 .style .token.string {
-  color: #d7ba7d;
+  color: #886600;
 }
 
-/* atrule・属性値・キーワード */
+/* atrule・属性値・キーワード - 濃い紫 */
 .token.atrule,
 .token.attr-value,
 .token.keyword {
-  color: #c586c0;
+  color: #7722aa;
 }
 
-/* 関数・クラス名 */
+/* 関数・クラス名 - 濃い青紫 */
 .token.function,
 .token.class-name {
-  color: #dcdcaa;
+  color: #445588;
 }
 
-/* 正規表現 */
+/* 正規表現 - 濃い赤 */
 .token.regex {
-  color: #d16969;
+  color: #aa2222;
 }
 
 /* 重要・太字 */
@@ -103,99 +104,121 @@
 /* JavaScript / TypeScript */
 .language-javascript .token.keyword,
 .language-typescript .token.keyword {
-  color: #569cd6;
+  color: #0055aa;
 }
 
 .language-javascript .token.string,
 .language-typescript .token.string {
-  color: #ce9178;
+  color: #aa4400;
+}
+
+.language-javascript .token.function,
+.language-typescript .token.function {
+  color: #445588;
 }
 
 /* Python */
 .language-python .token.keyword {
-  color: #569cd6;
+  color: #0055aa;
 }
 
 .language-python .token.builtin {
-  color: #4ec9b0;
+  color: #006666;
 }
 
 .language-python .token.decorator {
-  color: #dcdcaa;
+  color: #445588;
+}
+
+.language-python .token.string {
+  color: #aa4400;
 }
 
 /* Rust */
 .language-rust .token.keyword {
-  color: #569cd6;
+  color: #0055aa;
 }
 
 .language-rust .token.macro {
-  color: #dcdcaa;
+  color: #445588;
+}
+
+.language-rust .token.function {
+  color: #445588;
 }
 
 /* Go */
 .language-go .token.keyword {
-  color: #569cd6;
+  color: #0055aa;
 }
 
 .language-go .token.builtin {
-  color: #4ec9b0;
+  color: #006666;
+}
+
+.language-go .token.function {
+  color: #445588;
 }
 
 /* Shell / Bash */
 .language-bash .token.function,
 .language-shell .token.function {
-  color: #dcdcaa;
+  color: #445588;
 }
 
 .language-bash .token.variable,
 .language-shell .token.variable {
-  color: #9cdcfe;
+  color: #0066aa;
+}
+
+.language-bash .token.string,
+.language-shell .token.string {
+  color: #aa4400;
 }
 
 /* YAML */
 .language-yaml .token.key {
-  color: #9cdcfe;
+  color: #0066aa;
 }
 
 .language-yaml .token.string {
-  color: #ce9178;
+  color: #aa4400;
 }
 
 /* JSON */
 .language-json .token.property {
-  color: #9cdcfe;
+  color: #0066aa;
 }
 
 .language-json .token.string {
-  color: #ce9178;
+  color: #aa4400;
 }
 
 /* CSS */
 .language-css .token.selector {
-  color: #d7ba7d;
+  color: #886600;
 }
 
 .language-css .token.property {
-  color: #9cdcfe;
+  color: #0066aa;
 }
 
 /* HTML */
 .language-html .token.tag {
-  color: #569cd6;
+  color: #0055aa;
 }
 
 .language-html .token.attr-name {
-  color: #9cdcfe;
+  color: #0066aa;
 }
 
 .language-html .token.attr-value {
-  color: #ce9178;
+  color: #aa4400;
 }
 
 /* Markdown */
 .language-markdown .token.title {
-  color: #569cd6;
+  color: #0055aa;
   font-weight: bold;
 }
 
@@ -227,7 +250,7 @@ pre.line-numbers > code {
   left: -3.5em;
   width: 3em;
   letter-spacing: -1px;
-  border-right: 1px solid #ddd;
+  border-right: 1px solid #ccc;
   user-select: none;
 }
 
@@ -238,7 +261,7 @@ pre.line-numbers > code {
 
 .line-numbers-rows > span:before {
   content: counter(linenumber);
-  color: #999;
+  color: #666;
   display: block;
   padding-right: 0.8em;
   text-align: right;
