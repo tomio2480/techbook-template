@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200">
+  <!-- 背景 -->
+  <rect width="400" height="200" fill="#ffffff"/>
+
+  <!-- マイコン -->
+  <rect x="20" y="60" width="80" height="80" fill="#e8e8e8" stroke="#333" stroke-width="2" rx="4"/>
+  <text x="60" y="105" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#333">MCU</text>
+  <text x="60" y="120" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#666">GPIO</text>
+
+  <!-- 出力ピン -->
+  <circle cx="100" cy="100" r="4" fill="#333"/>
+  <line x1="100" y1="100" x2="140" y2="100" stroke="#333" stroke-width="2"/>
+
+  <!-- 抵抗 -->
+  <rect x="140" y="90" width="60" height="20" fill="#f5deb3" stroke="#333" stroke-width="2"/>
+  <text x="170" y="105" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#333">330Ω</text>
+
+  <!-- 抵抗からLEDへの配線 -->
+  <line x1="200" y1="100" x2="240" y2="100" stroke="#333" stroke-width="2"/>
+
+  <!-- LED -->
+  <polygon points="240,80 280,100 240,120" fill="#ff6b6b" stroke="#333" stroke-width="2"/>
+  <line x1="280" y1="80" x2="280" y2="120" stroke="#333" stroke-width="2"/>
+
+  <!-- LED発光表現 -->
+  <line x1="260" y1="70" x2="270" y2="55" stroke="#ff6b6b" stroke-width="1.5"/>
+  <polygon points="270,55 275,60 265,58" fill="#ff6b6b"/>
+  <line x1="275" y1="75" x2="285" y2="60" stroke="#ff6b6b" stroke-width="1.5"/>
+  <polygon points="285,60 290,65 280,63" fill="#ff6b6b"/>
+
+  <!-- LEDからGNDへの配線 -->
+  <line x1="280" y1="100" x2="320" y2="100" stroke="#333" stroke-width="2"/>
+  <line x1="320" y1="100" x2="320" y2="140" stroke="#333" stroke-width="2"/>
+
+  <!-- GND記号 -->
+  <line x1="305" y1="140" x2="335" y2="140" stroke="#333" stroke-width="2"/>
+  <line x1="310" y1="147" x2="330" y2="147" stroke="#333" stroke-width="2"/>
+  <line x1="315" y1="154" x2="325" y2="154" stroke="#333" stroke-width="2"/>
+
+  <!-- ラベル -->
+  <text x="320" y="175" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#666">GND</text>
+
+  <!-- タイトル -->
+  <text x="200" y="25" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#333">LED点滅回路</text>
+</svg>

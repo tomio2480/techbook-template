@@ -8,8 +8,13 @@ module.exports = {
     'src/chapters/00-preface.md',
     'src/chapters/01-introduction.md',
     'src/chapters/02-advanced.md',
+    'src/chapters/03-math-and-figures.md',
   ],
   output: [
     'dist/book.pdf',
   ],
+  vfm: {
+    math: true,
+    hardLineBreaks: false,
+  },
 };
