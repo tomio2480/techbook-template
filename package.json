@@ -1,6 +1,6 @@
 {
   "name": "techbook-template",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Vivliostyle を使用した技術書自動組版テンプレート",
   "private": true,
   "type": "module",
