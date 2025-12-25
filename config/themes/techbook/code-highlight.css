@@ -1,0 +1,245 @@
+@charset "UTF-8";
+
+/* コードハイライト用スタイル */
+/* Vivliostyle の Prism.js 互換テーマ */
+
+/* トークン共通 */
+.token {
+  font-family: 'Source Code Pro', 'Consolas', 'Monaco', monospace;
+}
+
+/* コメント */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+  color: #6a9955;
+  font-style: italic;
+}
+
+/* 演算子・句読点 */
+.token.punctuation {
+  color: #333;
+}
+
+.token.operator {
+  color: #d4d4d4;
+}
+
+/* 名前空間 */
+.token.namespace {
+  opacity: 0.7;
+}
+
+/* プロパティ・タグ・定数・シンボル */
+.token.property,
+.token.tag,
+.token.constant,
+.token.symbol,
+.token.deleted {
+  color: #569cd6;
+}
+
+/* 論理値・数値 */
+.token.boolean,
+.token.number {
+  color: #b5cea8;
+}
+
+/* セレクタ・属性名・文字列・文字・組込み */
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+  color: #ce9178;
+}
+
+/* 演算子・エンティティ・URL */
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+  color: #d7ba7d;
+}
+
+/* atrule・属性値・キーワード */
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+  color: #c586c0;
+}
+
+/* 関数・クラス名 */
+.token.function,
+.token.class-name {
+  color: #dcdcaa;
+}
+
+/* 正規表現 */
+.token.regex {
+  color: #d16969;
+}
+
+/* 重要・太字 */
+.token.important,
+.token.bold {
+  font-weight: bold;
+}
+
+/* イタリック */
+.token.italic {
+  font-style: italic;
+}
+
+/* エンティティ */
+.token.entity {
+  cursor: help;
+}
+
+/* 言語別のカスタマイズ */
+
+/* JavaScript / TypeScript */
+.language-javascript .token.keyword,
+.language-typescript .token.keyword {
+  color: #569cd6;
+}
+
+.language-javascript .token.string,
+.language-typescript .token.string {
+  color: #ce9178;
+}
+
+/* Python */
+.language-python .token.keyword {
+  color: #569cd6;
+}
+
+.language-python .token.builtin {
+  color: #4ec9b0;
+}
+
+.language-python .token.decorator {
+  color: #dcdcaa;
+}
+
+/* Rust */
+.language-rust .token.keyword {
+  color: #569cd6;
+}
+
+.language-rust .token.macro {
+  color: #dcdcaa;
+}
+
+/* Go */
+.language-go .token.keyword {
+  color: #569cd6;
+}
+
+.language-go .token.builtin {
+  color: #4ec9b0;
+}
+
+/* Shell / Bash */
+.language-bash .token.function,
+.language-shell .token.function {
+  color: #dcdcaa;
+}
+
+.language-bash .token.variable,
+.language-shell .token.variable {
+  color: #9cdcfe;
+}
+
+/* YAML */
+.language-yaml .token.key {
+  color: #9cdcfe;
+}
+
+.language-yaml .token.string {
+  color: #ce9178;
+}
+
+/* JSON */
+.language-json .token.property {
+  color: #9cdcfe;
+}
+
+.language-json .token.string {
+  color: #ce9178;
+}
+
+/* CSS */
+.language-css .token.selector {
+  color: #d7ba7d;
+}
+
+.language-css .token.property {
+  color: #9cdcfe;
+}
+
+/* HTML */
+.language-html .token.tag {
+  color: #569cd6;
+}
+
+.language-html .token.attr-name {
+  color: #9cdcfe;
+}
+
+.language-html .token.attr-value {
+  color: #ce9178;
+}
+
+/* Markdown */
+.language-markdown .token.title {
+  color: #569cd6;
+  font-weight: bold;
+}
+
+.language-markdown .token.bold {
+  font-weight: bold;
+}
+
+.language-markdown .token.italic {
+  font-style: italic;
+}
+
+/* 行番号表示用 */
+pre.line-numbers {
+  position: relative;
+  padding-left: 3.5em;
+  counter-reset: linenumber;
+}
+
+pre.line-numbers > code {
+  position: relative;
+  white-space: inherit;
+}
+
+.line-numbers .line-numbers-rows {
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  font-size: 100%;
+  left: -3.5em;
+  width: 3em;
+  letter-spacing: -1px;
+  border-right: 1px solid #ddd;
+  user-select: none;
+}
+
+.line-numbers-rows > span {
+  display: block;
+  counter-increment: linenumber;
+}
+
+.line-numbers-rows > span:before {
+  content: counter(linenumber);
+  color: #999;
+  display: block;
+  padding-right: 0.8em;
+  text-align: right;
+}

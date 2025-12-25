@@ -1,0 +1,27 @@
+# 依存関係
+node_modules/
+
+# ビルド出力
+dist/
+publication.json
+src/chapters/*.html
+
+# OS生成ファイル
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# エディタ設定
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ログファイル
+*.log
+npm-debug.log*
+
+# 一時ファイル
+*.tmp
+*.temp

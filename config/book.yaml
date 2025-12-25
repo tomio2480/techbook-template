@@ -1,0 +1,19 @@
+title: "書籍タイトル"
+subtitle: "サブタイトル"
+author: "著者名"
+version: "1.0.0"
+lang: ja
+date: "2025-01-01"
+
+chapters:
+  - src/chapters/00-preface.md
+  - src/chapters/01-introduction.md
+
+typesetting:
+  page_size: A5
+  font_size: 10pt
+  line_height: 1.8
+
+output:
+  filename: "book-{version}.pdf"
+  include_toc: true
