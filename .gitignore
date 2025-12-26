@@ -5,6 +5,7 @@ node_modules/
 dist/
 publication.json
 src/chapters/*.html
+!src/chapters/toc.html
 index.html
 
 # OS生成ファイル
