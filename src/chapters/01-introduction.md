@@ -3,6 +3,31 @@ body:
   style: "counter-set: chapter 0;"
 ---
 
+<section class="chapter-opening">
+
+<p class="chapter-title">はじめに</p>
+
+<div class="chapter-summary">
+
+本章では、技術書執筆テンプレートの基本的な使い方を説明します。Markdown を使った文書作成の基礎から、コードブロック、テーブル、画像の埋め込みまで、技術書を書くために必要な記法を一通り紹介します。
+
+</div>
+
+<div class="chapter-topics">
+
+<p class="chapter-topics-title">この章で学ぶこと</p>
+
+<ul>
+<li>コードブロックの記述方法とシンタックスハイライト</li>
+<li>テーブルの作成方法</li>
+<li>画像の埋め込み方法</li>
+<li>引用とリストの使い方</li>
+</ul>
+
+</div>
+
+</section>
+
 # はじめに
 
 本章では、技術書執筆テンプレートの基本的な使い方を説明します。

@@ -162,10 +162,12 @@ function updateTocFromIndex() {
   // パスを相対パスに変換（src/chapters/ を削除）
   tocInner = tocInner.replace(/href="src\/chapters\//g, 'href="');
 
-  // 表紙（cover.html）、目次自体（toc.html）、奥付（99-colophon.html）の項目を削除
+  // 表紙、目次自体、あとがき、奥付の項目を削除
   tocInner = removeLiContainingHref(tocInner, 'cover\\.html[^"]*');
   tocInner = removeLiContainingHref(tocInner, 'toc\\.html');
+  tocInner = removeLiContainingHref(tocInner, '98-afterword\\.html[^"]*');
   tocInner = removeLiContainingHref(tocInner, '99-colophon\\.html[^"]*');
+
 
   // アンカー（#以降）を削除してファイル名のみにする（target-counter の解決を助ける）
   tocInner = tocInner.replace(/href="([^"#]+)#[^"]*"/g, 'href="$1"');

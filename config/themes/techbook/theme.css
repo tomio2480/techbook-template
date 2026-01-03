@@ -670,3 +670,97 @@ body.colophon p {
 body.colophon {
   page: colophon;
 }
+
+/* あとがき */
+.afterword h1,
+body.afterword h1 {
+  counter-increment: none;
+}
+
+.afterword h1::before,
+body.afterword h1::before {
+  content: none !important;
+}
+
+.afterword h2,
+body.afterword h2 {
+  counter-increment: none;
+}
+
+.afterword h2::before,
+body.afterword h2::before {
+  content: none !important;
+}
+
+/* 章の扉ページ */
+.chapter-opening {
+  break-before: right;
+  break-after: page;
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 20mm 0;
+}
+
+.chapter-opening .chapter-title {
+  font-family: var(--font-gothic);
+  font-size: 28pt;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 30pt;
+  text-indent: 0;
+}
+
+.chapter-opening .chapter-summary {
+  font-size: 11pt;
+  line-height: 2;
+  text-align: justify;
+  max-width: 90%;
+  margin: 0 auto;
+}
+
+.chapter-opening .chapter-summary p {
+  text-indent: 1em;
+  margin-bottom: 12pt;
+}
+
+.chapter-opening .chapter-topics {
+  margin-top: 30pt;
+  padding: 15pt 20pt;
+  background-color: #f8f8f8;
+  border-radius: 4px;
+}
+
+.chapter-opening .chapter-topics-title {
+  font-family: var(--font-gothic);
+  font-size: 12pt;
+  font-weight: bold;
+  margin-top: 0;
+  margin-bottom: 10pt;
+  text-indent: 0;
+}
+
+.chapter-opening .chapter-topics ul {
+  margin: 0;
+  padding-left: 1.5em;
+}
+
+.chapter-opening .chapter-topics li {
+  font-size: 10pt;
+  margin-bottom: 6pt;
+}
+
+/* 扉ページのヘッダー・フッターを非表示 */
+@page chapter-opening {
+  @top-center {
+    content: none;
+  }
+  @bottom-center {
+    content: none;
+  }
+}
+
+.chapter-opening {
+  page: chapter-opening;
+}
