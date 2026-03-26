@@ -5,6 +5,7 @@ body:
 
 <section class="chapter-opening">
 
+<p class="chapter-number">1</p>
 <p class="chapter-title">はじめに</p>
 
 <div class="chapter-summary">

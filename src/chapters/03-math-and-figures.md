@@ -3,6 +3,32 @@ body:
   style: "counter-set: chapter 2;"
 ---
 
+<section class="chapter-opening">
+
+<p class="chapter-number">3</p>
+<p class="chapter-title">数式と図表</p>
+
+<div class="chapter-summary">
+
+本章では、数式の記述方法と図の埋め込み方法を説明する。LaTeX 形式の数式やSVG 図の埋め込みなど、理工系の技術書に欠かせない表現手法を紹介する。
+
+</div>
+
+<div class="chapter-topics">
+
+<p class="chapter-topics-title">この章で学ぶこと</p>
+
+<ul>
+<li>インライン数式とブロック数式の記述方法</li>
+<li>行列や場合分けの表現</li>
+<li>SVG 図の埋め込み</li>
+<li>図表の自動番号付け</li>
+</ul>
+
+</div>
+
+</section>
+
 # 数式と図表
 
 本章では、数式の記述方法と図の埋め込み方法を説明する。

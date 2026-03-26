@@ -3,8 +3,8 @@
 
 /* ページ設定 */
 @page {
-  size: A5;
-  margin: 20mm 15mm 25mm 15mm;
+  size: JIS-B5;
+  margin: 22mm 18mm 28mm 18mm;
 
   @top-center {
     content: env(doc-title);
@@ -459,6 +459,65 @@ hr {
   font-size: 9pt;
 }
 
+/* コラム */
+.column {
+  background-color: #f0f4f8;
+  border: 1px solid #b0c4de;
+  border-radius: 4px;
+  padding: 12pt 14pt;
+  margin: 16pt 0;
+  font-size: 9pt;
+  page-break-inside: avoid;
+}
+
+.column-title {
+  font-family: var(--font-gothic);
+  font-weight: bold;
+  font-size: 10pt;
+  margin: 0 0 8pt 0;
+  padding-bottom: 6pt;
+  border-bottom: 1px solid #b0c4de;
+  text-indent: 0;
+}
+
+.column p {
+  text-indent: 0;
+  margin: 0 0 6pt 0;
+}
+
+.column p:last-child {
+  margin-bottom: 0;
+}
+
+/* Tips */
+.tips {
+  background-color: #f0faf0;
+  border-left: 4px solid #4caf50;
+  border-radius: 0 4px 4px 0;
+  padding: 10pt 14pt;
+  margin: 12pt 0;
+  font-size: 9pt;
+  page-break-inside: avoid;
+}
+
+.tips-title {
+  font-family: var(--font-gothic);
+  font-weight: bold;
+  font-size: 10pt;
+  margin: 0 0 6pt 0;
+  text-indent: 0;
+  color: #2e7d32;
+}
+
+.tips p {
+  text-indent: 0;
+  margin: 0 0 6pt 0;
+}
+
+.tips p:last-child {
+  margin-bottom: 0;
+}
+
 /* 数式 - ブロック数式を含む段落 */
 p:has(> .math.display) {
   display: flex;
@@ -701,6 +760,27 @@ body.afterword h2::before {
   flex-direction: column;
   justify-content: center;
   padding: 20mm 0;
+  position: relative;
+}
+
+.chapter-opening .chapter-number {
+  position: absolute;
+  top: -22mm;
+  right: -18mm;
+  width: 40mm;
+  height: 40mm;
+  background: linear-gradient(225deg, #444 50%, transparent 50%);
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 5mm 5mm 0 0;
+  font-family: var(--font-gothic);
+  font-size: 36pt;
+  font-weight: bold;
+  color: #fff;
+  text-indent: 0;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .chapter-opening .chapter-title {
