@@ -7,9 +7,9 @@
   margin: 22mm 18mm 28mm 18mm;
 
   @top-center {
-    content: env(doc-title);
+    content: string(chapter-header);
     font-size: 9pt;
-    color: #666;
+    color: #aaa;
   }
 
   @bottom-center {
@@ -82,6 +82,10 @@ h1 {
   counter-reset: section subsection subsubsection figure table equation;
 }
 
+h1 {
+  string-set: chapter-header counter(chapter) ". " content(text);
+}
+
 h1::before {
   content: counter(chapter) ". ";
 }
@@ -122,6 +126,7 @@ section[data-preface] h1,
 body.preface h1 {
   counter-increment: none;
   counter-reset: none;
+  string-set: chapter-header "";
 }
 
 section[data-preface] h1::before,
@@ -715,6 +720,19 @@ body.colophon p {
   color: #666;
 }
 
+/* まえがき・目次・あとがきのヘッダーを非表示 */
+@page no-header {
+  @top-center {
+    content: none;
+  }
+}
+
+body.toc,
+body.preface,
+body.afterword {
+  page: no-header;
+}
+
 /* 奥付ページのヘッダー・フッターを非表示 */
 @page colophon {
   @top-center {
@@ -734,6 +752,7 @@ body.colophon {
 .afterword h1,
 body.afterword h1 {
   counter-increment: none;
+  string-set: chapter-header "";
 }
 
 .afterword h1::before,
