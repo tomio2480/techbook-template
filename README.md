@@ -175,6 +175,22 @@ javascript, typescript, python, rust, go, bash, json, yaml, markup（HTML）, cs
 </div>
 ```
 
+### HTML ブロック内での数式
+
+コラム、Tips、章の扉ページなどの HTML ブロック内では、Markdown の `$...$` 記法は使用できない。HTML ブロック内で数式を表示するには、以下の形式で記述する。
+
+ **インライン数式**
+
+```html
+<span class="math inline" data-math-typeset="true">\(E = mc^2\)</span>
+```
+
+ **ブロック数式**
+
+```html
+<span class="math display" data-math-typeset="true">$$\int_{0}^{1} x^2 dx$$</span>
+```
+
 ### 図の挿入
 
 図は Markdown の画像記法で挿入する。キャプションと番号は自動で付与される。
