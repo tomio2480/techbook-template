@@ -3,7 +3,7 @@
 
 /* ページ設定 */
 @page {
-  size: JIS-B5;
+  size: jis-b5;
   margin: 22mm 18mm 28mm 18mm;
 
   @top-center {
@@ -472,7 +472,7 @@ hr {
   padding: 12pt 14pt;
   margin: 16pt 0;
   font-size: 9pt;
-  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .column-title {
@@ -502,7 +502,7 @@ hr {
   padding: 10pt 14pt;
   margin: 12pt 0;
   font-size: 9pt;
-  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 .tips-title {
