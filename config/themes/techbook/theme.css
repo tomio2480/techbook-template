@@ -67,7 +67,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: bold;
   color: var(--color-heading);
   line-height: 1.4;
-  page-break-after: avoid;
+  break-after: avoid;
 }
 
 /* 章見出し（h1）- 章カウンターをリセット */
@@ -233,7 +233,7 @@ pre[class*="language-"] {
   font-family: 'Source Code Pro', 'Consolas', 'Monaco', monospace;
   font-size: 9pt;
   line-height: 1.6;
-  page-break-inside: avoid;
+  break-inside: avoid;
   padding: 10pt 12pt;
   position: relative;
 }
@@ -304,7 +304,7 @@ table {
   border-collapse: collapse;
   margin: 12pt 0;
   font-size: 9pt;
-  page-break-inside: avoid;
+  break-inside: avoid;
 }
 
 /* 縦罫線なし、横罫線のみ（細め） */
@@ -359,6 +359,7 @@ p:has(+ table) {
   margin-bottom: 6pt;
   text-indent: 0;
   counter-increment: table;
+  break-after: avoid;
 }
 
 /* 表番号：所属セクションに応じた形式 */
@@ -386,7 +387,7 @@ section.level4 > p:has(+ table)::before {
 figure {
   margin: 16pt 0;
   text-align: center;
-  page-break-inside: avoid;
+  break-inside: avoid;
   counter-increment: figure;
 }
 
@@ -401,6 +402,7 @@ figcaption {
   color: #333;
   margin-top: 6pt;
   text-align: center;
+  break-before: avoid;
 }
 
 /* 図番号：所属セクションに応じた形式 */
