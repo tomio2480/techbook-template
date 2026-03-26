@@ -6,10 +6,12 @@ class: colophon
 
 |   |   |
 |---|---|
-| 発行日 | 2025年1月1日 初版発行 |
+| 初頒布 | 20XX年XX月XX日 イベント名 |
+| 発行日 | 20XX年XX月XX日 初版発行 |
 | 著者 | 著者名 |
 | 発行 | サークル名 / 出版社名 |
 | 印刷 | 印刷所名 |
+| 組版 | Vivliostyle |
 | 連絡先 | example@example.com |
 | Web | https://example.com |
 
