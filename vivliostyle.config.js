@@ -3,7 +3,7 @@ import { spectroscope } from '@u1f992/rehype-spectroscope';
 
 export default {
   language: 'ja',
-  size: 'A5',
+  size: 'JIS-B5',
   theme: ['./config/themes/techbook/theme.css'],
   entry: [
     'src/chapters/cover.md',
@@ -12,6 +12,7 @@ export default {
     'src/chapters/01-introduction.md',
     'src/chapters/02-advanced.md',
     'src/chapters/03-math-and-figures.md',
+    'src/chapters/98-afterword.md',
     'src/chapters/99-colophon.md',
   ],
   output: [

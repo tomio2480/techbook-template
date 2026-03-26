@@ -3,6 +3,32 @@ body:
   style: "counter-set: chapter 1;"
 ---
 
+<section class="chapter-opening">
+
+<p class="chapter-number">2</p>
+<p class="chapter-title">応用編</p>
+
+<div class="chapter-summary">
+
+本章では、より実践的な技術書執筆のテクニックを紹介する。回路図の埋め込みや複数言語のコード例、コラムや Tips の活用方法など、技術書の品質を高めるための手法を解説する。
+
+</div>
+
+<div class="chapter-topics">
+
+<p class="chapter-topics-title">この章で学ぶこと</p>
+
+<ul>
+<li>回路図の埋め込み方法</li>
+<li>複数言語のコード例の記述</li>
+<li>コラムと Tips の使い方</li>
+<li>執筆時の注意事項とヒント</li>
+</ul>
+
+</div>
+
+</section>
+
 # 応用編
 
 本章では、より実践的な技術書執筆のテクニックを紹介する。
@@ -75,6 +101,29 @@ Arduino Uno を使った温度計の部品表
 | ブレッドボード | BB-801 | 1 | 300 | 300 | 秋月電子 |
 | ジャンパワイヤ | - | 10 | 20 | 200 | Amazon |
 | **合計** | | | | **4,320** | |
+
+## コラムと Tips
+
+本文の流れから少し外れた補足情報や、読者に役立つ実践的なヒントを提示するためのブロックを用意している。
+
+### コラムの使い方
+
+コラムは、本文の話題に関連する補足的な解説やコラム記事に使用する。HTML の `div` タグに `class="column"` を指定する。
+
+<div class="column">
+<p class="column-title">Vivliostyle と CSS 組版</p>
+<p>Vivliostyle は CSS 組版に基づくオープンソースの組版エンジンである。W3C の CSS Paged Media 仕様に準拠しており、ブラウザの描画エンジンを利用して高品質な PDF を生成できる。</p>
+<p>従来の DTP ソフトウェアと異なり、テキストエディタと Git による原稿管理が可能な点が特徴である。</p>
+</div>
+
+### Tips の使い方
+
+Tips は、読者が作業を効率化するための実践的なアドバイスに使用する。HTML の `div` タグに `class="tips"` を指定する。
+
+<div class="tips">
+<p class="tips-title">Tips: Markdown から HTML ブロックへの切り替え</p>
+<p>Vivliostyle の VFM（Vivliostyle Flavored Markdown）では、Markdown 内に HTML を直接記述できる。コラムや Tips のように独自クラスを使いたい場合は、HTML ブロックを利用する。</p>
+</div>
 
 ## 注意事項とヒント
 
