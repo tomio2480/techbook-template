@@ -132,8 +132,8 @@ Tips は、読者が作業を効率化するための実践的なアドバイス
 <div class="column">
 <p class="column-title">オームの法則</p>
 <p>電気回路の基本法則であるオームの法則は以下の式で表される。</p>
-<p><span class="math display" data-math-typeset="true">$$V = IR$$</span></p>
-<p>ここで、<span class="math inline" data-math-typeset="true">\(V\)</span> は電圧、<span class="math inline" data-math-typeset="true">\(I\)</span> は電流、<span class="math inline" data-math-typeset="true">\(R\)</span> は抵抗である。</p>
+<p><span class="math display">$$V = IR$$</span></p>
+<p>ここで、<span class="math inline">\(V\)</span> は電圧、<span class="math inline">\(I\)</span> は電流、<span class="math inline">\(R\)</span> は抵抗である。</p>
 </div>
 
 ## 注意事項とヒント
