@@ -364,22 +364,30 @@ p:has(+ table) {
 
 /* 表番号：所属セクションに応じた形式 */
 /* 章直下（section.level1 > table）*/
-section.level1 > p:has(+ table)::before {
+section.level1 > p:has(+ table)::before,
+section.level1 .column > p:has(+ table)::before,
+section.level1 .tips > p:has(+ table)::before {
   content: "表" counter(chapter) ".-" counter(table) ": ";
 }
 
 /* h2直下（section.level2 > table）*/
-section.level2 > p:has(+ table)::before {
+section.level2 > p:has(+ table)::before,
+section.level2 .column > p:has(+ table)::before,
+section.level2 .tips > p:has(+ table)::before {
   content: "表" counter(chapter) "." counter(section) ".-" counter(table) ": ";
 }
 
 /* h3直下（section.level3 > table）*/
-section.level3 > p:has(+ table)::before {
+section.level3 > p:has(+ table)::before,
+section.level3 .column > p:has(+ table)::before,
+section.level3 .tips > p:has(+ table)::before {
   content: "表" counter(chapter) "." counter(section) "." counter(subsection) ".-" counter(table) ": ";
 }
 
 /* h4直下（section.level4 > table）*/
-section.level4 > p:has(+ table)::before {
+section.level4 > p:has(+ table)::before,
+section.level4 .column > p:has(+ table)::before,
+section.level4 .tips > p:has(+ table)::before {
   content: "表" counter(chapter) "." counter(section) "." counter(subsection) "." counter(subsubsection) ".-" counter(table) ": ";
 }
 
@@ -407,22 +415,30 @@ figcaption {
 
 /* 図番号：所属セクションに応じた形式 */
 /* 章直下（section.level1 > figure）*/
-section.level1 > figure > figcaption::before {
+section.level1 > figure > figcaption::before,
+section.level1 .column > figure > figcaption::before,
+section.level1 .tips > figure > figcaption::before {
   content: "図" counter(chapter) ".-" counter(figure) ": ";
 }
 
 /* h2直下（section.level2 > figure）*/
-section.level2 > figure > figcaption::before {
+section.level2 > figure > figcaption::before,
+section.level2 .column > figure > figcaption::before,
+section.level2 .tips > figure > figcaption::before {
   content: "図" counter(chapter) "." counter(section) ".-" counter(figure) ": ";
 }
 
 /* h3直下（section.level3 > figure）*/
-section.level3 > figure > figcaption::before {
+section.level3 > figure > figcaption::before,
+section.level3 .column > figure > figcaption::before,
+section.level3 .tips > figure > figcaption::before {
   content: "図" counter(chapter) "." counter(section) "." counter(subsection) ".-" counter(figure) ": ";
 }
 
 /* h4直下（section.level4 > figure）*/
-section.level4 > figure > figcaption::before {
+section.level4 > figure > figcaption::before,
+section.level4 .column > figure > figcaption::before,
+section.level4 .tips > figure > figcaption::before {
   content: "図" counter(chapter) "." counter(section) "." counter(subsection) "." counter(subsubsection) ".-" counter(figure) ": ";
 }
 
@@ -539,7 +555,11 @@ p:has(> .math.display) {
 
 /* 数式番号：所属セクションに応じた形式 */
 section.level1 > p:has(> .math.display)::after,
-section.level1 > section.level2 > p:has(> .math.display)::after {
+section.level1 > section.level2 > p:has(> .math.display)::after,
+section.level1 .column > p:has(> .math.display)::after,
+section.level1 .tips > p:has(> .math.display)::after,
+section.level2 .column > p:has(> .math.display)::after,
+section.level2 .tips > p:has(> .math.display)::after {
   content: "(" counter(chapter) "." counter(section) ".-" counter(equation) ")";
   position: absolute;
   right: 0;
@@ -548,7 +568,9 @@ section.level1 > section.level2 > p:has(> .math.display)::after {
   color: var(--color-text);
 }
 
-section.level3 > p:has(> .math.display)::after {
+section.level3 > p:has(> .math.display)::after,
+section.level3 .column > p:has(> .math.display)::after,
+section.level3 .tips > p:has(> .math.display)::after {
   content: "(" counter(chapter) "." counter(section) "." counter(subsection) ".-" counter(equation) ")";
   position: absolute;
   right: 0;
@@ -557,7 +579,9 @@ section.level3 > p:has(> .math.display)::after {
   color: var(--color-text);
 }
 
-section.level4 > p:has(> .math.display)::after {
+section.level4 > p:has(> .math.display)::after,
+section.level4 .column > p:has(> .math.display)::after,
+section.level4 .tips > p:has(> .math.display)::after {
   content: "(" counter(chapter) "." counter(section) "." counter(subsection) "." counter(subsubsection) ".-" counter(equation) ")";
   position: absolute;
   right: 0;

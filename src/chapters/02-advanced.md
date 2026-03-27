@@ -125,6 +125,17 @@ Tips は、読者が作業を効率化するための実践的なアドバイス
 <p>Vivliostyle の VFM（Vivliostyle Flavored Markdown）では、Markdown 内に HTML を直接記述できる。コラムや Tips のように独自クラスを使いたい場合は、HTML ブロックを利用する。</p>
 </div>
 
+### コラム内の数式
+
+コラムや Tips の HTML ブロック内でも数式に番号を付与できる。HTML ブロック内では `<span class="math display">` 形式で記述する。
+
+<div class="column">
+<p class="column-title">オームの法則</p>
+<p>電気回路の基本法則であるオームの法則は以下の式で表される。</p>
+<p><span class="math display" data-math-typeset="true">$$V = IR$$</span></p>
+<p>ここで、<span class="math inline" data-math-typeset="true">\(V\)</span> は電圧、<span class="math inline" data-math-typeset="true">\(I\)</span> は電流、<span class="math inline" data-math-typeset="true">\(R\)</span> は抵抗である。</p>
+</div>
+
 ## 注意事項とヒント
 
 技術書を執筆する際の注意点を以下に示す。
