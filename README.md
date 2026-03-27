@@ -126,6 +126,21 @@ class: preface
 | あとがき | `afterword` |
 | 奥付 | `colophon` |
 | 表紙 | `cover` |
+| 付録 | `appendix` |
+
+### 付録（Appendix）
+
+付録として章番号をアルファベット（A, B, C...）にするには、frontmatter で `class: appendix` を指定する。
+
+```yaml
+---
+class: appendix
+body:
+  style: "counter-set: chapter 0;"
+---
+```
+
+`counter-set: chapter 0` の場合、h1 で A になる。`counter-set: chapter 1` の場合は B になる。図・表・数式の番号も自動的にアルファベット形式（例: 図A.-1）となる。扉ページの章番号は HTML に直接「A」等を記述する。
 
 ### 見出し
 

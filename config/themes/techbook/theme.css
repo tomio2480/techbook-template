@@ -865,3 +865,54 @@ body.afterword h2::before {
 .chapter-opening {
   page: chapter-opening;
 }
+
+/* 付録（Appendix） - 章番号をアルファベットで表示 */
+.appendix h1,
+body.appendix h1 {
+  string-set: chapter-header counter(chapter, upper-alpha) ". " content(text);
+}
+
+.appendix h1::before,
+body.appendix h1::before {
+  content: counter(chapter, upper-alpha) ". ";
+}
+
+/* 付録の表番号 */
+.appendix section.level1 > p:has(+ table)::before {
+  content: "表" counter(chapter, upper-alpha) ".-" counter(table) ": ";
+}
+.appendix section.level2 > p:has(+ table)::before {
+  content: "表" counter(chapter, upper-alpha) "." counter(section) ".-" counter(table) ": ";
+}
+.appendix section.level3 > p:has(+ table)::before {
+  content: "表" counter(chapter, upper-alpha) "." counter(section) "." counter(subsection) ".-" counter(table) ": ";
+}
+.appendix section.level4 > p:has(+ table)::before {
+  content: "表" counter(chapter, upper-alpha) "." counter(section) "." counter(subsection) "." counter(subsubsection) ".-" counter(table) ": ";
+}
+
+/* 付録の図番号 */
+.appendix section.level1 > figure > figcaption::before {
+  content: "図" counter(chapter, upper-alpha) ".-" counter(figure) ": ";
+}
+.appendix section.level2 > figure > figcaption::before {
+  content: "図" counter(chapter, upper-alpha) "." counter(section) ".-" counter(figure) ": ";
+}
+.appendix section.level3 > figure > figcaption::before {
+  content: "図" counter(chapter, upper-alpha) "." counter(section) "." counter(subsection) ".-" counter(figure) ": ";
+}
+.appendix section.level4 > figure > figcaption::before {
+  content: "図" counter(chapter, upper-alpha) "." counter(section) "." counter(subsection) "." counter(subsubsection) ".-" counter(figure) ": ";
+}
+
+/* 付録の数式番号 */
+.appendix section.level1 > p:has(> .math.display)::after,
+.appendix section.level1 > section.level2 > p:has(> .math.display)::after {
+  content: "(" counter(chapter, upper-alpha) "." counter(section) ".-" counter(equation) ")";
+}
+.appendix section.level3 > p:has(> .math.display)::after {
+  content: "(" counter(chapter, upper-alpha) "." counter(section) "." counter(subsection) ".-" counter(equation) ")";
+}
+.appendix section.level4 > p:has(> .math.display)::after {
+  content: "(" counter(chapter, upper-alpha) "." counter(section) "." counter(subsection) "." counter(subsubsection) ".-" counter(equation) ")";
+}
