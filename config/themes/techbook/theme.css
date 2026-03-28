@@ -363,7 +363,7 @@ p:has(+ table) {
 }
 
 /* 表番号：所属セクションに応じた形式 */
-/* 章直下（section.level1 > table）*/
+/* 章直下（section.level1 > table） */
 section.level1 > p:has(+ table)::before,
 section.level1 .column > p:has(+ table)::before,
 section.level1 .tips > p:has(+ table)::before {
@@ -414,7 +414,7 @@ figcaption {
 }
 
 /* 図番号：所属セクションに応じた形式 */
-/* 章直下（section.level1 > figure）*/
+/* 章直下（section.level1 > figure） */
 section.level1 > figure > figcaption::before,
 section.level1 .column > figure > figcaption::before,
 section.level1 .tips > figure > figcaption::before {
@@ -555,7 +555,7 @@ p:has(> .math.display) {
 
 /* 数式番号：所属セクションに応じた形式 */
 section.level1 > p:has(> .math.display)::after,
-section.level1 > section.level2 > p:has(> .math.display)::after,
+section.level2 > p:has(> .math.display)::after,
 section.level1 .column > p:has(> .math.display)::after,
 section.level1 .tips > p:has(> .math.display)::after,
 section.level2 .column > p:has(> .math.display)::after,
