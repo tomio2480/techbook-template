@@ -371,9 +371,10 @@ export default {
 
 ### 章の追加・変更
 
-`vivliostyle.config.js` の `entry` 配列を編集する。
+`vivliostyle.config.js` の `entry` 配列を編集する。以下は章を追加する場合の記述例である。
 
 ```javascript
+// 例: 第4章を追加する場合
 entry: [
   'src/chapters/cover.md',
   'src/chapters/00-preface.md',
@@ -381,8 +382,7 @@ entry: [
   'src/chapters/01-introduction.md',
   'src/chapters/02-advanced.md',
   'src/chapters/03-math-and-figures.md',
-  // 新しい章を追加
-  'src/chapters/04-new-chapter.md',
+  'src/chapters/04-new-chapter.md',   // 追加した章
   'src/chapters/97-appendix.md',
   'src/chapters/98-afterword.md',
   'src/chapters/99-colophon.md',
