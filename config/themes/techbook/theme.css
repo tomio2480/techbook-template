@@ -651,38 +651,46 @@ nav[role="doc-toc"] > ol {
   counter-reset: toc-chapter;
 }
 
-/* まえがき以外の章（data-section-level="1"）にカウンターを適用 */
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])) {
+/* まえがき・あとがき・表紙・目次自体・奥付以外の章（data-section-level="1"）にカウンターを適用 */
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])):not(:has(> a[href*="afterword"])):not(:has(> a[href*="cover"])):not(:has(> a[href*="toc"])):not(:has(> a[href*="colophon"])) {
   counter-increment: toc-chapter;
   counter-reset: toc-section;
 }
 
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])) > a::before {
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])):not(:has(> a[href*="afterword"])):not(:has(> a[href*="cover"])):not(:has(> a[href*="toc"])):not(:has(> a[href*="colophon"])) > a::before {
   content: counter(toc-chapter) ". ";
 }
 
-/* まえがきの子セクションには番号を付けない */
+/* まえがき・あとがき・表紙・目次自体・奥付の子セクションには番号を付けない */
 nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="preface"]) li[data-section-level="2"] > a::before,
-nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="preface"]) li[data-section-level="3"] > a::before {
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="preface"]) li[data-section-level="3"] > a::before,
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="afterword"]) li[data-section-level="2"] > a::before,
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="afterword"]) li[data-section-level="3"] > a::before,
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="cover"]) li[data-section-level="2"] > a::before,
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="cover"]) li[data-section-level="3"] > a::before,
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="toc"]) li[data-section-level="2"] > a::before,
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="toc"]) li[data-section-level="3"] > a::before,
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="colophon"]) li[data-section-level="2"] > a::before,
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="colophon"]) li[data-section-level="3"] > a::before {
   content: none;
 }
 
 /* 通常の章のセクション */
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])) li[data-section-level="2"] {
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])):not(:has(> a[href*="afterword"])):not(:has(> a[href*="cover"])):not(:has(> a[href*="toc"])):not(:has(> a[href*="colophon"])) li[data-section-level="2"] {
   counter-increment: toc-section;
   counter-reset: toc-subsection;
 }
 
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])) li[data-section-level="2"] > a::before {
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])):not(:has(> a[href*="afterword"])):not(:has(> a[href*="cover"])):not(:has(> a[href*="toc"])):not(:has(> a[href*="colophon"])) li[data-section-level="2"] > a::before {
   content: counter(toc-chapter) "." counter(toc-section) ". ";
 }
 
 /* 通常の章のサブセクション */
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])) li[data-section-level="3"] {
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])):not(:has(> a[href*="afterword"])):not(:has(> a[href*="cover"])):not(:has(> a[href*="toc"])):not(:has(> a[href*="colophon"])) li[data-section-level="3"] {
   counter-increment: toc-subsection;
 }
 
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])) li[data-section-level="3"] > a::before {
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"])):not(:has(> a[href*="afterword"])):not(:has(> a[href*="cover"])):not(:has(> a[href*="toc"])):not(:has(> a[href*="colophon"])) li[data-section-level="3"] > a::before {
   content: counter(toc-chapter) "." counter(toc-section) "." counter(toc-subsection) ". ";
 }
 
