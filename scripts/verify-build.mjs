@@ -75,9 +75,10 @@ export function verifyConfigUsesMarkdown(repoRoot) {
   }
 
   // コメントアウトされた行（例: // 'old.html' や /* ... */）は判定対象から除外する。
+  // 直前が ":" の "//"（https:// 等の URL）はコメントとみなさない。
   // toc.html は常に生の HTML として参照される正当なエントリのため対象から除外する
   const entryBlock = entryMatch[1]
-    .replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '')
+    .replace(/\/\*[\s\S]*?\*\/|(?<!:)\/\/.*/g, '')
     .replace(/src\/chapters\/toc\.html/g, '');
   if (/\.html['"`]/.test(entryBlock)) {
     return {

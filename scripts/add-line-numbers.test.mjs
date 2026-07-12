@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { parseListItems, mergeTocTrees, serializeTocTree, writeBuildMarker, stripHtmlTags } from './add-line-numbers.mjs';
+import { parseListItems, mergeTocTrees, serializeTocTree, writeBuildMarker, stripHtmlTags, extractHeadingOrDefault } from './add-line-numbers.mjs';
 
 // --- stripHtmlTags ---
 
@@ -119,6 +119,18 @@ test('parseListItems: <a> タグがない <li> でも子 <ol> はテキストに
   assert.equal(tree[0].text, 'リンクなし見出し');
   assert.equal(tree[0].children.length, 1);
   assert.equal(tree[0].children[0].text, '子見出し');
+});
+
+test('parseListItems: <olfoo> のような前方一致だけの無関係なタグに惑わされず、本物の <ol> を解析する', () => {
+  const html = `
+    <olfoo class="dummy">無関係なダミー</olfoo>
+    <ol>
+      <li data-section-level="1"><a href="00-preface.html">まえがき</a></li>
+    </ol>
+  `;
+  const tree = parseListItems(html);
+  assert.equal(tree.length, 1);
+  assert.equal(tree[0].text, 'まえがき');
 });
 
 test('parseListItems: </ol> が不足した不正な HTML では空配列を返す（部分的な文字列を誤ってパースしない）', () => {
