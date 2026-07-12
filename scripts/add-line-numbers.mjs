@@ -267,28 +267,46 @@ function normalizeHref(href) {
   return href.split('#')[0];
 }
 
-// 自動生成された木（auto）と既存の toc.html の木（old）をマージする
-// - 位置が一致すればそのノードのテキストを old から引き継ぐ
-// - 位置がずれていれば href の一致で old 側から探す
+// 自動生成された木（auto）と既存の toc.html の木（old）をマージする。2 パスで行う。
+// - 1 パス目: href・テキストが完全一致するノードを優先的に確保する（未編集の見出し）。
+//   同一ファイル内に新規見出しが挿入・削除されても、未編集の見出しが位置ずれにより
+//   誤って別ノードとマッチしてしまうのを防ぐ
+// - 2 パス目: 1 パス目で確保されなかった残りについて、位置が一致すれば old のテキストを
+//   引き継ぎ（リライト保持）、ずれていれば href の一致で old 側から探す
 // - old 側にのみ残った項目は手動追加項目として末尾に rawOuterHtml のまま残す
 export function mergeTocTrees(autoTree, oldTree) {
   const oldRemaining = oldTree.slice();
+  const matchedOldIndices = new Set();
+
+  const exactMatches = autoTree.map(autoNode => {
+    const autoHref = normalizeHref(autoNode.href);
+    if (!autoHref) return null;
+    const idx = oldRemaining.findIndex((node, index) =>
+      node && !matchedOldIndices.has(index) &&
+      normalizeHref(node.href) === autoHref && node.text === autoNode.text
+    );
+    if (idx === -1) return null;
+    matchedOldIndices.add(idx);
+    return oldRemaining[idx];
+  });
 
   const merged = autoTree.map((autoNode, i) => {
-    let matched = null;
+    let matched = exactMatches[i];
     const autoHref = normalizeHref(autoNode.href);
 
-    // href を持たないノード同士は同一性の根拠がないため、マッチングの対象にしない
-    if (autoHref && oldRemaining[i] && normalizeHref(oldRemaining[i].href) === autoHref) {
-      matched = oldRemaining[i];
-      oldRemaining[i] = null;
-    } else if (autoHref) {
-      const idx = oldRemaining.findIndex(
-        node => node && normalizeHref(node.href) === autoHref
-      );
-      if (idx !== -1) {
-        matched = oldRemaining[idx];
-        oldRemaining[idx] = null;
+    if (!matched && autoHref) {
+      // href を持たないノード同士は同一性の根拠がないため、マッチングの対象にしない
+      if (oldRemaining[i] && !matchedOldIndices.has(i) && normalizeHref(oldRemaining[i].href) === autoHref) {
+        matched = oldRemaining[i];
+        matchedOldIndices.add(i);
+      } else {
+        const idx = oldRemaining.findIndex(
+          (node, index) => node && !matchedOldIndices.has(index) && normalizeHref(node.href) === autoHref
+        );
+        if (idx !== -1) {
+          matched = oldRemaining[idx];
+          matchedOldIndices.add(idx);
+        }
       }
     }
 
@@ -305,7 +323,7 @@ export function mergeTocTrees(autoTree, oldTree) {
   });
 
   const manualLeftovers = oldRemaining
-    .filter(node => node !== null)
+    .filter((node, index) => node !== null && !matchedOldIndices.has(index))
     .map(node => ({ ...node, isManual: true }));
 
   return [...merged, ...manualLeftovers];
