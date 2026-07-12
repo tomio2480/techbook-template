@@ -62,6 +62,19 @@ test('parseListItems: ネストした ol を再帰的に解析できる', () => 
   assert.equal(tree[0].children[0].text, '本書の構成');
 });
 
+test('parseListItems: シングルクォーテーションの href も取得できる', () => {
+  const html = `
+    <ol>
+      <li data-section-level="1">
+        <a href='00-preface.html'>まえがき</a>
+      </li>
+    </ol>
+  `;
+  const tree = parseListItems(html);
+  assert.equal(tree.length, 1);
+  assert.equal(tree[0].href, '00-preface.html');
+});
+
 test('parseListItems: 複数行にまたがる <a> タグからも href とテキストを取得できる', () => {
   const html = `
     <ol>

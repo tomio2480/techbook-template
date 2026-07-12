@@ -243,7 +243,7 @@ function parseLiNode(liHtml) {
   const childrenHtml = olIndex !== -1 ? inner.substring(olIndex) : '';
 
   const anchorMatch = ownHtml.match(/<a([\s\S]*?)>([\s\S]*?)<\/a\s*>/);
-  const hrefMatch = anchorMatch ? anchorMatch[1].match(/href="([^"]*)"/) : null;
+  const hrefMatch = anchorMatch ? anchorMatch[1].match(/href=["']([^"']*)["']/) : null;
   const href = hrefMatch ? hrefMatch[1] : null;
   const text = anchorMatch
     ? anchorMatch[2].replace(/\s+/g, ' ').trim()

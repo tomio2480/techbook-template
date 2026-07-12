@@ -45,7 +45,9 @@ export function verifyPdfNewerThanMarker(repoRoot) {
 
   const markerMtime = fs.statSync(markerPath).mtimeMs;
   const pdfMtime = fs.statSync(pdfPath).mtimeMs;
-  if (pdfMtime <= markerMtime) {
+  // mtime 分解能が粗い環境（1秒単位のファイルシステム等）での偽陽性を
+  // 避けるため、同時刻は許容し、明確に古い場合のみ失敗とする
+  if (pdfMtime < markerMtime) {
     return {
       ok: false,
       message: 'dist/book.pdf が dist/.build-marker より新しくありません。ビルドが中断された可能性があります。',

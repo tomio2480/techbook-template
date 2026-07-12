@@ -74,6 +74,19 @@ test('verifyPdfNewerThanMarker: pdf が marker より古ければ失敗する', 
   assert.equal(result.ok, false);
 });
 
+test('verifyPdfNewerThanMarker: mtime 分解能が粗く pdf と marker が同時刻でも成功する（偽陽性防止）', () => {
+  const dir = makeTempRepo();
+  const pdfPath = path.join(dir, 'dist', 'book.pdf');
+  const markerPath = path.join(dir, 'dist', '.build-marker');
+  fs.writeFileSync(markerPath, new Date().toISOString(), 'utf-8');
+  fs.writeFileSync(pdfPath, 'dummy', 'utf-8');
+  const now = new Date();
+  setMtime(markerPath, now);
+  setMtime(pdfPath, now);
+  const result = verifyPdfNewerThanMarker(dir);
+  assert.equal(result.ok, true);
+});
+
 test('verifyPdfNewerThanMarker: pdf が marker より新しければ成功する', () => {
   const dir = makeTempRepo();
   const pdfPath = path.join(dir, 'dist', 'book.pdf');
