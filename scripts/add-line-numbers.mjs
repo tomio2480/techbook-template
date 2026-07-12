@@ -173,7 +173,9 @@ function extractOlContent(html) {
     i++;
   }
 
-  return html.substring(openTagEnd + 1, i);
+  // </ol> が不足している場合、depth が 0 に戻らずループを抜ける。
+  // 壊れた部分文字列を返さず、パース失敗として null を返す
+  return depth === 0 ? html.substring(openTagEnd + 1, i) : null;
 }
 
 // html 中のトップレベル <li>...</li> 群を、ネストを考慮して分割する
@@ -218,14 +220,24 @@ function parseLiNode(liHtml) {
   const levelMatch = openTagMatch ? openTagMatch[1].match(/data-section-level="(\d+)"/) : null;
   const level = levelMatch ? Number(levelMatch[1]) : null;
 
-  const anchorMatch = liHtml.match(/<a([\s\S]*?)>([\s\S]*?)<\/a\s*>/);
+  // 自ノード直下の内容（子 <ol> を除く）を先に切り出してから <a> を探す。
+  // liHtml 全体に対して <a> を検索すると、子ノードが持つ <a> を誤って
+  // 自ノードのものとして拾ってしまうため
+  const innerStart = openTagMatch ? openTagMatch[0].length : 0;
+  const innerEndIndex = liHtml.lastIndexOf('</li>');
+  const inner = liHtml.substring(innerStart, innerEndIndex === -1 ? liHtml.length : innerEndIndex);
+  const olIndex = inner.indexOf('<ol');
+  const ownHtml = olIndex !== -1 ? inner.substring(0, olIndex) : inner;
+  const childrenHtml = olIndex !== -1 ? inner.substring(olIndex) : '';
+
+  const anchorMatch = ownHtml.match(/<a([\s\S]*?)>([\s\S]*?)<\/a\s*>/);
   const hrefMatch = anchorMatch ? anchorMatch[1].match(/href="([^"]*)"/) : null;
   const href = hrefMatch ? hrefMatch[1] : null;
-  const text = anchorMatch ? anchorMatch[2].replace(/\s+/g, ' ').trim() : '';
+  const text = anchorMatch
+    ? anchorMatch[2].replace(/\s+/g, ' ').trim()
+    : ownHtml.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
 
-  const restStart = anchorMatch ? liHtml.indexOf(anchorMatch[0]) + anchorMatch[0].length : 0;
-  const rest = liHtml.substring(restStart);
-  const children = rest.includes('<ol') ? parseListItems(rest) : [];
+  const children = childrenHtml.includes('<ol') ? parseListItems(childrenHtml) : [];
 
   return { href, level, text, children, rawOuterHtml: liHtml };
 }

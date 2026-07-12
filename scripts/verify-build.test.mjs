@@ -89,6 +89,13 @@ test('verifyPdfNewerThanMarker: pdf が marker より新しければ成功する
 
 // --- verifyConfigUsesMarkdown ---
 
+test('verifyConfigUsesMarkdown: vivliostyle.config.js が存在しなければ失敗する（クラッシュしない）', () => {
+  const dir = makeTempRepo();
+  const result = verifyConfigUsesMarkdown(dir);
+  assert.equal(result.ok, false);
+  assert.match(result.message, /vivliostyle\.config\.js/);
+});
+
 test('verifyConfigUsesMarkdown: entry が .md のみなら成功する', () => {
   const dir = makeTempRepo();
   writeConfig(dir, ['src/chapters/cover.md', 'src/chapters/toc.html', 'src/chapters/01-introduction.md']);

@@ -56,6 +56,12 @@ export function verifyPdfNewerThanMarker(repoRoot) {
 
 export function verifyConfigUsesMarkdown(repoRoot) {
   const configPath = path.join(repoRoot, 'vivliostyle.config.js');
+  if (!fs.existsSync(configPath)) {
+    return {
+      ok: false,
+      message: 'vivliostyle.config.js が見つかりません。',
+    };
+  }
   const config = fs.readFileSync(configPath, 'utf-8');
 
   const entryMatch = config.match(/entry:\s*\[([\s\S]*?)\]/);
