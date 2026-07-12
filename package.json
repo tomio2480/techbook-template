@@ -5,12 +5,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vivliostyle build && node scripts/add-line-numbers.mjs && vivliostyle build && node scripts/add-line-numbers.mjs --restore && node scripts/verify-build.mjs",
+    "build": "vivliostyle build && node scripts/add-line-numbers.mjs && vivliostyle build && node scripts/add-line-numbers.mjs --restore && node scripts/verify-build.mjs && node scripts/tag-pdf.mjs",
     "test": "node --test scripts/*.test.mjs",
     "preview": "vivliostyle preview",
     "clean": "rimraf dist src/chapters/*.html"
   },
   "devDependencies": {
+    "@opendataloader/pdf": "^2.4.7",
     "@vivliostyle/cli": "^8.0.0",
     "@u1f992/rehype-spectroscope": "github:u1f992/rehype-spectroscope#v0.1.0",
     "rimraf": "^5.0.0"

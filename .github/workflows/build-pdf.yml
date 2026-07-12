@@ -30,6 +30,13 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      # dist/book.pdf へのタグ付け後処理（@opendataloader/pdf）が Java 11 以上を要求する
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
       - name: Install dependencies
         run: npm ci
 
@@ -68,6 +75,13 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
+
+      # dist/book.pdf へのタグ付け後処理（@opendataloader/pdf）が Java 11 以上を要求する
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
 
       - name: Install dependencies
         run: npm ci
