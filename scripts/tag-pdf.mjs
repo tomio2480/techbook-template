@@ -25,20 +25,27 @@ import { fileURLToPath, pathToFileURL } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// opendataloader-pdf は --output-dir に、入力ファイルと同じベース名で
-// タグ付き PDF を書き出す
+// opendataloader-pdf は --output-dir に `{拡張子を除いた入力ファイル名}_tagged.pdf`
+// という名前でタグ付き PDF を書き出す（実行結果で確認済み。ドキュメント上の
+// 明記はないため、@opendataloader/pdf のバージョンアップ時は要再確認）。
 export function resolveTaggedPdfPath(outputDir, inputPdfPath) {
-  return path.join(outputDir, path.basename(inputPdfPath));
+  const ext = path.extname(inputPdfPath);
+  const baseName = path.basename(inputPdfPath, ext);
+  return path.join(outputDir, `${baseName}_tagged${ext}`);
 }
 
 export function buildTaggingArgs(inputPdfPath, outputDir) {
   return ['--format', 'tagged-pdf', '--output-dir', outputDir, inputPdfPath];
 }
 
+// Windows では npx が npx.cmd（バッチファイル）として提供されており、
+// shell 経由でなければ spawnSync('npx', ...) は ENOENT で失敗する。
+// Node.js 公式ドキュメントが推奨するとおり shell: true で回避する。
 function defaultRunCommand(args) {
   return spawnSync('npx', ['opendataloader-pdf', ...args], {
     encoding: 'utf-8',
     stdio: ['ignore', 'pipe', 'pipe'],
+    shell: process.platform === 'win32',
   });
 }
 
@@ -57,6 +64,13 @@ export function tagPdf(repoRoot, { runCommand = defaultRunCommand } = {}) {
   try {
     const args = buildTaggingArgs(inputPdfPath, outputDir);
     const result = runCommand(args);
+
+    if (result.error) {
+      return {
+        ok: false,
+        message: `opendataloader-pdf を起動できませんでした: ${result.error.message}`,
+      };
+    }
 
     if (result.status !== 0) {
       const detail = result.stderr ? result.stderr.trim() : '';

@@ -1,4 +1,4 @@
-import { test } from 'node:test';
+import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'fs';
 import path from 'path';
@@ -9,17 +9,26 @@ import {
   tagPdf,
 } from './tag-pdf.mjs';
 
+const tempRepos = [];
+
+after(() => {
+  for (const dir of tempRepos) {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 function makeTempRepo() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'tag-pdf-test-'));
   fs.mkdirSync(path.join(dir, 'dist'), { recursive: true });
+  tempRepos.push(dir);
   return dir;
 }
 
 // --- resolveTaggedPdfPath ---
 
-test('resolveTaggedPdfPath: 出力先ディレクトリと入力 PDF のベース名を結合する', () => {
+test('resolveTaggedPdfPath: 出力先ディレクトリと `{ベース名}_tagged.pdf` を結合する', () => {
   const result = resolveTaggedPdfPath('/tmp/out', '/repo/dist/book.pdf');
-  assert.equal(result, path.join('/tmp/out', 'book.pdf'));
+  assert.equal(result, path.join('/tmp/out', 'book_tagged.pdf'));
 });
 
 // --- buildTaggingArgs ---
@@ -36,6 +45,16 @@ test('tagPdf: dist/book.pdf が存在しなければ失敗する', () => {
   const result = tagPdf(dir, { runCommand: () => ({ status: 0 }) });
   assert.equal(result.ok, false);
   assert.match(result.message, /book\.pdf/);
+});
+
+test('tagPdf: コマンドの起動自体に失敗すれば result.error のメッセージを含める', () => {
+  const dir = makeTempRepo();
+  fs.writeFileSync(path.join(dir, 'dist', 'book.pdf'), 'original', 'utf-8');
+  const result = tagPdf(dir, {
+    runCommand: () => ({ status: null, error: new Error('spawn npx ENOENT') }),
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.message, /spawn npx ENOENT/);
 });
 
 test('tagPdf: コマンドが異常終了すれば失敗し stderr を含める', () => {
