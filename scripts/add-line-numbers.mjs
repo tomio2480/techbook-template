@@ -214,6 +214,18 @@ function splitTopLevelLis(html) {
   return lis;
 }
 
+// HTML タグを除去する。単発の置換ではネストした断片が結合して新たな
+// タグを再構成してしまう可能性があるため、変化がなくなるまで反復適用する
+export function stripHtmlTags(html) {
+  let previous;
+  let result = html;
+  do {
+    previous = result;
+    result = result.replace(/<[^>]*>/g, '');
+  } while (result !== previous);
+  return result;
+}
+
 // 1 件の <li>...</li> 文字列から { href, level, text, children, rawOuterHtml } を組み立てる
 function parseLiNode(liHtml) {
   const openTagMatch = liHtml.match(/^<li\b([^>]*)>/);
@@ -235,7 +247,7 @@ function parseLiNode(liHtml) {
   const href = hrefMatch ? hrefMatch[1] : null;
   const text = anchorMatch
     ? anchorMatch[2].replace(/\s+/g, ' ').trim()
-    : ownHtml.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+    : stripHtmlTags(ownHtml).replace(/\s+/g, ' ').trim();
 
   const children = childrenHtml.includes('<ol') ? parseListItems(childrenHtml) : [];
 

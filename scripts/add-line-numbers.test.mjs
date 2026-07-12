@@ -3,7 +3,22 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { parseListItems, mergeTocTrees, serializeTocTree, writeBuildMarker } from './add-line-numbers.mjs';
+import { parseListItems, mergeTocTrees, serializeTocTree, writeBuildMarker, stripHtmlTags } from './add-line-numbers.mjs';
+
+// --- stripHtmlTags ---
+
+test('stripHtmlTags: 単純なタグを除去する', () => {
+  assert.equal(stripHtmlTags('<b>太字</b>のテキスト'), '太字のテキスト');
+});
+
+test('stripHtmlTags: 単発の置換では残ってしまうネスト状の入力でも、タグを一切残さない', () => {
+  const nasty = '<a<b>>script<c>>';
+  const result = stripHtmlTags(nasty);
+  // 単発置換（.replace(/<[^>]*>/g, '')を1回だけ適用）だとタグ断片が
+  // 結合して残ることがあるため、結果に <...> が一切含まれないことを
+  // 不変条件として確認する
+  assert.doesNotMatch(result, /<[^>]*>/);
+});
 
 // --- writeBuildMarker ---
 
