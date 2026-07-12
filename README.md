@@ -53,7 +53,13 @@ npm install
 npm run build
 ```
 
-生成された PDF は `dist/book.pdf` に出力される。
+生成された PDF は `dist/book.pdf` に出力される．内部的にはページ番号解決のための
+2 パスビルドを行っており，最終ステップで `scripts/verify-build.mjs` が
+ビルドが正しく完了したことを検証する．検証に失敗した場合はコマンドが
+非 0 で終了するため，`dist/book.pdf` の内容を確認せず配布しないこと．
+
+`src/chapters/toc.html` の `<nav>` 内は手動編集してよい．追加した項目や
+言い換えたリンク文言は，次回 `npm run build` 実行後も保持される．
 
 ### プレビュー
 
@@ -445,6 +451,20 @@ npm run build
 ### 章番号が正しく表示されない
 
 各章の frontmatter で `counter-set` が正しく設定されているか確認する。
+
+### `検証失敗: ...` と表示されビルドが失敗する
+
+`npm run build` の最終ステップ（`scripts/verify-build.mjs`）が，2 パス
+ビルドの中断を検出した状態．表示されたメッセージが原因を示す．
+
+```bash
+# ルートに index.html が残っている／設定ファイルが未復元の場合
+npm run clean
+npm run build
+```
+
+`vivliostyle build` を単体で実行した後など，`npm run build` を経由せずに
+ビルドした場合にも発生する．必ず `npm run build` を使うこと．
 
 ## 📄 ライセンス
 

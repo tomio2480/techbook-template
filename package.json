@@ -5,7 +5,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vivliostyle build && node scripts/add-line-numbers.mjs && vivliostyle build && node scripts/add-line-numbers.mjs --restore",
+    "build": "vivliostyle build && node scripts/add-line-numbers.mjs && vivliostyle build && node scripts/add-line-numbers.mjs --restore && node scripts/verify-build.mjs",
+    "test": "node --test scripts/*.test.mjs",
     "preview": "vivliostyle preview",
     "clean": "rimraf dist src/chapters/*.html"
   },
