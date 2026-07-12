@@ -7,7 +7,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,6 +67,15 @@ function updateConfig() {
 
   fs.writeFileSync(configPath, config, 'utf-8');
   console.log('Updated vivliostyle.config.js to use HTML files');
+}
+
+// ビルド中断フェイルセーフ用のマーカーファイルを書き込む
+export function writeBuildMarker(distDir) {
+  if (!fs.existsSync(distDir)) {
+    fs.mkdirSync(distDir, { recursive: true });
+  }
+  fs.writeFileSync(path.join(distDir, '.build-marker'), new Date().toISOString(), 'utf-8');
+  console.log('Wrote dist/.build-marker');
 }
 
 // 元の設定に戻す
@@ -190,14 +199,19 @@ function removeIndexHtml() {
   }
 }
 
-const args = process.argv.slice(2);
+// テストからの import 時には実行せず、CLI から直接起動された場合のみ実行する
+const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isMainModule) {
+  const args = process.argv.slice(2);
 
-if (args.includes('--restore')) {
-  restoreConfig();
-} else {
-  updateTocFromIndex();
-  removeIndexHtml();
-  processHtmlFiles();
-  updateConfig();
-  console.log('Line numbers added successfully.');
+  if (args.includes('--restore')) {
+    restoreConfig();
+  } else {
+    updateTocFromIndex();
+    removeIndexHtml();
+    processHtmlFiles();
+    updateConfig();
+    writeBuildMarker(path.join(__dirname, '..', 'dist'));
+    console.log('Line numbers added successfully.');
+  }
 }
