@@ -1,5 +1,6 @@
 import { VFM } from '@vivliostyle/vfm';
 import { spectroscope } from '@u1f992/rehype-spectroscope';
+import { joinCjkLineBreaksPlugin } from './scripts/join-cjk-line-breaks.mjs';
 
 export default {
   language: 'ja',
@@ -20,12 +21,14 @@ export default {
     'dist/book.pdf',
   ],
   documentProcessor: (opts, meta) =>
-    VFM(opts, meta).use(spectroscope, {
-      languages: [
-        'javascript', 'typescript', 'python', 'rust', 'go', 'bash',
-        'json', 'yaml', 'markup', 'css', 'markdown', 'c', 'cpp'
-      ],
-    }),
+    VFM(opts, meta)
+      .use(joinCjkLineBreaksPlugin)
+      .use(spectroscope, {
+        languages: [
+          'javascript', 'typescript', 'python', 'rust', 'go', 'bash',
+          'json', 'yaml', 'markup', 'css', 'markdown', 'c', 'cpp'
+        ],
+      }),
   vfm: {
     math: true,
     hardLineBreaks: false,
