@@ -252,13 +252,15 @@ export function mergeTocTrees(autoTree, oldTree) {
 
   const merged = autoTree.map((autoNode, i) => {
     let matched = null;
+    const autoHref = normalizeHref(autoNode.href);
 
-    if (oldRemaining[i] && normalizeHref(oldRemaining[i].href) === normalizeHref(autoNode.href)) {
+    // href を持たないノード同士は同一性の根拠がないため、マッチングの対象にしない
+    if (autoHref && oldRemaining[i] && normalizeHref(oldRemaining[i].href) === autoHref) {
       matched = oldRemaining[i];
       oldRemaining[i] = null;
-    } else {
+    } else if (autoHref) {
       const idx = oldRemaining.findIndex(
-        node => node && normalizeHref(node.href) === normalizeHref(autoNode.href)
+        node => node && normalizeHref(node.href) === autoHref
       );
       if (idx !== -1) {
         matched = oldRemaining[idx];
@@ -296,8 +298,10 @@ function serializeTocNode(node) {
   if (node.isManual) {
     return node.rawOuterHtml;
   }
+  const levelAttr = node.level !== null ? ` data-section-level="${node.level}"` : '';
+  const anchorHtml = node.href ? `<a href="${node.href}">${node.text}</a>` : node.text;
   const childrenHtml = node.children && node.children.length > 0 ? serializeTocTree(node.children) : '';
-  return `<li data-section-level="${node.level}"><a href="${node.href}">${node.text}</a>${childrenHtml}</li>`;
+  return `<li${levelAttr}>${anchorHtml}${childrenHtml}</li>`;
 }
 
 // index.html から目次を抽出して toc.html に挿入

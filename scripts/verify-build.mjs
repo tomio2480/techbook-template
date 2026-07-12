@@ -66,9 +66,12 @@ export function verifyConfigUsesMarkdown(repoRoot) {
     };
   }
 
+  // コメントアウトされた行（例: // 'old.html' や /* ... */）は判定対象から除外する。
   // toc.html は常に生の HTML として参照される正当なエントリのため対象から除外する
-  const entryBlock = entryMatch[1].replace(/src\/chapters\/toc\.html/g, '');
-  if (/\.html['"]/.test(entryBlock)) {
+  const entryBlock = entryMatch[1]
+    .replace(/\/\*[\s\S]*?\*\/|\/\/.*/g, '')
+    .replace(/src\/chapters\/toc\.html/g, '');
+  if (/\.html['"`]/.test(entryBlock)) {
     return {
       ok: false,
       message: 'vivliostyle.config.js の entry 配列が .html ファイルを参照しています。restore 処理が正しく完了していない可能性があります。',
