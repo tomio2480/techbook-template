@@ -47,6 +47,14 @@ test('tagPdf: dist/book.pdf が存在しなければ失敗する', () => {
   assert.match(result.message, /book\.pdf/);
 });
 
+test('tagPdf: runCommand未指定かつ @opendataloader/pdf 未インストールなら失敗する', () => {
+  const dir = makeTempRepo();
+  fs.writeFileSync(path.join(dir, 'dist', 'book.pdf'), 'original', 'utf-8');
+  const result = tagPdf(dir);
+  assert.equal(result.ok, false);
+  assert.match(result.message, /npm install/);
+});
+
 test('tagPdf: コマンドの起動自体に失敗すれば result.error のメッセージを含める', () => {
   const dir = makeTempRepo();
   fs.writeFileSync(path.join(dir, 'dist', 'book.pdf'), 'original', 'utf-8');
