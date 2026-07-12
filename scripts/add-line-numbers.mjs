@@ -147,6 +147,159 @@ function removeLiContainingHref(html, hrefPattern) {
   return result;
 }
 
+// HTML パーサは使わず文字列走査のみで実装している（既存の removeLiContainingHref
+// と同じ方針）。toc.html は本スクリプトが生成する既知の構造のみを想定しており，
+// 属性名の前方一致で偶然マッチする入力（例: <olfoo>）は扱わない。
+function extractOlContent(html) {
+  const start = html.indexOf('<ol');
+  if (start === -1) return null;
+  const openTagEnd = html.indexOf('>', start);
+  if (openTagEnd === -1) return null;
+
+  let depth = 1;
+  let i = openTagEnd + 1;
+  while (i < html.length && depth > 0) {
+    if (html.substring(i, i + 3) === '<ol') {
+      depth++;
+      i += 3;
+      continue;
+    }
+    if (html.substring(i, i + 5) === '</ol>') {
+      depth--;
+      if (depth === 0) break;
+      i += 5;
+      continue;
+    }
+    i++;
+  }
+
+  return html.substring(openTagEnd + 1, i);
+}
+
+// html 中のトップレベル <li>...</li> 群を、ネストを考慮して分割する
+function splitTopLevelLis(html) {
+  const isLiBoundary = ch => ch === undefined || ch === ' ' || ch === '>' || ch === '\n' || ch === '\t' || ch === '\r';
+  const lis = [];
+  let i = 0;
+  while (i < html.length) {
+    const liStart = html.indexOf('<li', i);
+    if (liStart === -1) break;
+    if (!isLiBoundary(html[liStart + 3])) {
+      i = liStart + 3;
+      continue;
+    }
+
+    let depth = 1;
+    let j = liStart + 3;
+    while (j < html.length && depth > 0) {
+      if (html.substring(j, j + 3) === '<li' && isLiBoundary(html[j + 3])) {
+        depth++;
+        j += 3;
+        continue;
+      }
+      if (html.substring(j, j + 5) === '</li>') {
+        depth--;
+        j += 5;
+        if (depth === 0) break;
+        continue;
+      }
+      j++;
+    }
+
+    lis.push(html.substring(liStart, j));
+    i = j;
+  }
+  return lis;
+}
+
+// 1 件の <li>...</li> 文字列から { href, level, text, children, rawOuterHtml } を組み立てる
+function parseLiNode(liHtml) {
+  const openTagMatch = liHtml.match(/^<li\b([^>]*)>/);
+  const levelMatch = openTagMatch ? openTagMatch[1].match(/data-section-level="(\d+)"/) : null;
+  const level = levelMatch ? Number(levelMatch[1]) : null;
+
+  const anchorMatch = liHtml.match(/<a([\s\S]*?)>([\s\S]*?)<\/a\s*>/);
+  const hrefMatch = anchorMatch ? anchorMatch[1].match(/href="([^"]*)"/) : null;
+  const href = hrefMatch ? hrefMatch[1] : null;
+  const text = anchorMatch ? anchorMatch[2].replace(/\s+/g, ' ').trim() : '';
+
+  const restStart = anchorMatch ? liHtml.indexOf(anchorMatch[0]) + anchorMatch[0].length : 0;
+  const rest = liHtml.substring(restStart);
+  const children = rest.includes('<ol') ? parseListItems(rest) : [];
+
+  return { href, level, text, children, rawOuterHtml: liHtml };
+}
+
+// nav 内側などの HTML から、トップレベル <ol> 直下の <li> 群を再帰的に解析する
+export function parseListItems(html) {
+  const olContent = extractOlContent(html);
+  if (olContent === null) return [];
+  return splitTopLevelLis(olContent).map(parseLiNode);
+}
+
+// href からアンカー（# 以降）を取り除いて比較用に正規化する
+function normalizeHref(href) {
+  if (!href) return href;
+  return href.split('#')[0];
+}
+
+// 自動生成された木（auto）と既存の toc.html の木（old）をマージする
+// - 位置が一致すればそのノードのテキストを old から引き継ぐ
+// - 位置がずれていれば href の一致で old 側から探す
+// - old 側にのみ残った項目は手動追加項目として末尾に rawOuterHtml のまま残す
+export function mergeTocTrees(autoTree, oldTree) {
+  const oldRemaining = oldTree.slice();
+
+  const merged = autoTree.map((autoNode, i) => {
+    let matched = null;
+
+    if (oldRemaining[i] && normalizeHref(oldRemaining[i].href) === normalizeHref(autoNode.href)) {
+      matched = oldRemaining[i];
+      oldRemaining[i] = null;
+    } else {
+      const idx = oldRemaining.findIndex(
+        node => node && normalizeHref(node.href) === normalizeHref(autoNode.href)
+      );
+      if (idx !== -1) {
+        matched = oldRemaining[idx];
+        oldRemaining[idx] = null;
+      }
+    }
+
+    const text = matched ? matched.text : autoNode.text;
+    const oldChildren = matched ? matched.children : [];
+
+    return {
+      href: autoNode.href,
+      level: autoNode.level,
+      text,
+      children: mergeTocTrees(autoNode.children, oldChildren),
+      rawOuterHtml: null,
+    };
+  });
+
+  const manualLeftovers = oldRemaining
+    .filter(node => node !== null)
+    .map(node => ({ ...node, isManual: true }));
+
+  return [...merged, ...manualLeftovers];
+}
+
+// マージ済みの木を <ol>...</ol> の HTML 文字列に戻す
+export function serializeTocTree(tree) {
+  if (tree.length === 0) return '';
+  const items = tree.map(serializeTocNode).join('\n');
+  return `<ol>\n${items}\n</ol>`;
+}
+
+function serializeTocNode(node) {
+  if (node.isManual) {
+    return node.rawOuterHtml;
+  }
+  const childrenHtml = node.children && node.children.length > 0 ? serializeTocTree(node.children) : '';
+  return `<li data-section-level="${node.level}"><a href="${node.href}">${node.text}</a>${childrenHtml}</li>`;
+}
+
 // index.html から目次を抽出して toc.html に挿入
 function updateTocFromIndex() {
   if (!fs.existsSync(indexPath) || !fs.existsSync(tocPath)) {
@@ -181,10 +334,17 @@ function updateTocFromIndex() {
   // アンカー（#以降）を削除してファイル名のみにする（target-counter の解決を助ける）
   tocInner = tocInner.replace(/href="([^"#]+)#[^"]*"/g, 'href="$1"');
 
-  // toc.html の nav 内を置換
+  // 既存 toc.html 側（手動編集済みのテキストを含みうる）の nav 内側を解析
+  const oldTocMatch = tocContent.match(/<nav[^>]*role="doc-toc"[^>]*>([\s\S]*?)<\/nav>/);
+  const oldTree = oldTocMatch ? parseListItems(oldTocMatch[1]) : [];
+  const autoTree = parseListItems(tocInner);
+  const mergedTree = mergeTocTrees(autoTree, oldTree);
+  const mergedOl = serializeTocTree(mergedTree);
+
+  // toc.html の nav 内を、手動編集済みテキストを保持したままマージ結果で置換
   tocContent = tocContent.replace(
     /<nav[^>]*role="doc-toc"[^>]*>[\s\S]*?<\/nav>/,
-    `<nav role="doc-toc">${tocInner}</nav>`
+    `<nav role="doc-toc">\n  <h2>目次</h2>\n  ${mergedOl}\n</nav>`
   );
 
   fs.writeFileSync(tocPath, tocContent, 'utf-8');
