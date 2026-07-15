@@ -653,7 +653,8 @@ hr {
   margin: 0 0 8pt 0;
 }
 
-.chapter-recap p {
+/* タイトル（p 要素）へ側方 margin を波及させないため除外する */
+.chapter-recap p:not(.chapter-recap-title) {
   text-indent: 0;
   margin: 0 14pt 6pt 14pt;
 }

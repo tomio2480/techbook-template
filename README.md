@@ -229,7 +229,7 @@ javascript, typescript, python, rust, go, bash, json, yaml, markup（HTML）, cs
 
 ### 注釈・警告
 
-補足の注釈には `note` クラス、注意喚起には `warning` クラスを使用する。タイトル帯（※ Note・！ 注意）は自動で付与される。
+補足の注釈は `note` クラス、注意喚起は `warning` クラスを使用する。タイトル帯（※ Note・！ 注意）は自動で付与される。
 
 ```html
 <div class="note">
