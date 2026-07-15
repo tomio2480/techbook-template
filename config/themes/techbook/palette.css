@@ -60,6 +60,7 @@
   --heading-accent: var(--palette-primary);
   --heading-plate-bg: var(--palette-primary-light);
   --heading-rule: var(--palette-primary-mid);
+  --heading-rule-muted: var(--palette-gray-mid);
 
   /* コラム */
   --column-accent: var(--palette-primary);

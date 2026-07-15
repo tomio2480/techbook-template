@@ -31,7 +31,9 @@
 
 /* ===== 見本ページ用の補助スタイル ===== */
 
-/* 案ラベル（見本 PDF 上でどの案かを示す．採用時には持ち込まない） */
+/* 案ラベル（見本 PDF 上でどの案かを示す．採用時には持ち込まない）
+ * 装飾要素でなく見本のメタ表示であるため，パレット差し替えへの追従は
+ * 不要とし，パレット層の無彩色を意図的に直接参照する． */
 .sample-label {
   font-family: var(--font-gothic);
   font-size: 9pt;
@@ -287,7 +289,7 @@ h3.variant-b::before {
 h3.variant-c {
   border-left: 2.5pt solid var(--heading-rule);
   padding-left: 7pt;
-  border-bottom: 1pt dotted var(--palette-gray-mid);
+  border-bottom: 1pt dotted var(--heading-rule-muted);
   padding-bottom: 2pt;
 }
 
@@ -481,6 +483,8 @@ h3.variant-c {
 /* --- A 案: 淡色地＋左罫線（太さ・線種 3 段階で種別を区別） --- */
 .tips.variant-a {
   border-left: 2.5pt solid var(--tips-accent);
+  background-color: var(--tips-bg);
+  border-radius: 0;
 }
 
 .note.variant-a {
