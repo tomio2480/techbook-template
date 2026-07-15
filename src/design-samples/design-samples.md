@@ -235,7 +235,7 @@ body:
 <p>ビルド前に必ず原稿を保存する。未保存の変更はビルド結果へ反映されない。</p>
 </div>
 
-<p class="sample-label">B 案: 淡色グラデ帯タイトル系（帯は淡色→白、ラベル先頭に種別記号 ✎ / ※ / ⚠）</p>
+<p class="sample-label">B 案: 淡色グラデ帯タイトル系（帯は淡色→白、ラベル先頭に種別記号 ◆ / ※ / ！）</p>
 
 <div class="tips variant-b">
 <p class="tips-title">Tips: ビルドの高速化</p>

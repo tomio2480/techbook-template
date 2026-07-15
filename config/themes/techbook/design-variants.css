@@ -505,7 +505,7 @@ h3.variant-c {
 }
 
 .warning.variant-a::before {
-  content: "⚠ 注意";
+  content: "！ 注意";
   color: var(--warning-accent);
 }
 
@@ -539,9 +539,11 @@ h3.variant-c {
   margin: 0 0 6pt 0;
 }
 
-/* 種別記号（warning の ⚠ と揃え，Tips / Note にも記号を付ける） */
+/* 種別記号（3 種とも JIS X 0208 内の記号に限定する．
+   JIS 外の記号（⚠・✎ 等）はビルド環境のフォント差で
+   豆腐や絵文字化の恐れがあるため使わない） */
 .tips.variant-b .tips-title::before {
-  content: "✎ ";
+  content: "◆ ";
 }
 
 .note.variant-b::before,
@@ -562,7 +564,7 @@ h3.variant-c {
 }
 
 .warning.variant-b::before {
-  content: "⚠ 注意";
+  content: "！ 注意";
   background: linear-gradient(to right, var(--warning-bg), #fff);
   border-left: 4pt solid var(--warning-accent);
   color: var(--warning-accent);
