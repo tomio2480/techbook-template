@@ -125,6 +125,10 @@ Tips は、読者が作業を効率化するための実践的なアドバイス
 <p>Vivliostyle の VFM（Vivliostyle Flavored Markdown）では、Markdown 内に HTML を直接記述できる。コラムや Tips のように独自クラスを使いたい場合は、HTML ブロックを利用する。</p>
 </div>
 
+### 章まとめ枠の使い方
+
+章末で要点をチェックリスト形式で振り返るための枠を用意している。HTML の `div` タグに `class="chapter-recap"` を指定し、タイトルの `p` タグに `class="chapter-recap-title"` を指定する。箇条書きの各項目には自動でチェック印が付く。本章末尾の「まとめ」節が使用例である。
+
 ### コラム内の数式
 
 コラムや Tips の HTML ブロック内でも数式に番号を付与できる。HTML ブロック内では `<span class="math display">` 形式で記述する。
@@ -159,3 +163,12 @@ Tips は、読者が作業を効率化するための実践的なアドバイス
 ## まとめ
 
 本章では、技術書執筆における実践的なテクニックを紹介した。次章では、CI/CD による自動ビルドの設定方法を解説する。
+
+<div class="chapter-recap">
+<p class="chapter-recap-title">この章のまとめ</p>
+<ul>
+<li>回路図は SVG 形式でエクスポートして埋め込む</li>
+<li>コラム・Tips・注釈・警告は用途に応じて使い分ける</li>
+<li>章末の要点は章まとめ枠（chapter-recap）で振り返る</li>
+</ul>
+</div>

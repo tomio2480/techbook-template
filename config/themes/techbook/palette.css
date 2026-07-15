@@ -16,8 +16,8 @@
  * - light（背景・帯用）: 本文の可読性を損なわない淡色．
  * 種別の判別自体は罫線の太さ・線種・文字ラベルで担保し，色に依存させない．
  *
- * 一部の意味トークンは，フェーズ 2 で theme.css の色リテラルを
- * 置き換える際に参照される（Issue #22）．
+ * 紙面の地色である白（#fff）だけは意図的にリテラル運用とし，
+ * トークン化しない（グラデーションのフェード先・白抜き文字を含む）．
  */
 
 :root {
@@ -44,12 +44,26 @@
 
   /* 無彩色の段階 */
   --palette-ink: #222;
+  --palette-ink-soft: #333;
   --palette-gray-dark: #444;
   --palette-gray-mid: #999;
   --palette-gray-light: #e0e0e0;
   --palette-gray-faint: #f5f5f5;
 
+  /* リンク色 */
+  --palette-link: #0066cc;
+
   /* ===== 第 2 層: 意味トークン層（装飾要素が参照する） ===== */
+
+  /* 基本（本文・見出し・リンク・罫線・地） */
+  --color-text: var(--palette-ink-soft);
+  --color-heading: var(--palette-ink);
+  --color-link: var(--palette-link);
+  --color-code-bg: var(--palette-gray-faint);
+  --color-border: var(--palette-gray-light);
+  --color-muted: var(--palette-gray-mid);
+  --color-muted-dark: var(--palette-gray-dark);
+  --color-surface-faint: var(--palette-gray-faint);
 
   /* 章扉 */
   --chapter-accent: var(--palette-primary);
@@ -60,7 +74,6 @@
   --heading-accent: var(--palette-primary);
   --heading-plate-bg: var(--palette-primary-light);
   --heading-rule: var(--palette-primary-mid);
-  --heading-rule-muted: var(--palette-gray-mid);
 
   /* コラム */
   --column-accent: var(--palette-primary);
