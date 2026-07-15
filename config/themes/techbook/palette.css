@@ -1,0 +1,89 @@
+@charset "UTF-8";
+
+/*
+ * カラーパレット定義（2 層トークン構成）
+ *
+ * 本ごとの配色替えは第 1 層（パレット層）の値だけを書き換える．
+ * theme.css・design-variants.css は第 2 層（意味トークン層）のみを参照する．
+ *
+ * デザイン言語: 工業系教科書風．淡色基調で邪魔にならないが，
+ * 軽いグラデーション・角落とし（ドッグイヤー）・縁取り文字といった
+ * ささやかな遊び心を持たせる．
+ *
+ * グレースケール印刷でも判別できるよう，差し替え時は次の明度役割を守る．
+ * - accent（文字・罫線の強調用）: 本文黒に近い判読可能な濃色．
+ * - mid（罫線・折り返し用）: 中明度．背景の白とも本文の黒とも区別できる明度．
+ * - light（背景・帯用）: 本文の可読性を損なわない淡色．
+ * 種別の判別自体は罫線の太さ・線種・文字ラベルで担保し，色に依存させない．
+ *
+ * 一部の意味トークンは，フェーズ 2 で theme.css の色リテラルを
+ * 置き換える際に参照される（Issue #22）．
+ */
+
+:root {
+  /* ===== 第 1 層: パレット層（本ごとに差し替える） ===== */
+
+  /* 基調色（章扉・見出し・コラムなどの主装飾） */
+  --palette-primary: #2f5b8c;
+  --palette-primary-mid: #b0c4de;
+  --palette-primary-light: #f0f4f8;
+
+  /* 補助色（Tips などの肯定的な補足） */
+  --palette-accent: #2e7d32;
+  --palette-accent-mid: #a5d6a7;
+  --palette-accent-light: #f0faf0;
+
+  /* 警告色 */
+  --palette-warning: #b23b3b;
+  --palette-warning-mid: #e0b4b4;
+  --palette-warning-light: #fff0f0;
+
+  /* 注釈色 */
+  --palette-note-mid: #f0e68c;
+  --palette-note-light: #fffbcc;
+
+  /* 無彩色の段階 */
+  --palette-ink: #222;
+  --palette-gray-dark: #444;
+  --palette-gray-mid: #999;
+  --palette-gray-light: #e0e0e0;
+  --palette-gray-faint: #f5f5f5;
+
+  /* ===== 第 2 層: 意味トークン層（装飾要素が参照する） ===== */
+
+  /* 章扉 */
+  --chapter-accent: var(--palette-primary);
+  --chapter-plate-bg: var(--palette-primary-light);
+  --chapter-plate-fold: var(--palette-primary-mid);
+
+  /* 見出し */
+  --heading-accent: var(--palette-primary);
+  --heading-plate-bg: var(--palette-primary-light);
+  --heading-rule: var(--palette-primary-mid);
+  --heading-rule-muted: var(--palette-gray-mid);
+
+  /* コラム */
+  --column-accent: var(--palette-primary);
+  --column-bg: var(--palette-primary-light);
+  --column-border: var(--palette-primary-mid);
+
+  /* Tips */
+  --tips-accent: var(--palette-accent);
+  --tips-bg: var(--palette-accent-light);
+  --tips-border: var(--palette-accent-mid);
+
+  /* 注釈（note） */
+  --note-accent: var(--palette-gray-dark);
+  --note-bg: var(--palette-note-light);
+  --note-border: var(--palette-note-mid);
+
+  /* 警告（warning） */
+  --warning-accent: var(--palette-warning);
+  --warning-bg: var(--palette-warning-light);
+  --warning-border: var(--palette-warning-mid);
+
+  /* 章まとめ */
+  --recap-accent: var(--palette-primary);
+  --recap-bg: var(--palette-primary-light);
+  --recap-border: var(--palette-primary-mid);
+}
