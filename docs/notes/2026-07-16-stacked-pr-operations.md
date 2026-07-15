@@ -80,4 +80,4 @@ base を main 以外とする子 PR では CI が走らない．
 - [Issue #22](https://github.com/tomio2480/techbook-template/issues/22)
 - [PR #23（フェーズ 1）](https://github.com/tomio2480/techbook-template/pull/23)
 - [PR #24（フェーズ 2）](https://github.com/tomio2480/techbook-template/pull/24)
-- [`docs/notes/2026-07-16-decoration-design.md`](2026-07-16-decoration-design.md)（装飾デザインの決定記録）
+- [装飾デザインの決定記録](2026-07-16-decoration-design.md)
