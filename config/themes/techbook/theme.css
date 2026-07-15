@@ -10,7 +10,7 @@
   @top-center {
     content: string(chapter-header);
     font-size: 9pt;
-    color: #aaa;
+    color: var(--color-muted);
   }
 
   @bottom-center {
@@ -28,15 +28,10 @@
   }
 }
 
-/* 基本スタイル */
+/* 基本スタイル（色は palette.css の意味トークンで定義する） */
 :root {
   --font-size-base: 10pt;
   --line-height: 1.8;
-  --color-text: #333;
-  --color-heading: #222;
-  --color-link: #0066cc;
-  --color-code-bg: #f5f5f5;
-  --color-border: #ddd;
   --font-mincho: 'Noto Serif CJK JP', 'Noto Serif JP', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
   --font-gothic: 'Noto Sans CJK JP', 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
 }
@@ -72,12 +67,18 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* 章見出し（h1）- 章カウンターをリセット */
+/* 全幅の淡色グラデ帯＋帯右上の角落とし＋左罫線 */
 h1 {
   font-size: 24pt;
   margin-top: 0;
   margin-bottom: 20pt;
-  padding-bottom: 10pt;
-  border-bottom: 1px solid var(--color-heading);
+  padding: 10pt 14pt;
+  /* transparent への補間は黒ずむため，白へフェードさせる（紙面は白前提）．
+     1 層目の白い斜め帯が右上の角落としを作る */
+  background:
+    linear-gradient(225deg, #fff 10pt, transparent 10pt),
+    linear-gradient(to right, var(--heading-plate-bg), #fff);
+  border-left: 6pt solid var(--heading-accent);
   break-before: page;
   counter-increment: chapter;
   counter-reset: section subsection subsubsection figure table equation;
@@ -98,7 +99,9 @@ section[role="doc-cover"] h1,
 body.cover h1 {
   counter-increment: none;
   counter-reset: none;
-  border-bottom: none;
+  background: none;
+  border-left: none;
+  padding: 0;
   break-before: auto;
   font-size: 32pt;
   text-align: center;
@@ -150,25 +153,35 @@ body.preface h4::before {
 }
 
 /* h2 - セクション番号 */
+/* 角落とし番号プレート＋下罫線 */
 h2 {
   font-size: 16pt;
   margin-top: 24pt;
   margin-bottom: 12pt;
-  padding-left: 10pt;
-  border-left: 4px solid var(--color-heading);
+  padding-bottom: 5pt;
+  border-bottom: 0.75pt solid var(--heading-rule);
   counter-increment: section;
   counter-reset: subsection subsubsection figure table equation;
 }
 
 h2::before {
   content: counter(chapter) "." counter(section) ". ";
+  /* 番号プレートの右下角を斜めに落とす */
+  background: linear-gradient(315deg, transparent 5pt, var(--heading-plate-bg) 5pt);
+  color: var(--heading-accent);
+  padding: 1pt 10pt;
+  margin-right: 8pt;
 }
 
 /* h3 - サブセクション番号 */
+/* 淡色マーカー下線（文字の下半分に淡色を敷く） */
 h3 {
   font-size: 13pt;
   margin-top: 18pt;
   margin-bottom: 8pt;
+  width: fit-content;
+  background: linear-gradient(transparent 60%, var(--heading-plate-bg) 60%);
+  padding: 0 4pt;
   counter-increment: subsection;
   counter-reset: subsubsection figure table equation;
 }
@@ -227,7 +240,7 @@ a:hover {
 /* コードブロック */
 pre[class*="language-"] {
   background-color: var(--color-code-bg);
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   margin: 12pt 0;
   overflow-x: auto;
@@ -258,8 +271,8 @@ pre[class*="language-"].line-numbers > .line-numbers-rows {
   width: 3em;
   padding-top: 10pt;
   padding-bottom: 10pt;
-  border-right: 1px solid #999;
-  background-color: #e0e0e0;
+  border-right: 1px solid var(--color-muted);
+  background-color: var(--color-border);
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
@@ -272,7 +285,7 @@ pre[class*="language-"].line-numbers > .line-numbers-rows {
 
 pre[class*="language-"].line-numbers > .line-numbers-rows > span {
   display: block;
-  color: #333;
+  color: var(--color-text);
   padding-right: 0.6em;
   text-align: right;
   font-size: 9pt;
@@ -311,7 +324,7 @@ table {
 /* 縦罫線なし、横罫線のみ（細め） */
 th, td {
   border: none;
-  border-bottom: 0.5pt solid #aaa;
+  border-bottom: 0.5pt solid var(--color-muted);
   padding: 6pt 8pt;
   vertical-align: middle;
   text-align: center;
@@ -323,16 +336,16 @@ th {
   font-family: var(--font-gothic);
   font-weight: bold;
   text-align: center;
-  border-bottom: 0.5pt solid #666;
+  border-bottom: 0.5pt solid var(--color-muted-dark);
 }
 
 /* ゼブラストライプ（偶数行に背景色） */
 tr:nth-child(even) td {
-  background-color: #f5f5f5;
+  background-color: var(--color-surface-faint);
 }
 
 tr:nth-child(odd) td {
-  background-color: #ffffff;
+  background-color: #fff;
 }
 
 /* 最終行の下線をなくす */
@@ -408,7 +421,7 @@ figure img {
 figcaption {
   font-size: 9pt;
   font-family: var(--font-mincho);
-  color: #333;
+  color: var(--color-text);
   margin-top: 6pt;
   text-align: center;
   break-before: avoid;
@@ -447,8 +460,8 @@ section.level4 .tips > figure > figcaption::before {
 blockquote {
   margin: 12pt 0;
   padding: 10pt 15pt;
-  background-color: #fafafa;
-  border-left: 4px solid #ccc;
+  background-color: var(--color-surface-faint);
+  border-left: 4px solid var(--color-border);
   font-style: normal;
 }
 
@@ -464,34 +477,99 @@ hr {
   margin: 20pt 0;
 }
 
-/* 注釈・脚注 */
-.note {
-  background-color: #fffbcc;
-  border: 1px solid #f0e68c;
-  border-radius: 4px;
-  padding: 10pt;
+/* 注釈・警告 */
+/* 淡色グラデ帯のタイトルと枠線で種別を示す．
+   帯先頭の種別記号は JIS X 0208 内に限定する（※・！）．
+   JIS 外の記号はビルド環境のフォント差で豆腐・絵文字化の恐れがある */
+.note,
+.warning {
+  background: #fff;
+  border-radius: 0;
+  padding: 0 0 8pt 0;
   margin: 12pt 0;
   font-size: 9pt;
+  break-inside: avoid;
+}
+
+.note {
+  border: 0.75pt solid var(--note-border);
 }
 
 .warning {
-  background-color: #fff0f0;
-  border: 1px solid #ffcccc;
-  border-radius: 4px;
-  padding: 10pt;
-  margin: 12pt 0;
-  font-size: 9pt;
+  border: 0.75pt solid var(--warning-border);
+}
+
+.note::before,
+.warning::before {
+  font-family: var(--font-gothic);
+  font-weight: bold;
+  font-size: 10pt;
+  display: block;
+  padding: 3pt 10pt;
+  margin-bottom: 6pt;
+}
+
+.note::before {
+  content: "※ Note";
+  background: linear-gradient(to right, var(--note-bg), #fff);
+  border-left: 4pt solid var(--note-accent);
+  color: var(--note-accent);
+}
+
+.warning::before {
+  content: "！ 注意";
+  background: linear-gradient(to right, var(--warning-bg), #fff);
+  border-left: 4pt solid var(--warning-accent);
+  color: var(--warning-accent);
+}
+
+.note p,
+.warning p {
+  text-indent: 0;
+  margin: 0 10pt 6pt 10pt;
+}
+
+.note p:last-child,
+.warning p:last-child {
+  margin-bottom: 0;
 }
 
 /* コラム */
+/* ドッグイヤー地＋縁取り COLUMN ラベル */
 .column {
-  background-color: #f0f4f8;
-  border: 1px solid #b0c4de;
-  border-radius: 4px;
+  position: relative;
+  /* 右上の角落としは背景の斜めグラデーション（透明→地色）で作る */
+  background: linear-gradient(225deg, transparent 14pt, var(--column-bg) 14pt);
   padding: 12pt 14pt;
   margin: 16pt 0;
   font-size: 9pt;
   break-inside: avoid;
+}
+
+/* 右上角の折り返し（テキストを持たない装飾のみの絶対配置であり，
+   PDF タグ付けの読み順へは影響しない） */
+.column::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 14pt;
+  height: 14pt;
+  background: linear-gradient(225deg, transparent 50%, var(--column-border) 50%);
+}
+
+/* 縁取り文字は -webkit-text-stroke（Chromium 対応）で作る．
+   白抜き＋色ストロークとし，10pt 未満の小さな文字には使わない */
+.column::before {
+  content: "COLUMN";
+  display: block;
+  font-family: var(--font-gothic);
+  font-size: 11pt;
+  font-weight: bold;
+  letter-spacing: 0.25em;
+  color: #fff;
+  -webkit-text-stroke: 0.6pt var(--column-accent);
+  margin-bottom: 4pt;
 }
 
 .column-title {
@@ -500,7 +578,7 @@ hr {
   font-size: 10pt;
   margin: 0 0 8pt 0;
   padding-bottom: 6pt;
-  border-bottom: 1px solid #b0c4de;
+  border-bottom: 1px solid var(--column-border);
   text-indent: 0;
 }
 
@@ -514,11 +592,14 @@ hr {
 }
 
 /* Tips */
+/* 淡色グラデ帯タイトル＋枠線（note / warning と同系のあしらい）．
+   帯先頭の種別記号は JIS X 0208 内に限定する（◆） */
 .tips {
-  background-color: #f0faf0;
-  border-left: 4px solid #4caf50;
-  border-radius: 0 4px 4px 0;
-  padding: 10pt 14pt;
+  background: #fff;
+  border: 0.75pt solid var(--tips-border);
+  border-left: none;
+  border-radius: 0;
+  padding: 0 0 8pt 0;
   margin: 12pt 0;
   font-size: 9pt;
   break-inside: avoid;
@@ -530,16 +611,78 @@ hr {
   font-size: 10pt;
   margin: 0 0 6pt 0;
   text-indent: 0;
-  color: #2e7d32;
+  background: linear-gradient(to right, var(--tips-bg), #fff);
+  border-left: 4pt solid var(--tips-accent);
+  color: var(--tips-accent);
+  padding: 3pt 10pt;
 }
 
-.tips p {
+.tips-title::before {
+  content: "◆ ";
+}
+
+.tips p:not(.tips-title) {
   text-indent: 0;
-  margin: 0 0 6pt 0;
+  margin: 0 10pt 6pt 10pt;
 }
 
 .tips p:last-child {
   margin-bottom: 0;
+}
+
+/* 章まとめ */
+/* 淡色グラデ帯タイトル＋チェックリスト．
+   記法: <div class="chapter-recap"><p class="chapter-recap-title">…</p><ul>…</ul></div> */
+.chapter-recap {
+  border: 0.75pt solid var(--recap-border);
+  padding: 0 0 10pt 0;
+  margin: 16pt 0;
+  font-size: 9pt;
+  break-inside: avoid;
+}
+
+.chapter-recap-title {
+  font-family: var(--font-gothic);
+  font-weight: bold;
+  font-size: 10pt;
+  text-indent: 0;
+  background: linear-gradient(to right, var(--recap-bg), #fff);
+  border-left: 5pt solid var(--recap-border);
+  color: var(--recap-accent);
+  padding: 4pt 12pt;
+  margin: 0 0 8pt 0;
+}
+
+/* タイトル（p 要素）へ側方 margin を波及させないため除外する */
+.chapter-recap p:not(.chapter-recap-title) {
+  text-indent: 0;
+  margin: 0 14pt 6pt 14pt;
+}
+
+.chapter-recap ul {
+  margin: 0 14pt;
+  padding-left: 1.5em;
+}
+
+.chapter-recap li {
+  list-style: none;
+  margin-bottom: 4pt;
+}
+
+/* チェック印は文字（✓ は JIS 外）でなく罫線描画（回転 L 字）で作り，
+   フォント差による豆腐化を避ける．テキストを持たない装飾のみの
+   要素であり，回転してもタグ付けの読み順へは影響しない */
+.chapter-recap li::before {
+  content: "";
+  display: inline-block;
+  width: 0.55em;
+  height: 0.28em;
+  border-left: 1.5pt solid var(--recap-accent);
+  border-bottom: 1.5pt solid var(--recap-accent);
+  transform: rotate(-45deg);
+  vertical-align: 0.12em;
+  margin-left: -1.5em;
+  margin-right: 0.6em;
 }
 
 /* 数式 - ブロック数式を含む段落 */
@@ -605,8 +748,8 @@ nav#toc {
 
 nav[role="doc-toc"] h2,
 nav#toc h2 {
-  border-left: none;
-  padding-left: 0;
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 nav[role="doc-toc"] h2::before,
@@ -700,8 +843,10 @@ body.colophon {
 .colophon h1,
 body.colophon h1 {
   font-size: 14pt;
+  background: none;
+  border-left: none;
   border-bottom: 1px solid var(--color-heading);
-  padding-bottom: 6pt;
+  padding: 0 0 6pt 0;
   margin-bottom: 12pt;
   margin-top: 0;
   break-before: page;
@@ -744,7 +889,7 @@ body.colophon p {
   font-size: 8pt;
   text-indent: 0;
   margin: 6pt 0;
-  color: #666;
+  color: var(--color-muted-dark);
 }
 
 /* まえがき・目次・あとがきのヘッダーを非表示 */
@@ -809,24 +954,28 @@ body.afterword h2::before {
   position: relative;
 }
 
+/* 縁取り大数字＋「CHAPTER」ラベル＋タイトルへ淡色マーカー */
 .chapter-opening .chapter-number {
-  position: absolute;
-  top: -22mm;
-  right: -18mm;
-  width: 40mm;
-  height: 40mm;
-  background: linear-gradient(225deg, #444 50%, transparent 50%);
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  padding: 5mm 5mm 0 0;
   font-family: var(--font-gothic);
-  font-size: 36pt;
+  font-size: 80pt;
   font-weight: bold;
+  line-height: 1;
+  text-align: center;
+  /* 縁取り数字（白抜き＋中明度ストローク．Chromium 対応） */
   color: #fff;
+  -webkit-text-stroke: 1.2pt var(--chapter-plate-fold);
   text-indent: 0;
-  margin: 0;
-  box-sizing: border-box;
+  margin: 0 0 8pt 0;
+}
+
+.chapter-opening .chapter-number::before {
+  content: "CHAPTER";
+  display: block;
+  font-size: 10pt;
+  letter-spacing: 0.4em;
+  color: var(--chapter-accent);
+  -webkit-text-stroke: 0;
+  margin-bottom: 6pt;
 }
 
 .chapter-opening .chapter-title {
@@ -834,7 +983,11 @@ body.afterword h2::before {
   font-size: 28pt;
   font-weight: bold;
   text-align: center;
-  margin-bottom: 30pt;
+  /* 文字の下半分へ淡色マーカーを敷く */
+  background: linear-gradient(transparent 62%, var(--chapter-plate-bg) 62%);
+  width: fit-content;
+  margin: 0 auto 30pt auto;
+  padding: 0 8pt;
   text-indent: 0;
 }
 
@@ -854,7 +1007,7 @@ body.afterword h2::before {
 .chapter-opening .chapter-topics {
   margin-top: 30pt;
   padding: 15pt 20pt;
-  background-color: #f8f8f8;
+  background-color: var(--color-surface-faint);
   border-radius: 4px;
 }
 
