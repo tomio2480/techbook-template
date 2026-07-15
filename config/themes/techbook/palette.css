@@ -1,0 +1,89 @@
+@charset "UTF-8";
+
+/*
+ * カラーパレット定義（2 層トークン構成）
+ *
+ * 本ごとの配色替えは第 1 層（パレット層）の値だけを書き換える．
+ * theme.css・design-variants.css は第 2 層（意味トークン層）のみを参照する．
+ *
+ * グレースケール印刷でも判別できるよう，差し替え時は次の明度役割を守る．
+ * - band（帯・バッジ用）: 白文字が載る濃色．グレー変換で濃グレーになる明度．
+ * - mid（罫線用）: 中明度．本文の黒とも背景の白とも区別できる明度．
+ * - light（背景用）: 本文の可読性を損なわない淡色．
+ * 種別の判別自体は罫線の太さ・線種・文字ラベルで担保し，色に依存させない．
+ *
+ * 一部の意味トークン（--column-bg / --note-bg など）は，フェーズ 2 で
+ * theme.css の色リテラルを置き換える際に参照される（Issue #22）．
+ */
+
+:root {
+  /* ===== 第 1 層: パレット層（本ごとに差し替える） ===== */
+
+  /* 基調色（章扉・見出し・コラムなどの主装飾） */
+  --palette-primary: #2f5b8c;
+  --palette-primary-mid: #b0c4de;
+  --palette-primary-light: #f0f4f8;
+
+  /* 補助色（Tips などの肯定的な補足） */
+  --palette-accent: #2e7d32;
+  --palette-accent-mid: #4caf50;
+  --palette-accent-light: #f0faf0;
+
+  /* 警告色 */
+  --palette-warning: #b23b3b;
+  --palette-warning-light: #fff0f0;
+
+  /* 注釈色 */
+  --palette-note-mid: #f0e68c;
+  --palette-note-light: #fffbcc;
+
+  /* 無彩色の段階 */
+  --palette-ink: #222;
+  --palette-gray-dark: #444;
+  --palette-gray-mid: #999;
+  --palette-gray-light: #e0e0e0;
+  --palette-gray-faint: #f5f5f5;
+
+  /* ===== 第 2 層: 意味トークン層（装飾要素が参照する） ===== */
+
+  /* 章扉 */
+  --chapter-badge-bg: var(--palette-primary);
+  --chapter-badge-fg: #fff;
+  --chapter-number-ghost: var(--palette-gray-light);
+
+  /* 見出し */
+  --heading-accent: var(--palette-primary);
+  --heading-band-bg: var(--palette-gray-faint);
+  --heading-badge-fg: #fff;
+
+  /* コラム */
+  --column-bg: var(--palette-primary-light);
+  --column-border: var(--palette-primary-mid);
+  --column-band-bg: var(--palette-primary);
+  --column-band-fg: #fff;
+
+  /* Tips */
+  --tips-bg: var(--palette-accent-light);
+  --tips-border: var(--palette-accent-mid);
+  --tips-title-color: var(--palette-accent);
+  --tips-band-bg: var(--palette-accent);
+  --tips-band-fg: #fff;
+
+  /* 注釈（note） */
+  --note-bg: var(--palette-note-light);
+  --note-border: var(--palette-note-mid);
+  --note-band-bg: var(--palette-gray-light);
+  --note-band-fg: var(--palette-ink);
+
+  /* 警告（warning） */
+  --warning-bg: var(--palette-warning-light);
+  --warning-border: var(--palette-warning);
+  --warning-band-bg: var(--palette-warning);
+  --warning-band-fg: #fff;
+
+  /* 章まとめ */
+  --recap-bg: var(--palette-gray-faint);
+  --recap-border: var(--palette-ink);
+  --recap-band-bg: var(--palette-primary);
+  --recap-band-fg: #fff;
+}

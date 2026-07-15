@@ -6,6 +6,7 @@ dist/
 publication.json
 src/chapters/*.html
 !src/chapters/toc.html
+src/design-samples/*.html
 index.html
 
 # OS生成ファイル
