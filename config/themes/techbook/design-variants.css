@@ -379,13 +379,20 @@ h3.variant-c {
   list-style: none;
 }
 
+/* チェック印は文字（✓ は JIS 外）でなく罫線描画で作り，
+   フォント差による豆腐化を避ける．テキストを持たない装飾のみの
+   要素のため，回転してもタグ付けの読み順へは影響しない */
 .chapter-recap.variant-c li::before {
-  content: "✓ ";
-  font-family: var(--font-gothic);
-  font-weight: bold;
-  color: var(--recap-accent);
+  content: "";
+  display: inline-block;
+  width: 0.55em;
+  height: 0.28em;
+  border-left: 1.5pt solid var(--recap-accent);
+  border-bottom: 1.5pt solid var(--recap-accent);
+  transform: rotate(-45deg);
+  vertical-align: 0.12em;
   margin-left: -1.5em;
-  padding-right: 0.5em;
+  margin-right: 0.6em;
 }
 
 /* ============================================================
