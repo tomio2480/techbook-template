@@ -5,14 +5,14 @@ body:
 
 <section class="chapter-opening variant-a">
 
-<p class="sample-label">章扉 A 案: 現行改良（三角バッジを基調色ベタに、タイトル下へ短罫線）</p>
+<p class="sample-label">章扉 A 案: 淡色グラデ帯「第 N 章」＋帯右上の角落とし</p>
 
 <p class="chapter-number">1</p>
 <p class="chapter-title">装飾バリアント見本</p>
 
 <div class="chapter-summary">
 
-この扉は A 案である。現行レイアウトを踏襲しつつ、右上の三角バッジを基調色のベタ塗りに変更し、章タイトルの下へ短い罫線を加えた。グレースケール変換ではバッジが濃グレーになり、エッジは明瞭なまま保たれる。
+この扉は A 案である。ページ上部に右へ白へとける淡色グラデーションの帯を置き、「第 N 章」を基調色の文字で示す。帯の右上は斜めに落とし、ドッグイヤー風の遊び心を添えた。章タイトルは帯の下で左揃えとし、細い罫線で区切る。
 
 </div>
 
@@ -32,14 +32,14 @@ body:
 
 <section class="chapter-opening variant-b">
 
-<p class="sample-label">章扉 B 案: 上部横帯＋白抜き章番号（絶対配置を使わない通常フロー）</p>
+<p class="sample-label">章扉 B 案: 右上に淡色ドッグイヤー色面（折り返し付き）＋タイトル二重罫</p>
 
 <p class="chapter-number">1</p>
 <p class="chapter-title">装飾バリアント見本</p>
 
 <div class="chapter-summary">
 
-この扉は B 案である。ページ上部に基調色の横帯を置き、帯内へ「第 N 章」を白抜きで表示する。章タイトルは帯の下で左揃えとし、左罫線を添えた。絶対配置を使わないため、PDF タグ付けの読み順解析に最も安全な構成である。
+この扉は B 案である。現行の右上コーナー面を淡色に置き換え、左下の角へ中明度の折り返しを付けてドッグイヤーに見立てた。章番号は基調色の文字で示す。章タイトルは中央揃えのまま、二重罫線で区切りを添えた。
 
 </div>
 
@@ -59,14 +59,14 @@ body:
 
 <section class="chapter-opening variant-c">
 
-<p class="sample-label">章扉 C 案: 超大サイズ淡グレー章番号のミニマル案（色に依存しない）</p>
+<p class="sample-label">章扉 C 案: 縁取り大数字＋タイトルへ淡色マーカー</p>
 
 <p class="chapter-number">1</p>
 <p class="chapter-title">装飾バリアント見本</p>
 
 <div class="chapter-summary">
 
-この扉は C 案である。中央に超大サイズの淡グレー章番号を置き、その上へ「CHAPTER」の欧文ラベルを添えた。章タイトルは細い罫線で区切って配置する。色をまったく使わずに成立するため、グレースケール印刷と完全に等価な見た目になる。
+この扉は C 案である。中央に超大サイズの縁取り章番号（白抜き＋中明度ストローク）を置き、その上へ「CHAPTER」の欧文ラベルを添えた。章タイトルは文字の下半分へ淡色マーカーを敷いて示す。面を塗らないため、最も軽やかな印象になる。
 
 </div>
 
@@ -86,29 +86,29 @@ body:
 
 # 装飾バリアント見本
 
-本章は書籍要素の装飾バリアントを見比べるための見本である。各要素の直前にあるグレーのラベルが案の識別子を示す。比較の基準として、案を適用しない現行スタイルも併置する。
+本章は書籍要素の装飾バリアントを見比べるための見本である。工業系教科書を思わせる淡色基調のデザイン言語で統一し、軽いグラデーション・角落とし（ドッグイヤー）・縁取り文字といったささやかなあしらいを織り込んだ。各要素の直前にあるグレーのラベルが案の識別子を示す。比較の基準として、案を適用しない現行スタイルも併置する。
 
 ## 節見出し（h2）のバリアント
 
 この見出し自体が現行スタイル（左ボーダー 4px）である。以下に 3 案を示す。
 
-<p class="sample-label">h2 A 案: 左ボーダー太化＋薄グレー背景帯</p>
+<p class="sample-label">h2 A 案: 淡色グラデーション帯＋左罫線</p>
 
 <h2 class="variant-a">実践的な組版テクニック</h2>
 
 見出し直後の本文はこのように続く。背景帯により見出しの領域が明確になる。
 
-<p class="sample-label">h2 B 案: 節番号を白抜きバッジ化＋下罫線</p>
+<p class="sample-label">h2 B 案: 角落とし番号プレート＋下罫線</p>
 
 <h2 class="variant-b">実践的な組版テクニック</h2>
 
-見出し直後の本文はこのように続く。番号バッジが視線の起点になる。
+見出し直後の本文はこのように続く。角落としの番号プレートが視線の起点になる。
 
-<p class="sample-label">h2 C 案: 上細線・下太線の二本線（グレースケール完全対応）</p>
+<p class="sample-label">h2 C 案: 縁取り番号＋二重下罫線</p>
 
 <h2 class="variant-c">実践的な組版テクニック</h2>
 
-見出し直後の本文はこのように続く。色を使わず線の太さだけで階層を示す。
+見出し直後の本文はこのように続く。縁取り番号が軽やかな抜け感を作る。
 
 ## 項見出し（h3）のバリアント
 
@@ -116,19 +116,19 @@ body:
 
 この見出しが現行スタイル（装飾なし）である。以下に 3 案を示す。
 
-<p class="sample-label">h3 A 案: 先頭に基調色の ■ 記号</p>
+<p class="sample-label">h3 A 案: 淡色マーカー下線（文字の下半分に淡色を敷く）</p>
 
 <h3 class="variant-a">コードの読みやすさを高める</h3>
 
 見出し直後の本文はこのように続く。
 
-<p class="sample-label">h3 B 案: 短い左ボーダー</p>
+<p class="sample-label">h3 B 案: 角落とし小プレート番号</p>
 
 <h3 class="variant-b">コードの読みやすさを高める</h3>
 
 見出し直後の本文はこのように続く。
 
-<p class="sample-label">h3 C 案: 下点線（h2 の実線と線種で差別化）</p>
+<p class="sample-label">h3 C 案: 左短罫＋下点線</p>
 
 <h3 class="variant-c">コードの読みやすさを高める</h3>
 
@@ -138,7 +138,7 @@ body:
 
 章まとめ枠は新設要素であり、現行スタイルは存在しない。章末の「まとめ」節で要点を列挙する用途を想定する。
 
-<p class="sample-label">まとめ A 案: タイトル帯型（帯は基調色、白抜き文字）</p>
+<p class="sample-label">まとめ A 案: ドッグイヤーボックス（折り返し付き淡色地）</p>
 
 <div class="chapter-recap variant-a">
 <p class="chapter-recap-title">この章のまとめ</p>
@@ -149,7 +149,7 @@ body:
 </ul>
 </div>
 
-<p class="sample-label">まとめ B 案: 二重罫線枠（背景なし、グレースケール完全対応）</p>
+<p class="sample-label">まとめ B 案: 角丸枠＋上部淡色グラデーション</p>
 
 <div class="chapter-recap variant-b">
 <p class="chapter-recap-title">この章のまとめ</p>
@@ -160,7 +160,7 @@ body:
 </ul>
 </div>
 
-<p class="sample-label">まとめ C 案: 薄グレー地＋チェックリスト風</p>
+<p class="sample-label">まとめ C 案: 淡色グラデ帯タイトル＋チェックリスト</p>
 
 <div class="chapter-recap variant-c">
 <p class="chapter-recap-title">この章のまとめ</p>
@@ -180,21 +180,21 @@ body:
 <p>Vivliostyle は CSS 組版に基づくオープンソースの組版エンジンである。W3C の CSS Paged Media 仕様に準拠しており、ブラウザの描画エンジンを利用して高品質な PDF を生成できる。</p>
 </div>
 
-<p class="sample-label">コラム A 案: 現行踏襲＋タイトルを帯化</p>
+<p class="sample-label">コラム A 案: ドッグイヤー地＋縁取り COLUMN ラベル</p>
 
 <div class="column variant-a">
 <p class="column-title">Vivliostyle と CSS 組版</p>
 <p>Vivliostyle は CSS 組版に基づくオープンソースの組版エンジンである。W3C の CSS Paged Media 仕様に準拠しており、ブラウザの描画エンジンを利用して高品質な PDF を生成できる。</p>
 </div>
 
-<p class="sample-label">コラム B 案: 上下太罫線のみの雑誌風（背景色に依存しない）</p>
+<p class="sample-label">コラム B 案: 上部淡色グラデ地＋左罫タイトル</p>
 
 <div class="column variant-b">
 <p class="column-title">Vivliostyle と CSS 組版</p>
 <p>Vivliostyle は CSS 組版に基づくオープンソースの組版エンジンである。W3C の CSS Paged Media 仕様に準拠しており、ブラウザの描画エンジンを利用して高品質な PDF を生成できる。</p>
 </div>
 
-<p class="sample-label">コラム C 案: 角丸背景＋ラベルタブ</p>
+<p class="sample-label">コラム C 案: 上下罫線＋縁取り COLUMN ラベル</p>
 
 <div class="column variant-c">
 <p class="column-title">Vivliostyle と CSS 組版</p>
@@ -220,7 +220,7 @@ body:
 <p>ビルド前に必ず原稿を保存する。未保存の変更はビルド結果へ反映されない。</p>
 </div>
 
-<p class="sample-label">A 案: 左ボーダー統一系（線種・太さ 3 段階で種別を区別）</p>
+<p class="sample-label">A 案: 淡色地＋左罫線（太さ・線種 3 段階で種別を区別）</p>
 
 <div class="tips variant-a">
 <p class="tips-title">Tips: ビルドの高速化</p>
@@ -235,7 +235,7 @@ body:
 <p>ビルド前に必ず原稿を保存する。未保存の変更はビルド結果へ反映されない。</p>
 </div>
 
-<p class="sample-label">B 案: タイトル帯系（帯の明度 3 段階で種別を区別）</p>
+<p class="sample-label">B 案: 淡色グラデ帯タイトル系（帯は淡色→白、文字は種別色）</p>
 
 <div class="tips variant-b">
 <p class="tips-title">Tips: ビルドの高速化</p>
@@ -250,7 +250,7 @@ body:
 <p>ビルド前に必ず原稿を保存する。未保存の変更はビルド結果へ反映されない。</p>
 </div>
 
-<p class="sample-label">C 案: 記号ラベル系（枠は最小限の罫線のみ）</p>
+<p class="sample-label">C 案: ドッグイヤー地＋縁取りラベル系</p>
 
 <div class="tips variant-c">
 <p class="tips-title">Tips: ビルドの高速化</p>

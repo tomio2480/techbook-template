@@ -8,6 +8,18 @@
  * 採用が決まった案は該当ブロックを theme.css の対応セクションへ移す．
  * 色指定は palette.css の意味トークンのみを参照する．
  *
+ * デザイン言語: 工業系教科書風（実教出版・コロナ社・オーム社のイメージ）．
+ * 淡色基調で本文の邪魔をしないが，軽いグラデーション・角落とし
+ * （ドッグイヤー）・縁取り文字で，手の込んだあしらいを感じさせる．
+ *
+ * 実装メモ:
+ * - 角落としは background の斜めグラデーション（透明→地色）で作る．
+ * - 折り返し（ドッグイヤーの折り目）は空の ::after を絶対配置した
+ *   小さな三角形で作る．テキストを持たない装飾のみの絶対配置であり，
+ *   PDF タグ付けの読み順へは影響しない．
+ * - 縁取り文字は -webkit-text-stroke（Chromium 対応）で作る．
+ *   白抜き＋色ストロークとし，10pt 未満の小さな文字には使わない．
+ *
  * PDF タグ付け（OpenDataLoader，レイアウト解析ベース）への配慮:
  * - 本文テキストの絶対配置を増やさない（読み順の誤検出を防ぐ）．
  * - flex の order / row-reverse で DOM 順と視覚順を乖離させない．
@@ -39,7 +51,6 @@
   break-inside: avoid;
 }
 
-/* 見本内の note / warning でも段下げを無効化する */
 .note p,
 .warning p {
   text-indent: 0;
@@ -55,67 +66,85 @@
  * 章の扉ページ（.chapter-opening）
  * ============================================================ */
 
-/* --- A 案: 現行改良（三角バッジを基調色ベタに，タイトル下へ短罫線） --- */
-.chapter-opening.variant-a .chapter-number {
-  background: linear-gradient(225deg, var(--chapter-badge-bg) 50%, transparent 50%);
-  color: var(--chapter-badge-fg);
-}
-
-.chapter-opening.variant-a .chapter-title {
-  border-bottom: 2pt solid var(--heading-accent);
-  width: fit-content;
-  margin-left: auto;
-  margin-right: auto;
-  padding-bottom: 8pt;
-}
-
-/* --- B 案: 上部横帯 + 白抜き章番号（通常フロー．絶対配置を使わない） --- */
-.chapter-opening.variant-b {
+/* --- A 案: 淡色グラデ帯「第 N 章」＋帯右上の角落とし --- */
+.chapter-opening.variant-a {
   justify-content: flex-start;
 }
 
-.chapter-opening.variant-b .chapter-number {
+.chapter-opening.variant-a .chapter-number {
   position: static;
   width: auto;
   height: auto;
   display: block;
-  background: var(--chapter-badge-bg);
-  color: var(--chapter-badge-fg);
+  /* 右へ白にとけるグラデ帯．右上を斜めに落としてドッグイヤー風にする */
+  background:
+    linear-gradient(225deg, #fff 8pt, transparent 8pt),
+    linear-gradient(to right, var(--chapter-plate-bg), #fff);
+  color: var(--chapter-accent);
+  border-left: 6pt solid var(--chapter-plate-fold);
   font-size: 16pt;
-  padding: 6pt 14pt;
+  padding: 6pt 18pt;
   margin: 0 0 28pt 0;
   text-align: left;
   justify-content: flex-start;
   align-items: center;
 }
 
-.chapter-opening.variant-b .chapter-number::before {
+.chapter-opening.variant-a .chapter-number::before {
   content: "第 ";
 }
 
-.chapter-opening.variant-b .chapter-number::after {
+.chapter-opening.variant-a .chapter-number::after {
   content: " 章";
 }
 
-.chapter-opening.variant-b .chapter-title {
+.chapter-opening.variant-a .chapter-title {
   text-align: left;
-  padding-left: 14pt;
-  border-left: 4pt solid var(--heading-accent);
+  border-bottom: 0.75pt solid var(--chapter-plate-fold);
+  padding-bottom: 10pt;
 }
 
-/* --- C 案: 超大サイズ淡グレー章番号のミニマル案（色に依存しない） --- */
+/* --- B 案: 右上に淡色ドッグイヤー色面（折り返し付き）＋タイトル二重罫 --- */
+.chapter-opening.variant-b .chapter-number {
+  /* 位置・寸法は現行の右上コーナー面を踏襲し，配色を淡色へ置き換える */
+  background:
+    linear-gradient(45deg, transparent 10mm, var(--chapter-plate-bg) 10mm);
+  color: var(--chapter-accent);
+}
+
+/* 左下角の折り返し（テキストを持たない装飾のみの三角形） */
+.chapter-opening.variant-b .chapter-number::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 10mm;
+  height: 10mm;
+  background: linear-gradient(45deg, transparent 50%, var(--chapter-plate-fold) 50%);
+}
+
+.chapter-opening.variant-b .chapter-title {
+  border-bottom: 3pt double var(--chapter-plate-fold);
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  padding-bottom: 10pt;
+}
+
+/* --- C 案: 縁取り大数字＋タイトルへ淡色マーカー --- */
 .chapter-opening.variant-c .chapter-number {
   position: static;
   width: auto;
   height: auto;
   display: block;
   background: none;
-  color: var(--chapter-number-ghost);
-  font-size: 72pt;
+  color: #fff;
+  -webkit-text-stroke: 1.2pt var(--chapter-plate-fold);
+  font-size: 80pt;
   line-height: 1;
   text-align: center;
   padding: 0;
-  margin: 0 0 6pt 0;
+  margin: 0 0 8pt 0;
 }
 
 .chapter-opening.variant-c .chapter-number::before {
@@ -123,74 +152,87 @@
   display: block;
   font-size: 10pt;
   letter-spacing: 0.4em;
-  color: var(--palette-gray-dark);
-  margin-bottom: 4pt;
+  color: var(--chapter-accent);
+  -webkit-text-stroke: 0;
+  margin-bottom: 6pt;
 }
 
 .chapter-opening.variant-c .chapter-title {
-  border-top: 0.5pt solid var(--palette-gray-mid);
-  width: 80%;
+  /* 文字の下半分へ淡色マーカーを敷く */
+  background: linear-gradient(transparent 62%, var(--chapter-plate-bg) 62%);
+  width: fit-content;
   margin-left: auto;
   margin-right: auto;
-  padding-top: 16pt;
+  padding: 0 8pt;
 }
 
 /* ============================================================
  * 節見出し（h2）
  * ============================================================ */
 
-/* --- A 案: 左ボーダー太化 + 薄グレー背景帯 --- */
+/* --- A 案: 淡色グラデーション帯＋左罫線 --- */
 h2.variant-a {
-  border-left: 6pt solid var(--heading-accent);
-  background-color: var(--heading-band-bg);
+  border-left: 5pt solid var(--heading-accent);
+  /* transparent への補間は黒ずむため，白へフェードさせる（紙面は白前提） */
+  background: linear-gradient(to right, var(--heading-plate-bg), #fff 85%);
   padding: 4pt 8pt 4pt 10pt;
 }
 
-/* --- B 案: 節番号を白抜きバッジ化 + 下罫線 --- */
+/* --- B 案: 角落とし番号プレート＋下罫線 --- */
 h2.variant-b {
   border-left: none;
   padding-left: 0;
-  border-bottom: 1pt solid var(--heading-accent);
-  padding-bottom: 4pt;
+  border-bottom: 0.75pt solid var(--heading-rule);
+  padding-bottom: 5pt;
 }
 
 h2.variant-b::before {
-  background-color: var(--heading-accent);
-  color: var(--heading-badge-fg);
-  padding: 1pt 8pt;
+  /* 番号プレートの右下角を斜めに落とす */
+  background: linear-gradient(315deg, transparent 5pt, var(--heading-plate-bg) 5pt);
+  color: var(--heading-accent);
+  padding: 1pt 10pt;
   margin-right: 8pt;
-  border-radius: 2pt;
 }
 
-/* --- C 案: 上細線・下太線の二本線（グレースケール完全対応） --- */
-/* 無彩色で成立させる案のため，基調色でなく見出しインク色を意図的に使う */
+/* --- C 案: 縁取り番号＋二重下罫線 --- */
 h2.variant-c {
   border-left: none;
-  border-top: 0.5pt solid var(--color-heading);
-  border-bottom: 2.5pt solid var(--color-heading);
-  padding: 6pt 0;
+  padding-left: 0;
+  border-bottom: 3pt double var(--heading-rule);
+  padding-bottom: 4pt;
+}
+
+h2.variant-c::before {
+  color: #fff;
+  -webkit-text-stroke: 0.7pt var(--heading-accent);
+  margin-right: 6pt;
 }
 
 /* ============================================================
  * 項見出し（h3）
  * ============================================================ */
 
-/* --- A 案: 先頭に基調色の ■ 記号 --- */
-h3.variant-a::before {
-  content: "■ " counter(chapter) "." counter(section) "." counter(subsection) ". ";
+/* --- A 案: 淡色マーカー下線（文字の下半分に淡色を敷く） --- */
+h3.variant-a {
+  width: fit-content;
+  background: linear-gradient(transparent 60%, var(--heading-plate-bg) 60%);
+  padding: 0 4pt;
+}
+
+/* --- B 案: 角落とし小プレート番号 --- */
+h3.variant-b::before {
+  background: linear-gradient(315deg, transparent 4pt, var(--heading-plate-bg) 4pt);
   color: var(--heading-accent);
+  padding: 0 7pt;
+  margin-right: 6pt;
 }
 
-/* --- B 案: 短い左ボーダー --- */
-h3.variant-b {
-  border-left: 3pt solid var(--heading-accent);
-  padding-left: 8pt;
-}
-
-/* --- C 案: 下点線（h2 の実線と線種で差別化） --- */
+/* --- C 案: 左短罫＋下点線 --- */
 h3.variant-c {
-  border-bottom: 1pt dashed var(--palette-gray-mid);
-  padding-bottom: 3pt;
+  border-left: 2.5pt solid var(--heading-rule);
+  padding-left: 7pt;
+  border-bottom: 1pt dotted var(--palette-gray-mid);
+  padding-bottom: 2pt;
 }
 
 /* ============================================================
@@ -223,38 +265,58 @@ h3.variant-c {
   padding-left: 1.5em;
 }
 
-/* --- A 案: タイトル帯型（帯は基調色，白抜き文字） --- */
+/* --- A 案: ドッグイヤーボックス（折り返し付き淡色地） --- */
 .chapter-recap.variant-a {
-  background-color: var(--recap-bg);
-  padding: 0 0 10pt 0;
+  position: relative;
+  background: linear-gradient(225deg, transparent 12pt, var(--recap-bg) 12pt);
+  padding: 10pt 14pt;
+}
+
+/* 右上角の折り返し（装飾のみ） */
+.chapter-recap.variant-a::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 12pt;
+  height: 12pt;
+  background: linear-gradient(225deg, transparent 50%, var(--recap-border) 50%);
 }
 
 .chapter-recap.variant-a .chapter-recap-title {
-  background-color: var(--recap-band-bg);
-  color: var(--recap-band-fg);
-  padding: 4pt 14pt;
-  margin: 0 0 8pt 0;
+  color: var(--recap-accent);
+  border-bottom: 0.75pt solid var(--recap-border);
+  padding-bottom: 4pt;
 }
 
-.chapter-recap.variant-a ul {
-  margin: 0 14pt;
-}
-
-/* --- B 案: 二重罫線枠（背景なし．グレースケール完全対応） --- */
+/* --- B 案: 角丸枠＋上部淡色グラデーション --- */
 .chapter-recap.variant-b {
-  border: 3pt double var(--recap-border);
+  border: 1pt solid var(--recap-border);
+  border-radius: 6pt;
+  background: linear-gradient(to bottom, var(--recap-bg), #fff 45%);
   padding: 10pt 14pt;
 }
 
 .chapter-recap.variant-b .chapter-recap-title {
-  border-bottom: 0.5pt solid var(--recap-border);
-  padding-bottom: 4pt;
+  color: var(--recap-accent);
 }
 
-/* --- C 案: 薄グレー地 + チェックリスト風 --- */
+/* --- C 案: 淡色グラデ帯タイトル＋チェックリスト --- */
 .chapter-recap.variant-c {
-  background-color: var(--recap-bg);
-  padding: 10pt 14pt;
+  border: 0.75pt solid var(--recap-border);
+  padding: 0 0 10pt 0;
+}
+
+.chapter-recap.variant-c .chapter-recap-title {
+  background: linear-gradient(to right, var(--recap-bg), #fff);
+  border-left: 5pt solid var(--recap-border);
+  color: var(--recap-accent);
+  padding: 4pt 12pt;
+  margin: 0 0 8pt 0;
+}
+
+.chapter-recap.variant-c ul {
+  margin: 0 14pt;
 }
 
 .chapter-recap.variant-c li {
@@ -265,7 +327,7 @@ h3.variant-c {
   content: "✓ ";
   font-family: var(--font-gothic);
   font-weight: bold;
-  color: var(--heading-accent);
+  color: var(--recap-accent);
   margin-left: -1.5em;
   padding-right: 0.5em;
 }
@@ -274,91 +336,100 @@ h3.variant-c {
  * コラム枠（.column）
  * ============================================================ */
 
-/* --- A 案: 現行踏襲 + タイトルを帯化 --- */
+/* --- A 案: ドッグイヤー地＋縁取り COLUMN ラベル --- */
 .column.variant-a {
-  padding: 0 0 12pt 0;
-  overflow: hidden;
-}
-
-.column.variant-a .column-title {
-  background-color: var(--column-band-bg);
-  color: var(--column-band-fg);
-  border-bottom: none;
-  padding: 5pt 14pt;
-  margin: 0 0 8pt 0;
-}
-
-.column.variant-a p:not(.column-title) {
-  margin-left: 14pt;
-  margin-right: 14pt;
-}
-
-/* --- B 案: 上下太罫線のみの雑誌風（背景色に依存しない） --- */
-/* 罫線は無彩色で成立させる意図のため，見出しインク色を意図的に使う */
-.column.variant-b {
-  background: none;
+  position: relative;
   border: none;
-  border-top: 2pt solid var(--color-heading);
-  border-bottom: 2pt solid var(--color-heading);
   border-radius: 0;
-  padding: 10pt 4pt;
+  background: linear-gradient(225deg, transparent 14pt, var(--column-bg) 14pt);
 }
 
-.column.variant-b::before {
+/* 右上角の折り返し（装飾のみ） */
+.column.variant-a::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 14pt;
+  height: 14pt;
+  background: linear-gradient(225deg, transparent 50%, var(--column-border) 50%);
+}
+
+.column.variant-a::before {
   content: "COLUMN";
   display: block;
   font-family: var(--font-gothic);
-  font-size: 8pt;
+  font-size: 11pt;
   font-weight: bold;
   letter-spacing: 0.25em;
-  color: var(--heading-accent);
+  color: #fff;
+  -webkit-text-stroke: 0.6pt var(--column-accent);
   margin-bottom: 4pt;
+}
+
+/* --- B 案: 上部淡色グラデ地＋左罫タイトル --- */
+.column.variant-b {
+  background: linear-gradient(to bottom, var(--column-bg), #fff 55%);
+  border: 0.75pt solid var(--column-border);
+  border-radius: 4pt;
 }
 
 .column.variant-b .column-title {
   border-bottom: none;
+  border-left: 4pt solid var(--column-accent);
+  padding-left: 8pt;
   padding-bottom: 0;
+  color: var(--column-accent);
 }
 
-/* --- C 案: 角丸背景 + ラベルタブ --- */
+/* --- C 案: 上下罫線＋縁取り COLUMN ラベル --- */
 .column.variant-c {
-  border-radius: 6pt;
+  background: none;
+  border: none;
+  border-radius: 0;
+  border-top: 1.5pt solid var(--column-border);
+  border-bottom: 1.5pt solid var(--column-border);
+  padding: 10pt 4pt;
 }
 
 .column.variant-c::before {
   content: "COLUMN";
-  display: inline-block;
-  background-color: var(--column-band-bg);
-  color: var(--column-band-fg);
+  display: block;
   font-family: var(--font-gothic);
-  font-size: 8pt;
+  font-size: 11pt;
   font-weight: bold;
-  letter-spacing: 0.15em;
-  padding: 1pt 8pt;
-  border-radius: 2pt;
-  margin-bottom: 6pt;
+  letter-spacing: 0.25em;
+  color: #fff;
+  -webkit-text-stroke: 0.6pt var(--column-accent);
+  margin-bottom: 4pt;
+}
+
+.column.variant-c .column-title {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
 /* ============================================================
  * Tips / 注釈（note） / 警告（warning）
  * 3 種の判別性が主眼のため，案ごとに 3 種セットで定義する．
+ * いずれも淡色地を基本とし，罫線の太さ・線種とラベルで種別を区別する．
  * ============================================================ */
 
-/* --- A 案: 左ボーダー統一系（線種・太さで種別を区別） --- */
+/* --- A 案: 淡色地＋左罫線（太さ・線種 3 段階で種別を区別） --- */
 .tips.variant-a {
-  border-left: 2pt solid var(--tips-border);
+  border-left: 2.5pt solid var(--tips-accent);
 }
 
 .note.variant-a {
   border: none;
-  border-left: 1pt dashed var(--palette-gray-dark);
+  border-left: 1pt dashed var(--note-accent);
   border-radius: 0;
-  background-color: var(--palette-gray-faint);
+  background-color: var(--note-bg);
 }
 
 .warning.variant-a {
   border: none;
-  border-left: 5pt double var(--warning-border);
+  border-left: 5pt double var(--warning-accent);
   border-radius: 0;
   background-color: var(--warning-bg);
 }
@@ -374,39 +445,41 @@ h3.variant-c {
 
 .note.variant-a::before {
   content: "Note";
-  color: var(--palette-gray-dark);
+  color: var(--note-accent);
 }
 
 .warning.variant-a::before {
   content: "⚠ 注意";
-  color: var(--warning-border);
+  color: var(--warning-accent);
 }
 
-/* --- B 案: タイトル帯系（帯の明度 3 段階で種別を区別） --- */
+/* --- B 案: 淡色グラデ帯タイトル系（帯は淡色→白，文字は種別色） --- */
 .tips.variant-b,
 .note.variant-b,
 .warning.variant-b {
-  border: none;
+  background: #fff;
   border-radius: 0;
   padding: 0 0 8pt 0;
 }
 
 .tips.variant-b {
-  background-color: var(--tips-bg);
+  border: 0.75pt solid var(--tips-border);
+  border-left: none;
 }
 
 .note.variant-b {
-  background-color: var(--palette-gray-faint);
+  border: 0.75pt solid var(--note-border);
 }
 
 .warning.variant-b {
-  background-color: var(--warning-bg);
+  border: 0.75pt solid var(--warning-border);
 }
 
 .tips.variant-b .tips-title {
-  background-color: var(--tips-band-bg);
-  color: var(--tips-band-fg);
-  padding: 3pt 12pt;
+  background: linear-gradient(to right, var(--tips-bg), #fff);
+  border-left: 4pt solid var(--tips-accent);
+  color: var(--tips-accent);
+  padding: 3pt 10pt;
   margin: 0 0 6pt 0;
 }
 
@@ -416,65 +489,93 @@ h3.variant-c {
   font-weight: bold;
   font-size: 10pt;
   display: block;
-  padding: 3pt 12pt;
+  padding: 3pt 10pt;
   margin-bottom: 6pt;
 }
 
 .note.variant-b::before {
   content: "Note";
-  background-color: var(--note-band-bg);
-  color: var(--note-band-fg);
+  background: linear-gradient(to right, var(--note-bg), #fff);
+  border-left: 4pt solid var(--note-accent);
+  color: var(--note-accent);
 }
 
 .warning.variant-b::before {
   content: "⚠ 注意";
-  background-color: var(--warning-band-bg);
-  color: var(--warning-band-fg);
+  background: linear-gradient(to right, var(--warning-bg), #fff);
+  border-left: 4pt solid var(--warning-accent);
+  color: var(--warning-accent);
 }
 
 .tips.variant-b p:not(.tips-title),
 .note.variant-b p,
 .warning.variant-b p {
-  margin-left: 12pt;
-  margin-right: 12pt;
+  margin-left: 10pt;
+  margin-right: 10pt;
 }
 
-/* --- C 案: 記号ラベル系（枠は最小限の罫線のみ） --- */
+/* --- C 案: ドッグイヤー地＋縁取りラベル系 --- */
 .tips.variant-c,
 .note.variant-c,
 .warning.variant-c {
-  background: none;
+  position: relative;
   border: none;
   border-radius: 0;
-  border-top: 0.5pt solid var(--palette-gray-mid);
-  border-bottom: 0.5pt solid var(--palette-gray-mid);
-  padding: 8pt 4pt;
+}
+
+.tips.variant-c {
+  background: linear-gradient(225deg, transparent 10pt, var(--tips-bg) 10pt);
+}
+
+.note.variant-c {
+  background: linear-gradient(225deg, transparent 10pt, var(--note-bg) 10pt);
 }
 
 .warning.variant-c {
-  border-top: 2pt solid var(--warning-border);
-  border-bottom: 2pt solid var(--warning-border);
+  background: linear-gradient(225deg, transparent 10pt, var(--warning-bg) 10pt);
 }
 
-.tips.variant-c .tips-title {
-  color: var(--tips-title-color);
+/* 右上角の折り返し（装飾のみ） */
+.tips.variant-c::after,
+.note.variant-c::after,
+.warning.variant-c::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 10pt;
+  height: 10pt;
+}
+
+.tips.variant-c::after {
+  background: linear-gradient(225deg, transparent 50%, var(--tips-border) 50%);
+}
+
+.note.variant-c::after {
+  background: linear-gradient(225deg, transparent 50%, var(--note-border) 50%);
+}
+
+.warning.variant-c::after {
+  background: linear-gradient(225deg, transparent 50%, var(--warning-border) 50%);
 }
 
 .note.variant-c::before,
 .warning.variant-c::before {
   font-family: var(--font-gothic);
   font-weight: bold;
-  font-size: 10pt;
+  font-size: 11pt;
   display: block;
+  letter-spacing: 0.1em;
+  color: #fff;
   margin-bottom: 4pt;
 }
 
 .note.variant-c::before {
   content: "Note";
-  color: var(--palette-gray-dark);
+  -webkit-text-stroke: 0.5pt var(--note-accent);
 }
 
 .warning.variant-c::before {
-  content: "⚠ 注意";
-  color: var(--warning-border);
+  content: "注意";
+  -webkit-text-stroke: 0.5pt var(--warning-accent);
 }
