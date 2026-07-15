@@ -45,6 +45,14 @@
   break-after: avoid;
 }
 
+/* h1 見本の直前で改ページさせるための修飾クラス */
+/* inline-block には break 系が効かないため block へ切り替える */
+.sample-label.page-break {
+  display: block;
+  width: fit-content;
+  break-before: page;
+}
+
 /* 見本内の note / warning が枠の途中で改ページしないようにする */
 .note,
 .warning {
@@ -164,6 +172,54 @@
   margin-left: auto;
   margin-right: auto;
   padding: 0 8pt;
+}
+
+/* ============================================================
+ * 章見出し（h1，本文側の章タイトル）
+ * 見本では既存の採番を乱さないよう文書末尾へ置く．
+ * theme.css の break-before: page は見本用ラベルと同居させるため
+ * 抑止し，ラベル側（.sample-label.page-break）で改ページする．
+ * ============================================================ */
+
+/* --- A 案: 全幅淡色グラデ帯＋角落とし＋左罫線 --- */
+h1.variant-a {
+  break-before: auto;
+  border-bottom: none;
+  background:
+    linear-gradient(225deg, #fff 10pt, transparent 10pt),
+    linear-gradient(to right, var(--heading-plate-bg), #fff);
+  border-left: 6pt solid var(--heading-accent);
+  padding: 10pt 14pt;
+}
+
+/* --- B 案: 縁取り特大番号＋下二重罫線（扉 C 案と響き合う） --- */
+h1.variant-b {
+  break-before: auto;
+  border-bottom: 3pt double var(--heading-rule);
+  padding-bottom: 8pt;
+}
+
+h1.variant-b::before {
+  content: counter(chapter);
+  font-size: 44pt;
+  color: #fff;
+  -webkit-text-stroke: 1.2pt var(--heading-accent);
+  margin-right: 12pt;
+}
+
+/* --- C 案: 角落とし番号プレート大版＋下罫線（h2 B 案と相似形） --- */
+h1.variant-c {
+  break-before: auto;
+  border-bottom: 0.75pt solid var(--heading-rule);
+  padding-bottom: 8pt;
+}
+
+h1.variant-c::before {
+  content: counter(chapter);
+  background: linear-gradient(315deg, transparent 8pt, var(--heading-plate-bg) 8pt);
+  color: var(--heading-accent);
+  padding: 2pt 14pt;
+  margin-right: 12pt;
 }
 
 /* ============================================================
@@ -483,6 +539,11 @@ h3.variant-c {
   margin: 0 0 6pt 0;
 }
 
+/* 種別記号（warning の ⚠ と揃え，Tips / Note にも記号を付ける） */
+.tips.variant-b .tips-title::before {
+  content: "✎ ";
+}
+
 .note.variant-b::before,
 .warning.variant-b::before {
   font-family: var(--font-gothic);
@@ -494,7 +555,7 @@ h3.variant-c {
 }
 
 .note.variant-b::before {
-  content: "Note";
+  content: "※ Note";
   background: linear-gradient(to right, var(--note-bg), #fff);
   border-left: 4pt solid var(--note-accent);
   color: var(--note-accent);
