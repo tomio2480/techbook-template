@@ -82,10 +82,10 @@ body:
 
 | トークン | 割り当て | 用途 |
 |---|---|---|
-| table-head-rule | primary | 見出し行の下罫線 |
-| table-rule | primary-mid | 本体行の下罫線 |
-| table-stripe-bg | primary-light | 偶数行の背景 |
-| quote-bg / quote-border | primary-light / primary-mid | 引用の地と左罫線 |
+| `--table-head-rule` | primary | 見出し行の下罫線 |
+| `--table-rule` | primary-mid | 本体行の下罫線 |
+| `--table-stripe-bg` | primary-light | 偶数行の背景 |
+| `--quote-bg` / `--quote-border` | primary-light / primary-mid | 引用の地と左罫線 |
 
 ## 引用とリンク
 

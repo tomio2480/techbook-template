@@ -461,7 +461,7 @@ blockquote {
   margin: 12pt 0;
   padding: 10pt 15pt;
   background-color: var(--quote-bg);
-  border-left: 4px solid var(--quote-border);
+  border-left: 3pt solid var(--quote-border);
   font-style: normal;
 }
 
