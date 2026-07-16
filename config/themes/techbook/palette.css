@@ -64,7 +64,6 @@
   --color-border: var(--palette-gray-light);
   --color-muted: var(--palette-gray-mid);
   --color-muted-dark: var(--palette-gray-dark);
-  --color-surface-faint: var(--palette-gray-faint);
 
   /* 柱（ページ上部の章名ヘッダー） */
   --running-head-color: var(--palette-primary);
