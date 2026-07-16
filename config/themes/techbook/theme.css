@@ -792,42 +792,92 @@ nav[role="doc-toc"] h2::before {
 
 /* 目次の章節項番号 */
 nav[role="doc-toc"] > ol {
-  counter-reset: toc-chapter;
+  counter-reset: toc-chapter toc-appendix-chapter;
 }
 
-/* まえがき・あとがき・表紙・目次自体・奥付以外の章（data-section-level="1"）にカウンターを適用 */
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"])) {
+/* まえがき・解答・あとがき・表紙・目次自体・奥付・付録以外の章（data-section-level="1"）にカウンターを適用 */
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"])) {
   counter-increment: toc-chapter;
   counter-reset: toc-section;
 }
 
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"])) > a::before {
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"])) > a::before {
   content: counter(toc-chapter) ". ";
 }
 
-/* まえがき・あとがき・表紙・目次自体・奥付の子セクションには番号を付けない */
-nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="preface"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"]) li[data-section-level="2"] > a::before,
-nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="preface"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"]) li[data-section-level="3"] > a::before {
+/* まえがき・解答・あとがき・表紙・目次自体・奥付・付録の子セクションには番号を付けない */
+/* 付録・解答は後続の専用採番ルールが同じ詳細度で上書きする（記述順が優先） */
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"]) li[data-section-level="2"] > a::before,
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"]) li[data-section-level="3"] > a::before {
   content: none;
 }
 
 /* 通常の章のセクション */
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"])) li[data-section-level="2"] {
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"])) li[data-section-level="2"] {
   counter-increment: toc-section;
   counter-reset: toc-subsection;
 }
 
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"])) li[data-section-level="2"] > a::before {
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"])) li[data-section-level="2"] > a::before {
   content: counter(toc-chapter) "." counter(toc-section) ". ";
 }
 
 /* 通常の章のサブセクション */
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"])) li[data-section-level="3"] {
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"])) li[data-section-level="3"] {
   counter-increment: toc-subsection;
 }
 
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"])) li[data-section-level="3"] > a::before {
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"])) li[data-section-level="3"] > a::before {
   content: counter(toc-chapter) "." counter(toc-section) "." counter(toc-subsection) ". ";
+}
+
+/* 付録の目次番号（A. / A.1. / A.1.1. 形式） */
+/* 本文側のアルファベット章番号（counter(chapter, upper-alpha)）と対になる表現．
+   目次内の付録の出現順に A，B，… を割り当てる．
+   本文側で counter-set の開始値を変えた場合は目次側もカスタム CSS で上書きする */
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="appendix"]) {
+  counter-increment: toc-appendix-chapter;
+  counter-reset: toc-appendix-section;
+}
+
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="appendix"]) > a::before {
+  content: counter(toc-appendix-chapter, upper-alpha) ". ";
+}
+
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="appendix"]) li[data-section-level="2"] {
+  counter-increment: toc-appendix-section;
+  counter-reset: toc-appendix-subsection;
+}
+
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="appendix"]) li[data-section-level="2"] > a::before {
+  content: counter(toc-appendix-chapter, upper-alpha) "." counter(toc-appendix-section) ". ";
+}
+
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="appendix"]) li[data-section-level="3"] {
+  counter-increment: toc-appendix-subsection;
+}
+
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="appendix"]) li[data-section-level="3"] > a::before {
+  content: counter(toc-appendix-chapter, upper-alpha) "." counter(toc-appendix-section) "." counter(toc-appendix-subsection) ". ";
+}
+
+/* 解答の目次番号（A. / A.1. 形式） */
+/* 本文側の解答章ルール（.answers）と対になる表現．
+   解答の節は各章と対応する前提で 2 階層までを採番する */
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="answer"]) {
+  counter-reset: toc-answers-section;
+}
+
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="answer"]) > a::before {
+  content: "A. ";
+}
+
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="answer"]) li[data-section-level="2"] {
+  counter-increment: toc-answers-section;
+}
+
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="answer"]) li[data-section-level="2"] > a::before {
+  content: "A." counter(toc-answers-section) ". ";
 }
 
 /* 奥付（コロフォン） */
@@ -1094,4 +1144,33 @@ body.appendix h1::before {
 }
 .appendix section.level4 > p:has(> .math.display)::after {
   content: "(" counter(chapter, upper-alpha) "." counter(section) "." counter(subsection) "." counter(subsubsection) ".-" counter(equation) ")";
+}
+
+/* 解答（Answers） - 章番号の代わりに「A.」接頭辞を付ける */
+/* 解答の節（h2）は章と対応させる想定（A.1. は第 1 章の解答） */
+.answers,
+body.answers {
+  counter-reset: answers-section;
+}
+
+.answers h1,
+body.answers h1 {
+  counter-increment: none;
+  string-set: chapter-header "A. " content(text);
+}
+
+.answers h1::before,
+body.answers h1::before {
+  content: "A. ";
+}
+
+/* counter-reset は指定せず，基底 h2 のリセット（figure table equation 等）を生かす */
+.answers h2,
+body.answers h2 {
+  counter-increment: answers-section;
+}
+
+.answers h2::before,
+body.answers h2::before {
+  content: "A." counter(answers-section) ". ";
 }
