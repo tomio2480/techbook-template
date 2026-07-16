@@ -44,8 +44,10 @@
  * テキストを持たない装飾のみの絶対配置であり，
  * PDF タグ付けの読み順へは影響しない（.column::after と同じ扱い）．
  *
- * 種別記号（◆・※・！）は現状のまま残す．記号の扱いは採用決定時に
- * 合わせて確定する．クラス命名は用途が読める v-* 接頭辞とする．
+ * 種別記号（◆・※・！）は廃止し，帯の表記は Tips・Note・Warning の
+ * 英語へ統一する（フェーズ 2 で theme.css へ反映する）．
+ * 記号廃止により JIS X 0208 制約の考慮自体が不要になる．
+ * クラス命名は用途が読める v-* 接頭辞とする．
  */
 
 /* 基調色統一の再マップ（フェーズ 2 で palette.css 第 2 層へ移す想定） */
@@ -65,7 +67,7 @@
 :root {
   --vi-icon-bulb: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 9a6.5 6.5 0 0 0-4.2 11.4c.9.8 1.7 1.7 1.7 2.6h5c0-.9.8-1.8 1.7-2.6A6.5 6.5 0 0 0 16 9z'/%3E%3Cpath d='M13.5 26h5'/%3E%3Cpath d='M14.5 28.5h3'/%3E%3Cpath d='M16 2.5v3'/%3E%3Cpath d='M7 6l2.1 2.1'/%3E%3Cpath d='M25 6l-2.1 2.1'/%3E%3Cpath d='M3.5 14h3'/%3E%3Cpath d='M25.5 14h3'/%3E%3C/svg%3E");
   --vi-icon-doc: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 4.5h9l5 5v18H10z'/%3E%3Cpath d='M19 4.5V9.5h5'/%3E%3Cpath d='M13 15h8'/%3E%3Cpath d='M13 19.5h8'/%3E%3Cpath d='M13 24h5'/%3E%3Cpath d='M3.5 8l2.6 1.3'/%3E%3Cpath d='M3 13.5h3'/%3E%3Cpath d='M3.5 19l2.6-1.3'/%3E%3C/svg%3E");
-  --vi-icon-warn: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 5.5 5.5 23.5h21z'/%3E%3Cpath d='M16 12v5.5'/%3E%3Cpath d='M16 20.6v.1'/%3E%3Cpath d='M16 1v2.3'/%3E%3Cpath d='M8.5 2.5l1.4 2'/%3E%3Cpath d='M23.5 2.5l-1.4 2'/%3E%3C/svg%3E");
+  --vi-icon-warn: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 5.5 5.5 23.5h21z'/%3E%3Cpath d='M16 11.5v6'/%3E%3Ccircle cx='16' cy='20.8' r='1.5' fill='%23000' stroke='none'/%3E%3Cpath d='M16 1v2.3'/%3E%3Cpath d='M8.5 2.5l1.4 2'/%3E%3Cpath d='M23.5 2.5l-1.4 2'/%3E%3C/svg%3E");
 }
 
 /* 種別ごとのアイコン・塗り色・傾きの割り当て．
@@ -110,8 +112,25 @@
   width: 38pt;
   height: 38pt;
   background-color: var(--vi-color);
-  opacity: 0.08;
+  /* 0.08 では薄すぎるとの目視フィードバックを受けて 0.12 とした． */
+  opacity: 0.12;
   transform: rotate(var(--vi-tilt));
   -webkit-mask: var(--vi-icon) no-repeat center / contain;
   mask: var(--vi-icon) no-repeat center / contain;
+}
+
+/* 帯の表記．種別記号（◆・※・！）を外し，英語表記へ統一する．
+   theme.css の帯定義のうち content だけを部分上書きする．
+   セレクタの詳細度が theme.css 側より高いため上書きが成立する．
+   theme.css 側の帯ブロックを変える際は本バリアントも点検する． */
+.v-icon-watermark .tips-title::before {
+  content: "";
+}
+
+.v-icon-watermark .note::before {
+  content: "Note";
+}
+
+.v-icon-watermark .warning::before {
+  content: "Warning";
 }
