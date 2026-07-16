@@ -1,8 +1,8 @@
 # Figure タグ /Alt 調査と現状追認の判断
 
-OpenDataLoader が付与する `Figure` タグの `/Alt` に，原稿の alt 属性が
-反映されない問題（Issue #26）を調査した記録である．結論として，
-現行構成では機械的な反映が成立しないと判断し，制約の明文化に留めた．
+`Figure` タグ `/Alt` へ原稿の alt 属性が反映されない問題
+（Issue #26）を調査した記録である．結論として，現行構成では
+機械的な反映が成立しないと判断し，制約の明文化に留めた．
 
 ## 目次
 
@@ -15,10 +15,11 @@ OpenDataLoader が付与する `Figure` タグの `/Alt` に，原稿の alt 属
 
 ## 背景
 
-`npm run build` は後処理（`scripts/tag-pdf.mjs`）で OpenDataLoader PDF
-を実行し，`dist/book.pdf` をタグ付き PDF へ変換する．派生書籍リポジトリ
-での検証により，`Figure` タグの `/Alt` が原稿の alt 文にならないと
-判明した．原稿の alt を `/Alt` へ注入できるかを調査した．
+`npm run build` は後処理として OpenDataLoader PDF を実行する
+（`scripts/tag-pdf.mjs`）．これにより `dist/book.pdf` はタグ付き PDF
+となる．派生書籍リポジトリで検証した際，`Figure` タグの `/Alt` が
+原稿 alt 文にならないと判明した．原稿の alt を `/Alt` へ注入できるか
+調査した．
 
 ## 調査結果
 
@@ -34,7 +35,7 @@ OpenDataLoader が付与する `Figure` タグの `/Alt` に，原稿の alt 属
 | 画像の埋め込み形式 | SVG はベクター描画になり，PDF に画像 XObject が存在しない |
 | tagged-pdf の /Figure | 4 件に対し実画像は 2 件．数が一致しない |
 | /Alt の中身 | 図内に描かれた文字列を拾った偶然の一致．alt 属性の転記ではない |
-| CLI オプション | alt 注入・enrich 系は 2.5.0 にも存在しない |
+| CLI オプション | alt 注入・enrich 系は両バージョンの `--help` 全出力に存在しない |
 
 派生書籍（LED 本）では原稿画像 29 件に対し `/Figure` 12 件と，逆方向の
 不一致も観測されている．1 対 1 対応はどちらの実例でも成立しない．
