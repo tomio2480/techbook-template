@@ -556,6 +556,11 @@ hr {
   margin-bottom: 0;
 }
 
+.caution > ul,
+.caution > ol {
+  margin: 0 10pt 6pt 10pt;
+}
+
 /* コラム */
 /* ドッグイヤー地＋縁取り COLUMN ラベル */
 .column {
@@ -651,6 +656,11 @@ hr {
 
 .tips p:last-child {
   margin-bottom: 0;
+}
+
+.tips > ul,
+.tips > ol {
+  margin: 0 10pt 6pt 10pt;
 }
 
 /* 枠アイコン（Tips・注釈・注意の背景あしらい） */
