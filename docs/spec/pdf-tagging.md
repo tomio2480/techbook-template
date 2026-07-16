@@ -79,8 +79,8 @@
 - veraPDF 検証の CI 自動化．本要件は手動検証手順の明記までとする．
 - 原稿側 alt 属性から `Figure` タグ `/Alt` への反映．現行構成に伝搬
   経路がなく，機械的な対応付けも成立しない（Issue #26 で調査済み）．
-  再検討の条件は
-  [調査ノート](../notes/2026-07-16-figure-alt-investigation.md)
+  解決は上流の変更が前提である．再検討の条件は
+  [Figure タグ /Alt 調査と現状追認の判断](../notes/2026-07-16-figure-alt-investigation.md)
   を参照する．
 
 ## 変更記録

@@ -422,11 +422,13 @@ Vivliostyle CLI が生成する PDF は，タグ付き PDF（Tagged PDF）にな
 
 図版の代替テキストは PDF へ引き継がれない．原稿側 `alt` 属性から
 `Figure` タグ `/Alt` へ反映する経路が現行構成に存在しないためである．
-`/Alt` は空か，図内の文字列を拾った値になりうる．経緯・再検討の条件は
+`/Alt` は空か，図内の文字列を拾った値になりうる．解決には上流ツール
+（Vivliostyle CLI または OpenDataLoader）の変更が必要である．当面は
+図の説明を本文またはキャプションへ書いて補うこと．経緯・再検討の条件は
 [Issue #26](https://github.com/tomio2480/techbook-template/issues/26)
 および
-[調査ノート](docs/notes/2026-07-16-figure-alt-investigation.md) を
-参照する．
+[Figure タグ /Alt 調査と現状追認の判断](docs/notes/2026-07-16-figure-alt-investigation.md)
+を参照する．
 
 ### 前提環境
 

@@ -47,6 +47,11 @@
 より別の図へ誤った説明が付きうる．誤った代替テキストは PDF/UA が禁じる
 false alternative であり，欠落より有害と評価した．
 
+本問題はテンプレート側の実装だけでは解決できない．上流
+（Vivliostyle CLI または OpenDataLoader）の変更が前提となる．
+当面の対策として，図の内容説明を本文またはキャプションへ記載する．
+alt に依存しない形で図の内容を伝えるためである．
+
 ## 代替案と棄却理由
 
 表 2. 検討した代替案と棄却理由．
@@ -73,6 +78,6 @@ false alternative であり，欠落より有害と評価した．
 ## 参照
 
 - [Issue #26](https://github.com/tomio2480/techbook-template/issues/26)
-- [docs/spec/pdf-tagging.md](../spec/pdf-tagging.md)
+- [タグ付き PDF 生成（アクセシビリティ対応）要求・要件](../spec/pdf-tagging.md)
 - [vivliostyle-cli#539](https://github.com/vivliostyle/vivliostyle-cli/issues/539)
 - [opendataloader-pdf#537](https://github.com/opendataloader-project/opendataloader-pdf/pull/537)
