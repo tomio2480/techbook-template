@@ -73,11 +73,11 @@ h1 {
   margin-top: 0;
   margin-bottom: 20pt;
   padding: 10pt 14pt;
-  /* transparent への補間は黒ずむため，白へフェードさせる（紙面は白前提）．
-     1 層目の白い斜め帯が右上の角落としを作る */
-  background:
-    linear-gradient(225deg, #fff 10pt, transparent 10pt),
-    linear-gradient(to right, var(--heading-plate-bg), #fff);
+  /* 右上角の切り落としは，透過を伴うグラデーションのハードストップでは
+     なく clip-path で作る（Edge/PDFium でハードストップが不安定に
+     なる問題を避けるため） */
+  clip-path: polygon(0 0, calc(100% - 10pt) 0, 100% 10pt, 100% 100%, 0 100%);
+  background: linear-gradient(to right, var(--heading-plate-bg), #fff);
   border-left: 6pt solid var(--heading-accent);
   break-before: page;
   counter-increment: chapter;
@@ -99,6 +99,7 @@ section[role="doc-cover"] h1,
 body.cover h1 {
   counter-increment: none;
   counter-reset: none;
+  clip-path: none;
   background: none;
   border-left: none;
   padding: 0;
@@ -166,8 +167,9 @@ h2 {
 
 h2::before {
   content: counter(chapter) "." counter(section) ". ";
-  /* 番号プレートの右下角を斜めに落とす */
-  background: linear-gradient(315deg, transparent 5pt, var(--heading-plate-bg) 5pt);
+  /* 番号プレートの右下角の切り落としも clip-path で作る（h1 と同じ理由） */
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 5pt), calc(100% - 5pt) 100%, 0 100%);
+  background: var(--heading-plate-bg);
   color: var(--heading-accent);
   padding: 1pt 10pt;
   margin-right: 8pt;
@@ -176,14 +178,30 @@ h2::before {
 /* h3 - サブセクション番号 */
 /* 淡色マーカー下線（文字の下半分に淡色を敷く） */
 h3 {
+  position: relative;
+  /* 負の z-index の ::after が祖先の背景に隠れないよう，
+     スタッキングコンテキストを自身に固定する */
+  z-index: 0;
   font-size: 13pt;
   margin-top: 18pt;
   margin-bottom: 8pt;
   width: fit-content;
-  background: linear-gradient(transparent 60%, var(--heading-plate-bg) 60%);
   padding: 0 4pt;
   counter-increment: subsection;
   counter-reset: subsubsection figure table equation;
+}
+
+/* 淡色マーカーは，透過グラデーションのハードストップではなく，
+   単色背景の絶対配置要素（下 40% のみ）で作る */
+h3::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 40%;
+  background: var(--heading-plate-bg);
+  z-index: -1;
 }
 
 h3::before {
@@ -542,8 +560,10 @@ hr {
 /* ドッグイヤー地＋縁取り COLUMN ラベル */
 .column {
   position: relative;
-  /* 右上の角落としは背景の斜めグラデーション（透明→地色）で作る */
-  background: linear-gradient(225deg, transparent 14pt, var(--column-bg) 14pt);
+  /* 右上の角落としは clip-path で作る（透過グラデーションのハード
+     ストップは Edge/PDFium で不安定になるため使わない） */
+  clip-path: polygon(0 0, calc(100% - 14pt) 0, 100% 14pt, 100% 100%, 0 100%);
+  background: var(--column-bg);
   padding: 12pt 14pt;
   margin: 16pt 0;
   font-size: 9pt;
@@ -559,7 +579,8 @@ hr {
   right: 0;
   width: 14pt;
   height: 14pt;
-  background: linear-gradient(225deg, transparent 50%, var(--column-border) 50%);
+  clip-path: polygon(100% 0, 100% 100%, 0 0);
+  background: var(--column-border);
 }
 
 /* 縁取り文字は -webkit-text-stroke（Chromium 対応）で作る．
@@ -955,6 +976,7 @@ body.colophon {
 .colophon h1,
 body.colophon h1 {
   font-size: 14pt;
+  clip-path: none;
   background: none;
   border-left: none;
   border-bottom: 1px solid var(--color-heading);
@@ -1091,16 +1113,31 @@ body.afterword h2::before {
 }
 
 .chapter-opening .chapter-title {
+  position: relative;
+  /* 負の z-index の ::before が祖先の背景に隠れないよう，
+     スタッキングコンテキストを自身に固定する */
+  z-index: 0;
   font-family: var(--font-gothic);
   font-size: 28pt;
   font-weight: bold;
   text-align: center;
-  /* 文字の下半分へ淡色マーカーを敷く */
-  background: linear-gradient(transparent 62%, var(--chapter-plate-bg) 62%);
   width: fit-content;
   margin: 0 auto 30pt auto;
   padding: 0 8pt;
   text-indent: 0;
+}
+
+/* 文字の下半分へ淡色マーカーを敷く．透過グラデーションのハードストップ
+   ではなく，単色背景の絶対配置要素（下 38% のみ）で作る */
+.chapter-opening .chapter-title::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 38%;
+  background: var(--chapter-plate-bg);
+  z-index: -1;
 }
 
 .chapter-opening .chapter-summary {
