@@ -19,9 +19,12 @@
  * 紙面の地色である白（#fff）だけは意図的にリテラル運用とし，
  * トークン化しない（グラデーションのフェード先・白抜き文字を含む）．
  *
- * コードブロック背景（--color-code-bg）も無彩色のまま維持し，
- * パレット差し替えに追従させない．code-highlight.css のシンタックス色は
- * 背景 #f5f5f5 を前提にコントラスト比 4.5:1 を確保しているためである．
+ * コードブロックは外装（背景・枠・行番号帯）を基調色トークンへ追従させ，
+ * シンタックス色は --palette-code-* として差し替え可能にする．
+ * 差し替え時は全シンタックス色が背景 --code-bg に対して
+ * コントラスト比 4.5:1 以上を維持すること．背景を暗くするほど
+ * 条件は厳しくなるため，背景は淡色（既定 #f0f4f8 相当の明度）を保つ．
+ * 検証は WCAG の相対輝度式による機械計算で行う（目視に頼らない）．
  */
 
 :root {
@@ -54,16 +57,49 @@
   --palette-gray-light: #e0e0e0;
   --palette-gray-faint: #f5f5f5;
 
+  /* コード配色（シンタックスハイライト） */
+  /* 背景 --code-bg に対しコントラスト比 4.5:1 以上を維持して差し替える */
+  --palette-code-comment: #547336;
+  --palette-code-keyword: #0055aa;
+  --palette-code-variable: #0066aa;
+  --palette-code-builtin: #006666;
+  --palette-code-number: #116611;
+  --palette-code-string: #aa4400;
+  --palette-code-entity: #886600;
+  --palette-code-meta: #7722aa;
+  --palette-code-function: #445588;
+  --palette-code-regex: #aa2222;
+  --palette-code-operator: #555;
+
   /* ===== 第 2 層: 意味トークン層（装飾要素が参照する） ===== */
 
   /* 基本（本文・見出し・リンク・罫線・地） */
   --color-text: var(--palette-ink-soft);
   --color-heading: var(--palette-ink);
   --color-link: var(--palette-primary);
-  --color-code-bg: var(--palette-gray-faint);
   --color-border: var(--palette-gray-light);
   --color-muted: var(--palette-gray-mid);
   --color-muted-dark: var(--palette-gray-dark);
+
+  /* コードブロック（外装） */
+  --code-bg: var(--palette-primary-light);
+  --code-border: var(--palette-primary-mid);
+  --code-gutter-bg: var(--palette-primary-mid);
+  --code-gutter-rule: var(--palette-primary);
+
+  /* コードブロック（シンタックス色） */
+  --code-comment: var(--palette-code-comment);
+  --code-punctuation: var(--palette-ink-soft);
+  --code-operator: var(--palette-code-operator);
+  --code-keyword: var(--palette-code-keyword);
+  --code-variable: var(--palette-code-variable);
+  --code-builtin: var(--palette-code-builtin);
+  --code-number: var(--palette-code-number);
+  --code-string: var(--palette-code-string);
+  --code-entity: var(--palette-code-entity);
+  --code-meta: var(--palette-code-meta);
+  --code-function: var(--palette-code-function);
+  --code-regex: var(--palette-code-regex);
 
   /* 柱（ページ上部の章名ヘッダー） */
   --running-head-color: var(--palette-primary);

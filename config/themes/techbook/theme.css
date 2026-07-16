@@ -239,8 +239,8 @@ a:hover {
 
 /* コードブロック */
 pre[class*="language-"] {
-  background-color: var(--color-code-bg);
-  border: 1px solid var(--color-border);
+  background-color: var(--code-bg);
+  border: 1px solid var(--code-border);
   border-radius: 4px;
   margin: 12pt 0;
   overflow-x: auto;
@@ -271,8 +271,8 @@ pre[class*="language-"].line-numbers > .line-numbers-rows {
   width: 3em;
   padding-top: 10pt;
   padding-bottom: 10pt;
-  border-right: 1px solid var(--color-muted);
-  background-color: var(--color-border);
+  border-right: 1px solid var(--code-gutter-rule);
+  background-color: var(--code-gutter-bg);
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
@@ -302,7 +302,7 @@ pre[class*="language-"] code {
 code {
   font-family: 'Source Code Pro', 'Consolas', 'Monaco', monospace;
   font-size: 9pt;
-  background-color: var(--color-code-bg);
+  background-color: var(--code-bg);
   padding: 1pt 4pt;
   border-radius: 2px;
 }
