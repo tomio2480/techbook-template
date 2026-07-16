@@ -1194,6 +1194,29 @@ body.afterword h2::before {
   page: chapter-opening;
 }
 
+/* オプション: 扉直後ページの章タイトル帯（h1）を非表示にする．
+   扉（.chapter-opening）が既にタイトルを表示しているため，直後
+   ページに再表示される h1 帯を重複と感じる場合に使う．既定では
+   適用されない．有効化するには，対象章の扉 HTML に
+   `no-repeat-heading` クラスを追加する．
+   <section class="chapter-opening no-repeat-heading"> ... </section>
+   display: none は章カウンター・柱（string-set）・図表番号リセットを
+   壊すため使えない．ボックスを潰す不可視化で対応する．改ページは
+   扉側の break-after: page が担うため，break-before は avoid とし
+   連続改ページを防ぐ．扉のない章（まえがき・付録など）には影響しない．*/
+.chapter-opening.no-repeat-heading + section.level1 > h1 {
+  visibility: hidden;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-size: 0;
+  line-height: 0;
+  clip-path: none;
+  background: none;
+  break-before: avoid;
+}
+
 /* 付録（Appendix） - 章番号をアルファベットで表示 */
 .appendix h1,
 body.appendix h1 {
