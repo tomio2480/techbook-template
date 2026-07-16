@@ -1164,10 +1164,10 @@ body.answers h1::before {
   content: "A. ";
 }
 
+/* counter-reset は指定せず，基底 h2 のリセット（figure table equation 等）を生かす */
 .answers h2,
 body.answers h2 {
   counter-increment: answers-section;
-  counter-reset: equation;
 }
 
 .answers h2::before,
