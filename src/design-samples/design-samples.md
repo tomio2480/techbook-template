@@ -49,26 +49,26 @@ body:
 <p>Vivliostyle は CSS 組版に基づくオープンソースの組版エンジンである。W3C の CSS Paged Media 仕様に準拠しており、ブラウザの描画エンジンを利用して高品質な PDF を生成できる。</p>
 </div>
 
-## Tips・注釈・警告枠
+## Tips・注釈・注意枠
 
-3 種の枠は本文中で混在するため、種別記号（◆・※・！）と帯の配色で判別できるようにしている。記号は印刷入稿の安全のため JIS X 0208 内に限定している。
+枠 3 種は本文中に混在するため、帯の英語ラベルと背景アイコン（電球・書類・警告三角）で種別を判別する。配色は基調色系に統一しており、パレット差し替えへ追従する。アイコンは本文を邪魔しない薄色の線画で、傾きや集中線が遊び心を添える。SVG を mask で塗るため、フォント差による豆腐化も起きない。
 
-<p class="sample-label">Tips: 淡色グラデ帯タイトル＋種別記号 ◆</p>
+<p class="sample-label">Tips: 淡色グラデ帯タイトル＋背景アイコン（電球）</p>
 
 <div class="tips">
 <p class="tips-title">Tips: ビルドの高速化</p>
 <p>執筆中は対象章だけを entry に残すと、ビルド時間を大幅に短縮できる。</p>
 </div>
 
-<p class="sample-label">注釈: 淡色グラデ帯「※ Note」</p>
+<p class="sample-label">注釈: 淡色グラデ帯「Note」＋背景アイコン（書類）</p>
 
 <div class="note">
 <p>本文の理解を補う周辺情報は note に記載する。読み飛ばしても本筋の理解に支障がない情報を置く。</p>
 </div>
 
-<p class="sample-label">警告: 淡色グラデ帯「！ 注意」</p>
+<p class="sample-label">注意: 淡色グラデ帯「Caution」＋背景アイコン（警告三角）</p>
 
-<div class="warning">
+<div class="caution">
 <p>ビルド前に必ず原稿を保存する。未保存の変更はビルド結果へ反映されない。</p>
 </div>
 
