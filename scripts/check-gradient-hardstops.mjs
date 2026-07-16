@@ -3,10 +3,11 @@
  * theme.css のハードストップ透過グラデーション検出
  *
  * config/themes/techbook/theme.css の linear-gradient() について，
- * 隣接する 2 つの色停止（stop）が同一位置を持ち，かつ一方が
- * transparent であるパターン（ハードストップ透過）を検出する．
- * このパターンは Edge / PDFium でレンダリングが不安定になるため，
- * clip-path や単色疑似要素へ置き換える必要がある（Issue #32）．
+ * 隣接する 2 つの色停止（stop）が同一位置を持ち，かつ一方が透過色
+ * （`transparent` キーワード，アルファ値 0 の rgba()/hsla()，
+ * 透過を示す 4 桁・8 桁 hex）であるパターン（ハードストップ透過）を
+ * 検出する．このパターンは Edge / PDFium でレンダリングが不安定に
+ * なるため，clip-path や単色疑似要素へ置き換える必要がある（Issue #32）．
  */
 
 import fs from 'fs';
@@ -15,6 +16,25 @@ import { fileURLToPath, pathToFileURL } from 'url';
 const ANGLE_OR_DIRECTION = /^(-?\d+(\.\d+)?deg|to\s+(top|bottom|left|right)(\s+(top|bottom|left|right))?)$/i;
 /* 位置は単位付きの数値に加え，CSS 仕様で許容される単位なしの 0 も認める */
 const POSITION_PATTERN = /^(0|-?\d+(\.\d+)?(%|px|pt|em|rem|vw|vh|cm|mm|in|pc|q))$/i;
+/* アルファ値 0 の rgba()/hsla()（数値・小数・% 表記のいずれも許容） */
+const ZERO_ALPHA_FUNCTION_PATTERN = /^(rgba|hsla)\([^)]*,\s*0(\.0+)?%?\s*\)$/i;
+/* アルファ値 0 の 4 桁 hex（#rgba）・8 桁 hex（#rrggbbaa） */
+const ZERO_ALPHA_HEX_PATTERN = /^#([0-9a-f]{3}0|[0-9a-f]{6}00)$/i;
+
+/**
+ * 色が透過（アルファ値 0）かどうかを判定する．
+ * `transparent` キーワードに加え，アルファ値 0 の rgba()/hsla()，
+ * および透過を示す 4 桁・8 桁 hex 表記も透過として扱う．
+ * @param {string} color
+ * @returns {boolean}
+ */
+export function isTransparent(color) {
+  return (
+    color === 'transparent' ||
+    ZERO_ALPHA_FUNCTION_PATTERN.test(color) ||
+    ZERO_ALPHA_HEX_PATTERN.test(color)
+  );
+}
 
 /**
  * 文字列を，深さ 0 のカンマでのみ分割する．
@@ -77,20 +97,29 @@ export function extractLinearGradients(cssText) {
 /**
  * linear-gradient() の引数文字列を色停止（stop）の配列へ分解する．
  * 先頭が角度（例: 225deg）や方向（例: to right）の場合は除外する．
+ * 1 色に 2 位置を持つマルチポジション構文（例: `red 10% 20%`）は，
+ * 同じ色を各位置に持つ 2 つの stop へ展開する．
  * @param {string} argsStr linear-gradient() 括弧内の文字列
  * @returns {Array<{ color: string, position: string | null }>}
  */
 export function parseGradientStops(argsStr) {
   const parts = splitTopLevel(argsStr);
   const stopParts = parts.length > 0 && ANGLE_OR_DIRECTION.test(parts[0]) ? parts.slice(1) : parts;
-  return stopParts.map(part => {
+  const stops = [];
+  for (const part of stopParts) {
     const tokens = part.split(/\s+/).filter(Boolean);
     const last = tokens[tokens.length - 1];
-    if (tokens.length > 1 && POSITION_PATTERN.test(last)) {
-      return { color: tokens.slice(0, -1).join(' '), position: last };
+    const secondLast = tokens[tokens.length - 2];
+    if (tokens.length > 2 && POSITION_PATTERN.test(last) && POSITION_PATTERN.test(secondLast)) {
+      const color = tokens.slice(0, -2).join(' ');
+      stops.push({ color, position: secondLast }, { color, position: last });
+    } else if (tokens.length > 1 && POSITION_PATTERN.test(last)) {
+      stops.push({ color: tokens.slice(0, -1).join(' '), position: last });
+    } else {
+      stops.push({ color: tokens.join(' '), position: null });
     }
-    return { color: tokens.join(' '), position: null };
-  });
+  }
+  return stops;
 }
 
 /**
@@ -105,7 +134,7 @@ export function hasAdjacentHardStopTransparency(stops) {
     const b = stops[i + 1];
     if (a.position === null || b.position === null) continue;
     if (a.position !== b.position) continue;
-    if (a.color === 'transparent' || b.color === 'transparent') {
+    if (isTransparent(a.color) || isTransparent(b.color)) {
       return true;
     }
   }
