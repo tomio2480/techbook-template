@@ -179,6 +179,9 @@ h2::before {
 /* 淡色マーカー下線（文字の下半分に淡色を敷く） */
 h3 {
   position: relative;
+  /* 負の z-index の ::after が祖先の背景に隠れないよう，
+     スタッキングコンテキストを自身に固定する */
+  z-index: 0;
   font-size: 13pt;
   margin-top: 18pt;
   margin-bottom: 8pt;
@@ -1111,6 +1114,9 @@ body.afterword h2::before {
 
 .chapter-opening .chapter-title {
   position: relative;
+  /* 負の z-index の ::before が祖先の背景に隠れないよう，
+     スタッキングコンテキストを自身に固定する */
+  z-index: 0;
   font-family: var(--font-gothic);
   font-size: 28pt;
   font-weight: bold;

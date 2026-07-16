@@ -13,7 +13,8 @@ import fs from 'fs';
 import { fileURLToPath, pathToFileURL } from 'url';
 
 const ANGLE_OR_DIRECTION = /^(-?\d+(\.\d+)?deg|to\s+(top|bottom|left|right)(\s+(top|bottom|left|right))?)$/i;
-const POSITION_PATTERN = /^-?\d+(\.\d+)?(%|px|pt|em|rem|vw|vh|cm|mm|in|pc|q)$/i;
+/* 位置は単位付きの数値に加え，CSS 仕様で許容される単位なしの 0 も認める */
+const POSITION_PATTERN = /^(0|-?\d+(\.\d+)?(%|px|pt|em|rem|vw|vh|cm|mm|in|pc|q))$/i;
 
 /**
  * 文字列を，深さ 0 のカンマでのみ分割する．

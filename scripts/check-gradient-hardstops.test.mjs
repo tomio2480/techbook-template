@@ -76,6 +76,14 @@ test('parseGradientStops: 角度も方向もない場合はすべて stop とし
   ]);
 });
 
+test('parseGradientStops: 単位なしの 0 も位置として認識する', () => {
+  const stops = parseGradientStops('to right, transparent 0, red 0');
+  assert.deepEqual(stops, [
+    { color: 'transparent', position: '0' },
+    { color: 'red', position: '0' },
+  ]);
+});
+
 // --- hasAdjacentHardStopTransparency ---
 
 test('hasAdjacentHardStopTransparency: 同一位置かつ一方が transparent なら真', () => {
@@ -138,6 +146,12 @@ test('checkGradientHardStops: 複数箇所の違反をすべて検出する', ()
   `;
   const violations = checkGradientHardStops(css);
   assert.equal(violations.length, 2);
+});
+
+test('checkGradientHardStops: 単位なし 0 のハードストップ透過を検出する', () => {
+  const css = 'div { background: linear-gradient(to right, transparent 0, red 0); }';
+  const violations = checkGradientHardStops(css);
+  assert.equal(violations.length, 1);
 });
 
 // --- checkGradientHardStops（実ファイル theme.css） ---
