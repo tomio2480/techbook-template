@@ -1,7 +1,8 @@
 @charset "UTF-8";
 
 /* コードハイライト用スタイル */
-/* 背景色 #f5f5f5 に対してコントラスト比 4.5:1 以上を確保 */
+/* 色は palette.css の --code-* トークンを参照する． */
+/* 各色は背景 --code-bg に対してコントラスト比 4.5:1 以上を確保する． */
 
 /* トークン共通 */
 .token {
@@ -13,18 +14,18 @@
 .token.prolog,
 .token.doctype,
 .token.cdata {
-  color: #5a7a3a;
+  color: var(--code-comment);
   font-style: italic;
 }
 
 /* 句読点 - 黒に近いグレー */
 .token.punctuation {
-  color: #333333;
+  color: var(--code-punctuation);
 }
 
 /* 演算子 */
 .token.operator {
-  color: #555555;
+  color: var(--code-operator);
 }
 
 /* 名前空間 */
@@ -38,13 +39,13 @@
 .token.constant,
 .token.symbol,
 .token.deleted {
-  color: #0055aa;
+  color: var(--code-keyword);
 }
 
 /* 論理値・数値 - 濃い緑 */
 .token.boolean,
 .token.number {
-  color: #116611;
+  color: var(--code-number);
 }
 
 /* セレクタ・属性名・文字列・文字・組込み - 濃い茶/オレンジ */
@@ -54,7 +55,7 @@
 .token.char,
 .token.builtin,
 .token.inserted {
-  color: #aa4400;
+  color: var(--code-string);
 }
 
 /* エンティティ・URL */
@@ -62,25 +63,25 @@
 .token.url,
 .language-css .token.string,
 .style .token.string {
-  color: #886600;
+  color: var(--code-entity);
 }
 
 /* atrule・属性値・キーワード - 濃い紫 */
 .token.atrule,
 .token.attr-value,
 .token.keyword {
-  color: #7722aa;
+  color: var(--code-meta);
 }
 
 /* 関数・クラス名 - 濃い青紫 */
 .token.function,
 .token.class-name {
-  color: #445588;
+  color: var(--code-function);
 }
 
 /* 正規表現 - 濃い赤 */
 .token.regex {
-  color: #aa2222;
+  color: var(--code-regex);
 }
 
 /* 重要・太字 */
@@ -104,121 +105,121 @@
 /* JavaScript / TypeScript */
 .language-javascript .token.keyword,
 .language-typescript .token.keyword {
-  color: #0055aa;
+  color: var(--code-keyword);
 }
 
 .language-javascript .token.string,
 .language-typescript .token.string {
-  color: #aa4400;
+  color: var(--code-string);
 }
 
 .language-javascript .token.function,
 .language-typescript .token.function {
-  color: #445588;
+  color: var(--code-function);
 }
 
 /* Python */
 .language-python .token.keyword {
-  color: #0055aa;
+  color: var(--code-keyword);
 }
 
 .language-python .token.builtin {
-  color: #006666;
+  color: var(--code-builtin);
 }
 
 .language-python .token.decorator {
-  color: #445588;
+  color: var(--code-function);
 }
 
 .language-python .token.string {
-  color: #aa4400;
+  color: var(--code-string);
 }
 
 /* Rust */
 .language-rust .token.keyword {
-  color: #0055aa;
+  color: var(--code-keyword);
 }
 
 .language-rust .token.macro {
-  color: #445588;
+  color: var(--code-function);
 }
 
 .language-rust .token.function {
-  color: #445588;
+  color: var(--code-function);
 }
 
 /* Go */
 .language-go .token.keyword {
-  color: #0055aa;
+  color: var(--code-keyword);
 }
 
 .language-go .token.builtin {
-  color: #006666;
+  color: var(--code-builtin);
 }
 
 .language-go .token.function {
-  color: #445588;
+  color: var(--code-function);
 }
 
 /* Shell / Bash */
 .language-bash .token.function,
 .language-shell .token.function {
-  color: #445588;
+  color: var(--code-function);
 }
 
 .language-bash .token.variable,
 .language-shell .token.variable {
-  color: #0066aa;
+  color: var(--code-variable);
 }
 
 .language-bash .token.string,
 .language-shell .token.string {
-  color: #aa4400;
+  color: var(--code-string);
 }
 
 /* YAML */
 .language-yaml .token.key {
-  color: #0066aa;
+  color: var(--code-variable);
 }
 
 .language-yaml .token.string {
-  color: #aa4400;
+  color: var(--code-string);
 }
 
 /* JSON */
 .language-json .token.property {
-  color: #0066aa;
+  color: var(--code-variable);
 }
 
 .language-json .token.string {
-  color: #aa4400;
+  color: var(--code-string);
 }
 
 /* CSS */
 .language-css .token.selector {
-  color: #886600;
+  color: var(--code-entity);
 }
 
 .language-css .token.property {
-  color: #0066aa;
+  color: var(--code-variable);
 }
 
 /* HTML */
 .language-html .token.tag {
-  color: #0055aa;
+  color: var(--code-keyword);
 }
 
 .language-html .token.attr-name {
-  color: #0066aa;
+  color: var(--code-variable);
 }
 
 .language-html .token.attr-value {
-  color: #aa4400;
+  color: var(--code-string);
 }
 
 /* Markdown */
 .language-markdown .token.title {
-  color: #0055aa;
+  color: var(--code-keyword);
   font-weight: bold;
 }
 
