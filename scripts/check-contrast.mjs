@@ -4,8 +4,8 @@
  *
  * config/themes/techbook/palette.css の --palette-code-* が，
  * コードブロック背景 --code-bg（既定 var(--palette-primary-light)）に対し
- * WCAG コントラスト比 4.5:1 以上を満たすことを機械計算で確認する．
- * CSS 変数はテキストパースで解決し，var() 参照は末端の hex 値まで辿る．
+ * WCAG コントラスト比 4.5:1 以上を満たすか，機械計算で確認する．
+ * CSS 変数はテキストパースで解決する．var() 参照は末端の hex 値まで辿る．
  * 前提の明文化は palette.css 冒頭コメントと README
  * 「配色（カラーパレット）の変更」節を参照．
  */
@@ -33,7 +33,7 @@ export function parseCssVariables(cssText) {
 }
 
 /**
- * var() 参照を辿り，トークンを末端の値へ解決する．
+ * var() 参照を辿って，トークンは末端の値へ解決する．
  * @param {Map<string, string>} vars parseCssVariables の結果
  * @param {string} name 解決するトークン名
  * @returns {string} 解決済みの値
