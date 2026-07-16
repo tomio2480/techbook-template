@@ -44,8 +44,12 @@
  * テキストを持たない装飾のみの絶対配置であり，
  * PDF タグ付けの読み順へは影響しない（.column::after と同じ扱い）．
  *
- * 種別記号（◆・※・！）は廃止し，帯の表記は Tips・Note・Warning の
- * 英語へ統一する（フェーズ 2 で theme.css へ反映する）．
+ * 種別記号（◆・※・！）を廃止し，帯は Tips・Note・Caution の
+ * 英語表記へ統一する（フェーズ 2 で theme.css に反映する）．
+ * 「注意」の英訳は軽い温度感に合わせて Caution とした．
+ * ANSI Z535 対訳だと Caution ＝注意，Warning ＝警告である．
+ * クラス名 .warning とトークン名は，フェーズ 2 で .caution 系へ
+ * 付け替える（派生書籍リポジトリに対する破壊的変更）．
  * 記号廃止により JIS X 0208 制約の考慮自体が不要になる．
  * クラス命名は用途が読める v-* 接頭辞とする．
  */
@@ -132,5 +136,5 @@
 }
 
 .v-icon-watermark .warning::before {
-  content: "Warning";
+  content: "Caution";
 }
