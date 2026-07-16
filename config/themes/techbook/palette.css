@@ -18,6 +18,10 @@
  *
  * 紙面の地色である白（#fff）だけは意図的にリテラル運用とし，
  * トークン化しない（グラデーションのフェード先・白抜き文字を含む）．
+ *
+ * コードブロック背景（--color-code-bg）も無彩色のまま維持し，
+ * パレット差し替えに追従させない．code-highlight.css のシンタックス色は
+ * 背景 #f5f5f5 を前提にコントラスト比 4.5:1 を確保しているためである．
  */
 
 :root {
@@ -50,25 +54,35 @@
   --palette-gray-light: #e0e0e0;
   --palette-gray-faint: #f5f5f5;
 
-  /* リンク色 */
-  --palette-link: #0066cc;
-
   /* ===== 第 2 層: 意味トークン層（装飾要素が参照する） ===== */
 
   /* 基本（本文・見出し・リンク・罫線・地） */
   --color-text: var(--palette-ink-soft);
   --color-heading: var(--palette-ink);
-  --color-link: var(--palette-link);
+  --color-link: var(--palette-primary);
   --color-code-bg: var(--palette-gray-faint);
   --color-border: var(--palette-gray-light);
   --color-muted: var(--palette-gray-mid);
   --color-muted-dark: var(--palette-gray-dark);
-  --color-surface-faint: var(--palette-gray-faint);
+
+  /* 柱（ページ上部の章名ヘッダー） */
+  --running-head-color: var(--palette-primary);
+
+  /* 引用 */
+  --quote-bg: var(--palette-primary-light);
+  --quote-border: var(--palette-primary-mid);
+
+  /* 表 */
+  --table-head-rule: var(--palette-primary);
+  --table-rule: var(--palette-primary-mid);
+  --table-stripe-bg: var(--palette-primary-light);
 
   /* 章扉 */
   --chapter-accent: var(--palette-primary);
   --chapter-plate-bg: var(--palette-primary-light);
   --chapter-plate-fold: var(--palette-primary-mid);
+  --chapter-topics-bg: var(--palette-primary-light);
+  --chapter-topics-accent: var(--palette-primary);
 
   /* 見出し */
   --heading-accent: var(--palette-primary);

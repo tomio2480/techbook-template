@@ -10,7 +10,7 @@
   @top-center {
     content: string(chapter-header);
     font-size: 9pt;
-    color: var(--color-muted);
+    color: var(--running-head-color);
   }
 
   @bottom-center {
@@ -324,7 +324,7 @@ table {
 /* 縦罫線なし、横罫線のみ（細め） */
 th, td {
   border: none;
-  border-bottom: 0.5pt solid var(--color-muted);
+  border-bottom: 0.5pt solid var(--table-rule);
   padding: 6pt 8pt;
   vertical-align: middle;
   text-align: center;
@@ -336,12 +336,12 @@ th {
   font-family: var(--font-gothic);
   font-weight: bold;
   text-align: center;
-  border-bottom: 0.5pt solid var(--color-muted-dark);
+  border-bottom: 0.5pt solid var(--table-head-rule);
 }
 
 /* ゼブラストライプ（偶数行に背景色） */
 tr:nth-child(even) td {
-  background-color: var(--color-surface-faint);
+  background-color: var(--table-stripe-bg);
 }
 
 tr:nth-child(odd) td {
@@ -460,8 +460,8 @@ section.level4 .tips > figure > figcaption::before {
 blockquote {
   margin: 12pt 0;
   padding: 10pt 15pt;
-  background-color: var(--color-surface-faint);
-  border-left: 4px solid var(--color-border);
+  background-color: var(--quote-bg);
+  border-left: 3pt solid var(--quote-border);
   font-style: normal;
 }
 
@@ -1007,7 +1007,7 @@ body.afterword h2::before {
 .chapter-opening .chapter-topics {
   margin-top: 30pt;
   padding: 15pt 20pt;
-  background-color: var(--color-surface-faint);
+  background-color: var(--chapter-topics-bg);
   border-radius: 4px;
 }
 
@@ -1018,6 +1018,7 @@ body.afterword h2::before {
   margin-top: 0;
   margin-bottom: 10pt;
   text-indent: 0;
+  color: var(--chapter-topics-accent);
 }
 
 .chapter-opening .chapter-topics ul {
