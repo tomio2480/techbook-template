@@ -420,6 +420,16 @@ Vivliostyle CLI が生成する PDF は，タグ付き PDF（Tagged PDF）にな
 また，レイアウト解析による見出し・表・読み順の自動検出は完全ではない
 可能性がある．書籍ごとに，実際の読み上げ順を後述の手順で検証すること．
 
+図版の代替テキストは PDF へ引き継がれない．原稿側 `alt` 属性から
+`Figure` タグ `/Alt` へ反映する経路が現行構成に存在しないためである．
+`/Alt` は空か，図内の文字列を拾った値になりうる．解決には上流ツール
+（Vivliostyle CLI または OpenDataLoader）の変更が必要である．当面は
+図の説明を本文またはキャプションへ書いて補うこと．経緯・再検討の条件は
+[Issue #26](https://github.com/tomio2480/techbook-template/issues/26)
+および
+[Figure タグ /Alt 調査と現状追認の判断](docs/notes/2026-07-16-figure-alt-investigation.md)
+を参照する．
+
 ### 前提環境
 
 タグ付け処理には Java 11 以上が必要である．`java -version` で確認し，
