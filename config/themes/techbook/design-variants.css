@@ -24,3 +24,134 @@
   text-indent: 0;
   break-after: avoid;
 }
+
+/*
+ * ===== 検討中バリアント: 枠アイコン（フェーズ 1） =====
+ *
+ * Tips・注釈・警告の配色を基調色（primary）系へ統一する検討に伴い，
+ * 種別の判別を SVG 線画アイコン（電球・書類・警告三角）で担保する．
+ * 3 案を見本ページで並置し，採用決定後に theme.css へ本実装して
+ * 本節は削除する（Issue #22 と同じ 2 段階方式）．
+ *
+ * アイコンはデータ URI の SVG を mask で塗る．色は background-color が
+ * 担うため意味トークン経由でパレット差し替えに追従する．
+ * フォントを経由しないため JIS X 0208 制約（豆腐化）を受けない．
+ *
+ * クラス命名は用途が読める v-* 接頭辞とする（#23 の variant-a 形式から変更）．
+ * 案 A・B は既存の種別記号（◆・※・！）を残し，案 C のみ記号を置換する．
+ * 記号の扱いは採用決定時に合わせて確定する．
+ */
+
+/* 基調色統一の再マップ（フェーズ 2 で palette.css 第 2 層へ移す想定） */
+.v-primary-tone {
+  --tips-accent: var(--palette-primary);
+  --tips-bg: var(--palette-primary-light);
+  --tips-border: var(--palette-primary-mid);
+  --note-accent: var(--palette-primary);
+  --note-bg: var(--palette-primary-light);
+  --note-border: var(--palette-primary-mid);
+  --warning-accent: var(--palette-primary);
+  --warning-bg: var(--palette-primary-light);
+  --warning-border: var(--palette-primary-mid);
+}
+
+/* アイコン線画（アルファのみ使うため stroke 色は任意の黒） */
+:root {
+  --vi-icon-bulb: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2.5a6.5 6.5 0 0 0-4.2 11.4c.9.8 1.7 1.7 1.7 2.6h5c0-.9.8-1.8 1.7-2.6A6.5 6.5 0 0 0 12 2.5z'/%3E%3Cpath d='M9.5 19.5h5'/%3E%3Cpath d='M10.5 22h3'/%3E%3C/svg%3E");
+  --vi-icon-doc: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 2.5h8.5l4.5 4.5v14.5H6z'/%3E%3Cpath d='M14.5 2.5V7H19'/%3E%3Cpath d='M9 12.5h7'/%3E%3Cpath d='M9 16.5h7'/%3E%3C/svg%3E");
+  --vi-icon-warn: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3.5 2.8 19.5h18.4z'/%3E%3Cpath d='M12 9.5V14'/%3E%3Cpath d='M12 16.8v.1'/%3E%3C/svg%3E");
+}
+
+/* 種別ごとのアイコンと塗り色の割り当て */
+.v-icon-watermark .tips,
+.v-icon-corner .tips,
+.v-icon-label .tips {
+  position: relative;
+  --vi-icon: var(--vi-icon-bulb);
+  --vi-color: var(--tips-accent);
+}
+
+.v-icon-watermark .note,
+.v-icon-corner .note,
+.v-icon-label .note {
+  position: relative;
+  --vi-icon: var(--vi-icon-doc);
+  --vi-color: var(--note-accent);
+}
+
+.v-icon-watermark .warning,
+.v-icon-corner .warning,
+.v-icon-label .warning {
+  position: relative;
+  --vi-icon: var(--vi-icon-warn);
+  --vi-color: var(--warning-accent);
+}
+
+/* 案 A: 背景透かし．枠の右下に大きめの淡い線画を敷く．
+   テキストを持たない装飾のみの絶対配置であり，
+   PDF タグ付けの読み順へは影響しない（以下 B・C も同様） */
+.v-icon-watermark .tips::after,
+.v-icon-watermark .note::after,
+.v-icon-watermark .warning::after {
+  content: "";
+  position: absolute;
+  right: 4pt;
+  bottom: 4pt;
+  width: 28pt;
+  height: 28pt;
+  background-color: var(--vi-color);
+  opacity: 0.14;
+  -webkit-mask: var(--vi-icon) no-repeat center / contain;
+  mask: var(--vi-icon) no-repeat center / contain;
+}
+
+/* 案 B: 角ワンポイント．タイトル帯の右端に小さく置く */
+.v-icon-corner .tips::after,
+.v-icon-corner .note::after,
+.v-icon-corner .warning::after {
+  content: "";
+  position: absolute;
+  top: 3.5pt;
+  right: 6pt;
+  width: 10.5pt;
+  height: 10.5pt;
+  background-color: var(--vi-color);
+  -webkit-mask: var(--vi-icon) no-repeat center / contain;
+  mask: var(--vi-icon) no-repeat center / contain;
+}
+
+/* 案 C: 帯先頭置換．種別記号（◆・※・！）をアイコンへ置き換える．
+   theme.css の帯定義（content・padding）を後勝ちで部分上書きする前提．
+   冒頭の @import で theme.css が先に読まれるため成立する．
+   theme.css 側の帯ブロックを変える際は本バリアントも点検する */
+.v-icon-label .note::before {
+  content: "Note";
+  padding-left: 24pt;
+}
+
+.v-icon-label .warning::before {
+  content: "注意";
+  padding-left: 24pt;
+}
+
+.v-icon-label .tips-title {
+  padding-left: 24pt;
+}
+
+.v-icon-label .tips-title::before {
+  content: "";
+}
+
+.v-icon-label .tips::after,
+.v-icon-label .note::after,
+.v-icon-label .warning::after {
+  content: "";
+  position: absolute;
+  top: 3.5pt;
+  left: 8pt;
+  width: 10.5pt;
+  height: 10.5pt;
+  background-color: var(--vi-color);
+  -webkit-mask: var(--vi-icon) no-repeat center / contain;
+  mask: var(--vi-icon) no-repeat center / contain;
+}
