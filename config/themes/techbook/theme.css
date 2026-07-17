@@ -654,6 +654,13 @@ hr {
   margin-bottom: 0;
 }
 
+.caution > ul,
+.caution > ol,
+.tips > ul,
+.tips > ol {
+  margin: 0 10pt 6pt 10pt;
+}
+
 /* 枠アイコン（Tips・注釈・注意の背景あしらい） */
 /* データ URI の SVG 線画（集中線込み）を mask で塗る．
    色は background-color が意味トークン経由で担い，
