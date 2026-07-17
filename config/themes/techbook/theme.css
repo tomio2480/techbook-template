@@ -243,6 +243,7 @@ ul, ol {
 
 li {
   margin-bottom: 4pt;
+  break-inside: avoid;
 }
 
 /* リンク */
