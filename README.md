@@ -77,8 +77,9 @@ npm run build
 npm test
 ```
 
-`scripts/add-line-numbers.mjs`・`scripts/verify-build.mjs`・`scripts/tag-pdf.mjs`
-の単体テストを実行する．
+`scripts/` 配下の全テストスクリプト（`*.test.mjs`）をまとめて実行する．
+対象には行番号付与・ビルド検証・PDF タグ付けのほか，
+配色コントラストと透過ハードストップの回帰検査も含まれる．
 
 ### プレビュー
 
@@ -86,7 +87,7 @@ npm test
 npm run preview
 ```
 
-ブラウザでプレビューが表示される。
+ブラウザでプレビューが表示される．
 
 ### 装飾スタイルカタログのビルド
 
