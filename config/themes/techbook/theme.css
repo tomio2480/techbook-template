@@ -556,11 +556,6 @@ hr {
   margin-bottom: 0;
 }
 
-.caution > ul,
-.caution > ol {
-  margin: 0 10pt 6pt 10pt;
-}
-
 /* コラム */
 /* ドッグイヤー地＋縁取り COLUMN ラベル */
 .column {
@@ -658,6 +653,8 @@ hr {
   margin-bottom: 0;
 }
 
+.caution > ul,
+.caution > ol,
 .tips > ul,
 .tips > ol {
   margin: 0 10pt 6pt 10pt;
