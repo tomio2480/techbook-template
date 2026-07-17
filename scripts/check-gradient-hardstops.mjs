@@ -16,8 +16,9 @@ import { fileURLToPath, pathToFileURL } from 'url';
 const ANGLE_OR_DIRECTION = /^(-?\d+(\.\d+)?deg|to\s+(top|bottom|left|right)(\s+(top|bottom|left|right))?)$/i;
 /* 位置は単位付きの数値に加え，CSS 仕様で許容される単位なしの 0 も認める */
 const POSITION_PATTERN = /^(0|-?\d+(\.\d+)?(%|px|pt|em|rem|vw|vh|cm|mm|in|pc|q))$/i;
-/* アルファ値 0 の rgba()/hsla()（数値・小数・% 表記のいずれも許容） */
-const ZERO_ALPHA_FUNCTION_PATTERN = /^(rgba|hsla)\([^)]*,\s*0(\.0+)?%?\s*\)$/i;
+/* アルファ値 0 の rgba()/hsla()（数値・小数・% 表記，カンマ区切り・
+   スラッシュ区切り（CSS Color 4）のいずれも許容） */
+const ZERO_ALPHA_FUNCTION_PATTERN = /^(rgba|hsla)\([^)]*[,/]\s*0(\.0+)?%?\s*\)$/i;
 /* アルファ値 0 の 4 桁 hex（#rgba）・8 桁 hex（#rrggbbaa） */
 const ZERO_ALPHA_HEX_PATTERN = /^#([0-9a-f]{3}0|[0-9a-f]{6}00)$/i;
 

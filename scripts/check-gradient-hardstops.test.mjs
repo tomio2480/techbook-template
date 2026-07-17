@@ -127,6 +127,17 @@ test('isTransparent: 不透明な色キーワードや hex は偽', () => {
   assert.equal(isTransparent('var(--heading-plate-bg)'), false);
 });
 
+test('isTransparent: スラッシュ区切りのアルファ値 0（CSS Color 4）も真', () => {
+  assert.equal(isTransparent('rgba(255 255 255 / 0)'), true);
+  assert.equal(isTransparent('hsla(0 0% 0% / 0.0)'), true);
+  assert.equal(isTransparent('rgba(0 0 0 / 0%)'), true);
+});
+
+test('isTransparent: スラッシュ区切りでもアルファ値が 0 でなければ偽', () => {
+  assert.equal(isTransparent('rgba(255 255 255 / 1)'), false);
+  assert.equal(isTransparent('hsla(0 0% 0% / 0.5)'), false);
+});
+
 // --- hasAdjacentHardStopTransparency ---
 
 test('hasAdjacentHardStopTransparency: 同一位置かつ一方が transparent なら真', () => {
