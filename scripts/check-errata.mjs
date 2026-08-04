@@ -197,7 +197,12 @@ if (isMainModule) {
   }
   const data = parse(fs.readFileSync(errataPath, 'utf-8'));
   const pkg = JSON.parse(fs.readFileSync(fileURLToPath(new URL('package.json', root)), 'utf-8'));
-  const bookYaml = parse(fs.readFileSync(fileURLToPath(new URL('config/book.yaml', root)), 'utf-8'));
+  /* config/book.yaml が無い構成でも検査自体は継続する（突合のみ省略） */
+  const bookYamlPath = fileURLToPath(new URL('config/book.yaml', root));
+  const bookYaml = fs.existsSync(bookYamlPath) ? parse(fs.readFileSync(bookYamlPath, 'utf-8')) : null;
+  if (bookYaml === null) {
+    console.warn('警告 config/book.yaml が存在しないため version・title の突合を省略する');
+  }
   const bookYamlVersion = typeof bookYaml?.version === 'string' ? bookYaml.version.match(/^(\d+)\./) : null;
   const context = {
     packageMajor: Number(pkg.version.split('.')[0]),
