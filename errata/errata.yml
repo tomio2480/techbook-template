@@ -1,0 +1,33 @@
+# 正誤表の原本．スキーマと運用ルールは docs/spec/edition-errata.md を参照する．
+# 検査は `npm run check:errata`（ビルド時にも自動実行される）．
+
+book:
+  # 公開サイトの URL に使う識別子．リポジトリ名から推測できない名前にする
+  slug: example-book
+  # 公開表示用の書名．config/book.yaml の title と一致させる
+  title: "書籍タイトル"
+
+# 出版のたびに版を追記する．未出版の間は空配列のままにする
+editions: []
+
+# 正誤が見つかるたびに追記する
+errata: []
+
+# ---- 記入例 ----
+# editions:
+#   - edition: 1                        # 初版（package.json の major と一致させる）
+#     date: "2025-08-15"                # 頒布日
+#     event: コミックマーケット106       # 頒布イベント（任意）
+#     release: v1.0.5                   # PDF を保管した GitHub Release のタグ
+#   - edition: 2
+#     date: "2026-01-10"
+#     release: v2.0.0
+# errata:
+#   - page: 12                          # ページ番号（"12-13" のような範囲表記も可）
+#     location: 3 行目                  # ページ内の位置
+#     wrong: 誤りの記述
+#     correct: 正しい記述
+#     date: "2025-09-01"                # 正誤を確認した日
+#     applies_to: [1]                   # 該当する版
+#     fixed_in: 2                       # 修正を反映した版（未反映なら省略）
+#     note: 補足（任意）
