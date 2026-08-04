@@ -3,7 +3,7 @@
 ## 背景
 
 書籍リポジトリ（`techbook-introduction-to-electronics-basic-led`，以下
-「LED 本」）への移植 PR に対する Gemini レビューで，テンプレート
+「LED 本」）への移植 PR に対する `gemini-code-assist` レビューで，テンプレート
 （本リポジトリ）由来のコード・コメントへの指摘が複数出た．移植先では
 上流との逐語一致を維持する方針のため修正せず，発生源である本リポジトリ
 へ Issue #41〜#45 として持ち込まれた．本ノートは，この 5 件を一括対応
@@ -24,9 +24,9 @@
    ユーザーに確認したうえで着手．オプション化（`no-repeat-heading`
    クラス）を選んだ．
 
-### 2 巡目レビュー（Gemini）への判断基準
+### 2 巡目レビュー（`gemini-code-assist`）への判断基準
 
-Draft PR 作成後，各 PR に Gemini の追加指摘が入った．採否は
+Draft PR 作成後，各 PR に `gemini-code-assist` の追加指摘が入った．採否は
 「却下時は仕様上の意図・トレードオフ・スコープ外のいずれかで説明する」
 という `github-dev` Skill の原則に従って判断した．
 
@@ -58,6 +58,10 @@ Draft PR 作成後，各 PR に Gemini の追加指摘が入った．採否は
 
 ## 参照
 
-- [Issue #41](https://github.com/tomio2480/techbook-template/issues/41)〜[#45](https://github.com/tomio2480/techbook-template/issues/45)
+- [Issue #41](https://github.com/tomio2480/techbook-template/issues/41)
+- [Issue #42](https://github.com/tomio2480/techbook-template/issues/42)
+- [Issue #43](https://github.com/tomio2480/techbook-template/issues/43)
+- [Issue #44](https://github.com/tomio2480/techbook-template/issues/44)
+- [Issue #45](https://github.com/tomio2480/techbook-template/issues/45)
 - [PR #46](https://github.com/tomio2480/techbook-template/pull/46)・[#47](https://github.com/tomio2480/techbook-template/pull/47)・[#48](https://github.com/tomio2480/techbook-template/pull/48)・[#49](https://github.com/tomio2480/techbook-template/pull/49)・[#50](https://github.com/tomio2480/techbook-template/pull/50)
 - `github-dev` Skill「PR レビュー対応」節
