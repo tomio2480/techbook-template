@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateErrata } from './check-errata.mjs';
+import { validateErrata, extractContext } from './check-errata.mjs';
 
 /** 検証に通る初期状態（未出版）のデータを返す */
 function initialData() {
@@ -117,6 +117,22 @@ describe('validateErrata: editions 節', () => {
     assert.ok(errors.some((e) => e.includes('date')));
   });
 
+  it('形式は合うが実在しない日付（13 月・2 月 30 日）はエラーになる', () => {
+    for (const bad of ['2025-13-45', '2025-02-30', '0000-00-00']) {
+      const data = publishedData();
+      data.editions[0].date = bad;
+      const { errors } = validateErrata(data, publishedContext);
+      assert.ok(errors.some((e) => e.includes('date')), `${bad} が通ってしまう`);
+    }
+  });
+
+  it('release タグの先頭ゼロ（v01.0.0）はエラーになる', () => {
+    const data = publishedData();
+    data.editions[0].release = 'v01.0.5';
+    const { errors } = validateErrata(data, publishedContext);
+    assert.ok(errors.some((e) => e.includes('release')));
+  });
+
   it('release タグの major が版番号と一致しないとエラーになる', () => {
     const data = publishedData();
     data.editions[1].release = 'v1.2.0';
@@ -193,6 +209,22 @@ describe('validateErrata: errata 節', () => {
     assert.deepEqual(errors, []);
   });
 
+  it('applies_to に重複があるとエラーになる', () => {
+    const data = publishedData();
+    data.errata[0].applies_to = [1, 1];
+    const { errors } = validateErrata(data, publishedContext);
+    assert.ok(errors.some((e) => e.includes('applies_to')));
+  });
+
+  it('wrong が文字列でない（0 や false）とエラーになる', () => {
+    for (const bad of [0, false]) {
+      const data = publishedData();
+      data.errata[0].wrong = bad;
+      const { errors } = validateErrata(data, publishedContext);
+      assert.ok(errors.some((e) => e.includes('wrong')), `wrong: ${bad} が通ってしまう`);
+    }
+  });
+
   it('editions が空なのに errata があるとエラーになる', () => {
     const data = initialData();
     data.errata = [
@@ -207,5 +239,45 @@ describe('validateErrata: errata 節', () => {
     ];
     const { errors } = validateErrata(data, initialContext);
     assert.ok(errors.length > 0);
+  });
+});
+
+describe('extractContext: version 情報の抽出', () => {
+  it('通常の semver から major を抽出する', () => {
+    const ctx = extractContext('1.0.5', { title: 'T', version: '1.0.0' });
+    assert.equal(ctx.packageMajor, 1);
+    assert.equal(ctx.bookYamlMajor, 1);
+    assert.equal(ctx.bookYamlTitle, 'T');
+    assert.deepEqual(ctx.warnings, []);
+  });
+
+  it('book.yaml の version が "2"（ドットなし）でも major を抽出する', () => {
+    const ctx = extractContext('2.0.0', { version: '2' });
+    assert.equal(ctx.bookYamlMajor, 2);
+  });
+
+  it('book.yaml の version が YAML 数値（2.0）でも major を抽出する', () => {
+    const ctx = extractContext('2.0.0', { version: 2.0 });
+    assert.equal(ctx.bookYamlMajor, 2);
+  });
+
+  it('book.yaml の version から抽出できない場合は警告を出す', () => {
+    const ctx = extractContext('1.0.0', { version: 'unknown' });
+    assert.equal(ctx.bookYamlMajor, undefined);
+    assert.ok(ctx.warnings.length > 0);
+  });
+
+  it('package.json の version が不正なら packageMajor は null になる', () => {
+    for (const bad of ['v1.0.0', undefined, '']) {
+      const ctx = extractContext(bad, null);
+      assert.equal(ctx.packageMajor, null, `${bad} で null にならない`);
+    }
+  });
+
+  it('book.yaml が無い場合は突合情報なし・警告ありになる', () => {
+    const ctx = extractContext('1.0.0', null);
+    assert.equal(ctx.bookYamlMajor, undefined);
+    assert.equal(ctx.bookYamlTitle, undefined);
+    assert.ok(ctx.warnings.length > 0);
   });
 });

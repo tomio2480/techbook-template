@@ -16,8 +16,9 @@ import { parse } from 'yaml';
 
 const SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{2,62}$/;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const RELEASE_PATTERN = /^v(\d+)\.\d+\.\d+$/;
+const RELEASE_PATTERN = /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 const ERRATUM_REQUIRED_KEYS = ['page', 'location', 'wrong', 'correct', 'date', 'applies_to'];
+const ERRATUM_STRING_KEYS = ['location', 'wrong', 'correct'];
 
 /**
  * 値が空でない文字列かどうかを判定する．
@@ -35,6 +36,21 @@ function isNonEmptyString(value) {
  */
 function isPositiveInteger(value) {
   return Number.isInteger(value) && value >= 1;
+}
+
+/**
+ * YYYY-MM-DD 形式かつ実在する日付かどうかを判定する．
+ * 形式だけの検査では 13 月や 2 月 30 日を通してしまうため，
+ * UTC で往復させて元の値と一致することを確認する．
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+function isRealDate(value) {
+  if (!isNonEmptyString(value) || !DATE_PATTERN.test(value)) {
+    return false;
+  }
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
 
 /**
@@ -82,8 +98,8 @@ function validateEditions(editions, errors) {
     } else {
       numbers.push(entry.edition);
     }
-    if (!isNonEmptyString(entry.date) || !DATE_PATTERN.test(entry.date)) {
-      errors.push(`${label}.date: YYYY-MM-DD 形式の頒布日が必須`);
+    if (!isRealDate(entry.date)) {
+      errors.push(`${label}.date: YYYY-MM-DD 形式の実在する頒布日が必須`);
     }
     const releaseMatch = isNonEmptyString(entry.release) ? entry.release.match(RELEASE_PATTERN) : null;
     if (!releaseMatch) {
@@ -142,17 +158,24 @@ function validateErrataEntries(errata, editionNumbers, errors) {
         errors.push(`${label}.${key}: 必須キーが欠けている`);
       }
     }
+    for (const key of ERRATUM_STRING_KEYS) {
+      if (entry[key] !== undefined && entry[key] !== null && !isNonEmptyString(entry[key])) {
+        errors.push(`${label}.${key}: 空でない文字列が必要`);
+      }
+    }
     if (entry.page !== undefined && !isPositiveInteger(entry.page) && !isNonEmptyString(entry.page)) {
       errors.push(`${label}.page: 1 以上の整数または文字列（範囲表記など）が必要`);
     }
-    if (isNonEmptyString(entry.date) && !DATE_PATTERN.test(entry.date)) {
-      errors.push(`${label}.date: YYYY-MM-DD 形式が必要`);
+    if (isNonEmptyString(entry.date) && !isRealDate(entry.date)) {
+      errors.push(`${label}.date: YYYY-MM-DD 形式の実在する日付が必要`);
     }
     if (entry.applies_to !== undefined) {
       if (!Array.isArray(entry.applies_to) || entry.applies_to.length === 0) {
         errors.push(`${label}.applies_to: 該当する版番号を 1 つ以上含む配列が必要`);
       } else if (!entry.applies_to.every((n) => editionSet.has(n))) {
         errors.push(`${label}.applies_to: editions に存在しない版番号を参照している`);
+      } else if (new Set(entry.applies_to).size !== entry.applies_to.length) {
+        errors.push(`${label}.applies_to: 版番号が重複している`);
       }
     }
     if (entry.fixed_in !== undefined) {
@@ -186,6 +209,38 @@ export function validateErrata(data, context) {
   return { errors, warnings };
 }
 
+/**
+ * package.json と config/book.yaml から検査用コンテキストを抽出する．
+ * version の表現ゆれ（"2"・YAML 数値・欠損）を吸収し，
+ * 抽出できない場合は警告として返す（無言のスキップにしない）．
+ * @param {unknown} pkgVersion package.json の version
+ * @param {Record<string, unknown> | null} bookYaml config/book.yaml の内容（無い場合は null）
+ * @returns {{ packageMajor: number | null, bookYamlMajor?: number, bookYamlTitle?: string, warnings: string[] }}
+ */
+export function extractContext(pkgVersion, bookYaml) {
+  const warnings = [];
+  const pkgMatch = String(pkgVersion ?? '').match(/^(\d+)\./);
+  const packageMajor = pkgMatch ? Number(pkgMatch[1]) : null;
+  let bookYamlMajor;
+  let bookYamlTitle;
+  if (!bookYaml || typeof bookYaml !== 'object') {
+    warnings.push('config/book.yaml が読めないため version・title の突合を省略する');
+  } else {
+    if (bookYaml.version !== undefined) {
+      const match = String(bookYaml.version).match(/^(\d+)(\.|$)/);
+      if (match) {
+        bookYamlMajor = Number(match[1]);
+      } else {
+        warnings.push(`config/book.yaml: version（${bookYaml.version}）から major を抽出できない`);
+      }
+    }
+    if (typeof bookYaml.title === 'string') {
+      bookYamlTitle = bookYaml.title;
+    }
+  }
+  return { packageMajor, bookYamlMajor, bookYamlTitle, warnings };
+}
+
 const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isMainModule) {
@@ -200,17 +255,13 @@ if (isMainModule) {
   /* config/book.yaml が無い構成でも検査自体は継続する（突合のみ省略） */
   const bookYamlPath = fileURLToPath(new URL('config/book.yaml', root));
   const bookYaml = fs.existsSync(bookYamlPath) ? parse(fs.readFileSync(bookYamlPath, 'utf-8')) : null;
-  if (bookYaml === null) {
-    console.warn('警告 config/book.yaml が存在しないため version・title の突合を省略する');
+  const context = extractContext(pkg?.version, bookYaml);
+  if (context.packageMajor === null) {
+    console.error(`NG package.json の version（${pkg?.version}）から major を抽出できない`);
+    process.exit(1);
   }
-  const bookYamlVersion = typeof bookYaml?.version === 'string' ? bookYaml.version.match(/^(\d+)\./) : null;
-  const context = {
-    packageMajor: Number(pkg.version.split('.')[0]),
-    bookYamlMajor: bookYamlVersion ? Number(bookYamlVersion[1]) : undefined,
-    bookYamlTitle: typeof bookYaml?.title === 'string' ? bookYaml.title : undefined,
-  };
   const { errors, warnings } = validateErrata(data, context);
-  for (const warning of warnings) {
+  for (const warning of [...context.warnings, ...warnings]) {
     console.warn(`警告 ${warning}`);
   }
   if (errors.length > 0) {
