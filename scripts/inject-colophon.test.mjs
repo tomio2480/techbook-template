@@ -1,0 +1,229 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+
+import {
+  buildAuthorsSection,
+  buildErrataSection,
+  injectColophonPlugin,
+} from './inject-colophon.mjs';
+
+/** hast の element ノードを組み立てるテスト用ヘルパー */
+function el(tagName, children = [], properties = {}) {
+  return { type: 'element', tagName, properties, children };
+}
+
+function textNode(value) {
+  return { type: 'text', value };
+}
+
+function markerParagraph(marker) {
+  return el('p', [textNode(marker)]);
+}
+
+/** ノード配下のテキストを連結して返す */
+function textOf(node) {
+  if (node.type === 'text') return node.value;
+  return (node.children ?? []).map(textOf).join('');
+}
+
+/** ノード配下から className に一致する element をすべて集める */
+function findByClass(node, className) {
+  const found = [];
+  const visit = (n) => {
+    const classes = n.properties?.className ?? [];
+    if (classes.includes(className)) found.push(n);
+    (n.children ?? []).forEach(visit);
+  };
+  visit(node);
+  return found;
+}
+
+const AUTHOR = {
+  name: '著者名',
+  sns: '@example',
+  bio: '組込みと電子工作が好きな著者。',
+  link: { title: 'Web サイト', url: 'https://example.com/' },
+};
+
+describe('buildAuthorsSection', () => {
+  it('著者一覧から colophon-authors セクションを組み立てる', () => {
+    const section = buildAuthorsSection([AUTHOR], () => {});
+    assert.equal(section.tagName, 'section');
+    assert.ok(section.properties.className.includes('colophon-authors'));
+    const heading = section.children[0];
+    assert.equal(heading.tagName, 'h2');
+    assert.equal(textOf(heading), '著者紹介');
+  });
+
+  it('氏名と SNS ID を「氏名（ID）」の形で出力する', () => {
+    const section = buildAuthorsSection([AUTHOR], () => {});
+    const [name] = findByClass(section, 'colophon-author-name');
+    assert.equal(textOf(name), '著者名（@example）');
+  });
+
+  it('SNS ID が無い著者は氏名のみを出力する', () => {
+    const section = buildAuthorsSection([{ name: '著者名' }], () => {});
+    const [name] = findByClass(section, 'colophon-author-name');
+    assert.equal(textOf(name), '著者名');
+  });
+
+  it('紹介文を出力する', () => {
+    const section = buildAuthorsSection([AUTHOR], () => {});
+    const [bio] = findByClass(section, 'colophon-author-bio');
+    assert.equal(textOf(bio), AUTHOR.bio);
+  });
+
+  it('リンクはタイトルと URL を並記し，URL をアンカーにする', () => {
+    const section = buildAuthorsSection([AUTHOR], () => {});
+    const [link] = findByClass(section, 'colophon-author-link');
+    assert.equal(textOf(link), 'Web サイト：https://example.com/');
+    const anchor = findAnchor(link);
+    assert.equal(anchor.properties.href, 'https://example.com/');
+  });
+
+  it('bio やリンクが無い著者ではその行を出力しない', () => {
+    const section = buildAuthorsSection([{ name: '著者名' }], () => {});
+    assert.equal(findByClass(section, 'colophon-author-bio').length, 0);
+    assert.equal(findByClass(section, 'colophon-author-link').length, 0);
+  });
+
+  it('リンクの title と url が揃わない場合は警告して行を省く', () => {
+    const warnings = [];
+    const section = buildAuthorsSection(
+      [{ name: '著者名', link: { title: 'Web サイト' } }],
+      (m) => warnings.push(m),
+    );
+    assert.equal(findByClass(section, 'colophon-author-link').length, 0);
+    assert.equal(warnings.length, 1);
+  });
+
+  it('複数著者を順に出力する', () => {
+    const section = buildAuthorsSection(
+      [AUTHOR, { name: '二人目', sns: '@second' }],
+      () => {},
+    );
+    assert.equal(findByClass(section, 'colophon-author').length, 2);
+  });
+
+  it('name の無い著者は警告して読み飛ばす', () => {
+    const warnings = [];
+    const section = buildAuthorsSection(
+      [{ sns: '@no-name' }, AUTHOR],
+      (m) => warnings.push(m),
+    );
+    assert.equal(findByClass(section, 'colophon-author').length, 1);
+    assert.equal(warnings.length, 1);
+  });
+
+  it('authors が空・未定義なら警告して null を返す', () => {
+    const warnings = [];
+    assert.equal(buildAuthorsSection([], (m) => warnings.push(m)), null);
+    assert.equal(buildAuthorsSection(undefined, (m) => warnings.push(m)), null);
+    assert.equal(warnings.length, 2);
+  });
+});
+
+describe('buildErrataSection', () => {
+  const ERRATA = { url: 'https://example.github.io/errata/books/example-book/' };
+
+  it('正誤表 URL から colophon-errata セクションを組み立てる', () => {
+    const section = buildErrataSection(ERRATA, () => {});
+    assert.equal(section.tagName, 'section');
+    assert.ok(section.properties.className.includes('colophon-errata'));
+    const anchor = findAnchor(section);
+    assert.equal(anchor.properties.href, ERRATA.url);
+    assert.equal(textOf(anchor), ERRATA.url);
+  });
+
+  it('案内文を出力する', () => {
+    const section = buildErrataSection(ERRATA, () => {});
+    assert.ok(textOf(section).includes('正誤表'));
+  });
+
+  it('url が無い・http(s) でない場合は警告して null を返す', () => {
+    const warnings = [];
+    assert.equal(buildErrataSection(undefined, (m) => warnings.push(m)), null);
+    assert.equal(buildErrataSection({}, (m) => warnings.push(m)), null);
+    assert.equal(
+      buildErrataSection({ url: 'example.com' }, (m) => warnings.push(m)),
+      null,
+    );
+    assert.equal(warnings.length, 3);
+  });
+});
+
+describe('injectColophonPlugin', () => {
+  const OPTIONS = {
+    authors: [AUTHOR],
+    errata: { url: 'https://example.github.io/errata/books/example-book/' },
+    warn: () => {},
+  };
+
+  function makeTree() {
+    return {
+      type: 'root',
+      children: [
+        el('section', [
+          el('h1', [textNode('書籍タイトル')]),
+          markerParagraph('{{authors}}'),
+          el('p', [textNode('本文の段落')]),
+          markerParagraph('{{errata}}'),
+        ]),
+      ],
+    };
+  }
+
+  it('{{authors}} マーカーを著者紹介セクションへ置き換える', () => {
+    const tree = makeTree();
+    injectColophonPlugin(OPTIONS)(tree);
+    assert.equal(findByClass(tree, 'colophon-authors').length, 1);
+    assert.ok(!textOf(tree).includes('{{authors}}'));
+  });
+
+  it('{{errata}} マーカーを正誤表セクションへ置き換える', () => {
+    const tree = makeTree();
+    injectColophonPlugin(OPTIONS)(tree);
+    assert.equal(findByClass(tree, 'colophon-errata').length, 1);
+    assert.ok(!textOf(tree).includes('{{errata}}'));
+  });
+
+  it('マーカー以外の段落は変更しない', () => {
+    const tree = makeTree();
+    injectColophonPlugin(OPTIONS)(tree);
+    assert.ok(textOf(tree).includes('本文の段落'));
+  });
+
+  it('データが無い場合はマーカーを取り除いて警告する', () => {
+    const warnings = [];
+    const tree = makeTree();
+    injectColophonPlugin({ warn: (m) => warnings.push(m) })(tree);
+    assert.ok(!textOf(tree).includes('{{authors}}'));
+    assert.ok(!textOf(tree).includes('{{errata}}'));
+    assert.equal(warnings.length, 2);
+  });
+
+  it('前後に空白があるマーカーも置き換える', () => {
+    const tree = { type: 'root', children: [markerParagraph('  {{authors}}\n')] };
+    injectColophonPlugin(OPTIONS)(tree);
+    assert.equal(findByClass(tree, 'colophon-authors').length, 1);
+  });
+
+  it('文章に埋め込まれたマーカー文字列は置き換えない', () => {
+    const tree = {
+      type: 'root',
+      children: [el('p', [textNode('本文中の {{authors}} は置換しない')])],
+    };
+    injectColophonPlugin(OPTIONS)(tree);
+    assert.ok(textOf(tree).includes('{{authors}}'));
+  });
+});
+
+/** ノード配下から最初の a 要素を探す */
+function findAnchor(node) {
+  if (node.type === 'element' && node.tagName === 'a') return node;
+  for (const child of node.children ?? []) {
+    const found = findAnchor(child);
+    if (found) return found;
+  }
+  return null;
+}

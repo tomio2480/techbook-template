@@ -1034,6 +1034,57 @@ body.colophon p {
   color: var(--color-muted-dark);
 }
 
+/* 奥付の著者紹介（{{authors}} マーカーから inject-colophon.mjs が生成する） */
+/* 著者紹介だけをページ上部へ置き，従来の奥付情報は下部寄せのまま保つ．
+   著者紹介が無い書籍では従来どおり全体が下部寄せになる */
+.colophon > section:has(.colophon-authors),
+body.colophon > section:has(.colophon-authors) {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+}
+
+.colophon .colophon-authors,
+body.colophon .colophon-authors {
+  margin-bottom: auto;
+}
+
+/* 章見出し用の番号プレート・下罫線装飾を奥付では打ち消す */
+.colophon h2,
+body.colophon h2 {
+  font-size: 11pt;
+  margin: 0 0 8pt 0;
+  padding-bottom: 4pt;
+  border-bottom: 0.75pt solid var(--heading-rule);
+  counter-increment: none;
+}
+
+.colophon h2::before,
+body.colophon h2::before {
+  content: none !important;
+}
+
+.colophon .colophon-author,
+body.colophon .colophon-author {
+  margin-bottom: 10pt;
+}
+
+.colophon .colophon-author-name,
+body.colophon .colophon-author-name {
+  font-size: 10pt;
+  font-family: var(--font-gothic);
+  font-weight: bold;
+  color: var(--color-text);
+  margin: 0 0 2pt 0;
+}
+
+.colophon .colophon-author-bio,
+body.colophon .colophon-author-bio {
+  font-size: 9pt;
+  color: var(--color-text);
+  margin: 0 0 2pt 0;
+}
+
 /* まえがき・目次・あとがきのヘッダーを非表示 */
 @page no-header {
   @top-center {

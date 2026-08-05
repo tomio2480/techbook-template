@@ -5,6 +5,21 @@ version: "1.0.0"
 lang: ja
 date: "2025-01-01"
 
+# 奥付の著者紹介（99-colophon.md の {{authors}} マーカーへ流し込まれる）
+# name 以外は任意．bio は 140 文字程度を目安にする．link は 1 つだけ書く
+authors:
+  - name: "著者名"
+    sns: "@example"
+    bio: "著者の紹介文をここに書く。経歴や活動内容などを 140 文字程度でまとめる。"
+    link:
+      title: "Web サイト"
+      url: "https://example.com/"
+
+# 公開正誤表ページの URL（99-colophon.md の {{errata}} マーカーへ流し込まれる）
+# errata/errata.yml の slug と一致するページを指すこと（check:errata が突合する）
+errata:
+  url: "https://example.github.io/errata/books/example-book/"
+
 chapters:
   - src/chapters/00-preface.md
   - src/chapters/01-introduction.md

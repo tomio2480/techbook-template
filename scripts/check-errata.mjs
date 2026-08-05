@@ -73,6 +73,14 @@ function validateBook(book, context, errors, warnings) {
   } else if (context.bookYamlTitle !== undefined && book.title !== context.bookYamlTitle) {
     warnings.push(`book.title: config/book.yaml の title と一致しない（errata: "${book.title}" / book.yaml: "${context.bookYamlTitle}"）`);
   }
+  /* 奥付へ流し込む正誤表 URL が別の書籍ページを指す事故を検出する */
+  if (
+    context.bookYamlErrataUrl !== undefined &&
+    isNonEmptyString(book.slug) &&
+    !context.bookYamlErrataUrl.includes(book.slug)
+  ) {
+    warnings.push(`book.slug: config/book.yaml の errata.url に slug（${book.slug}）が含まれない（url: ${context.bookYamlErrataUrl}）`);
+  }
 }
 
 /**
@@ -215,7 +223,7 @@ export function validateErrata(data, context) {
  * 抽出できない場合は警告として返す（無言のスキップにしない）．
  * @param {unknown} pkgVersion package.json の version
  * @param {Record<string, unknown> | null} bookYaml config/book.yaml の内容（無い場合は null）
- * @returns {{ packageMajor: number | null, bookYamlMajor?: number, bookYamlTitle?: string, warnings: string[] }}
+ * @returns {{ packageMajor: number | null, bookYamlMajor?: number, bookYamlTitle?: string, bookYamlErrataUrl?: string, warnings: string[] }}
  */
 export function extractContext(pkgVersion, bookYaml) {
   const warnings = [];
@@ -223,6 +231,7 @@ export function extractContext(pkgVersion, bookYaml) {
   const packageMajor = pkgMatch ? Number(pkgMatch[1]) : null;
   let bookYamlMajor;
   let bookYamlTitle;
+  let bookYamlErrataUrl;
   if (!bookYaml || typeof bookYaml !== 'object') {
     warnings.push('config/book.yaml が読めないため version・title の突合を省略する');
   } else {
@@ -237,8 +246,16 @@ export function extractContext(pkgVersion, bookYaml) {
     if (typeof bookYaml.title === 'string') {
       bookYamlTitle = bookYaml.title;
     }
+    if (bookYaml.errata !== undefined) {
+      const url = bookYaml.errata?.url;
+      if (typeof url === 'string' && url.trim() !== '') {
+        bookYamlErrataUrl = url;
+      } else {
+        warnings.push('config/book.yaml: errata.url が読めないため slug との突合を省略する');
+      }
+    }
   }
-  return { packageMajor, bookYamlMajor, bookYamlTitle, warnings };
+  return { packageMajor, bookYamlMajor, bookYamlTitle, bookYamlErrataUrl, warnings };
 }
 
 const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
