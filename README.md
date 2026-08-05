@@ -13,6 +13,7 @@ Vivliostyle を使用した技術書執筆のためのテンプレートリポ�
 - [ディレクトリ構造](#ディレクトリ構造)
 - [カスタマイズ](#カスタマイズ)
 - [GitHub 運用](#github-運用)
+- [版管理と正誤表](#版管理と正誤表)
 - [トラブルシューティング](#トラブルシューティング)
 
 ## 🔧 機能
@@ -508,10 +509,13 @@ techbook-template/
 │           ├── palette.css    # カラーパレット（2 層トークン）
 │           ├── design-variants.css # カタログ用補助スタイル
 │           └── code-highlight.css
+├── errata/
+│   └── errata.yml             # 正誤表の原本（版一覧・正誤情報）
 ├── scripts/
 │   ├── add-line-numbers.mjs   # 行番号追加・目次マージスクリプト
 │   ├── verify-build.mjs       # ビルド中断検知（フェイルセーフ）
 │   ├── tag-pdf.mjs            # タグ付き PDF 生成（ビルド後処理）
+│   ├── check-errata.mjs       # 正誤表スキーマ・版整合の検査
 │   └── *.test.mjs             # 各スクリプトの単体テスト
 ├── dist/                      # 出力先（.gitignore 済）
 ├── package.json
@@ -641,6 +645,18 @@ Tips・注釈・注意の枠 3 種も基調色系トークンへ統一してい�
 2. ブランチを切って執筆
 3. PR を作成すると `npm test`（スクリプトの単体テスト）が実行され，プレビュー PDF が生成される
 4. main へマージするとリリース PDF が生成される
+
+## 📚 版管理と正誤表
+
+書籍の版（初版・第 2 版……）と正誤情報を管理する仕組みを備える．
+詳細な運用ルールは [docs/spec/edition-errata.md](docs/spec/edition-errata.md) を参照．
+
+- 版番号は `package.json` の semver の major と一致させる（`v1.x.x` が初版）．
+- 出版のたびに `errata/errata.yml` の `editions` へ版を追記する．
+  main へのマージで作られる Release が版ごとの PDF アーカイブとなる．
+- 正誤が見つかったら `errata/errata.yml` の `errata` へ追記する．
+  公開正誤表サイトが定期収集して掲載する．
+- `npm run check:errata` でスキーマと版整合を検査できる（ビルド時にも自動実行）．
 
 ## 🔍 トラブルシューティング
 

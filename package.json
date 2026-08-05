@@ -5,7 +5,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "vivliostyle build && node scripts/add-line-numbers.mjs && vivliostyle build && node scripts/add-line-numbers.mjs --restore && node scripts/verify-build.mjs && node scripts/tag-pdf.mjs",
+    "build": "node scripts/check-errata.mjs && vivliostyle build && node scripts/add-line-numbers.mjs && vivliostyle build && node scripts/add-line-numbers.mjs --restore && node scripts/verify-build.mjs && node scripts/tag-pdf.mjs",
+    "check:errata": "node scripts/check-errata.mjs",
     "test": "node --test scripts/*.test.mjs",
     "preview": "vivliostyle preview",
     "build:samples": "vivliostyle build -c vivliostyle.design-samples.config.js",
@@ -14,9 +15,10 @@
   },
   "devDependencies": {
     "@opendataloader/pdf": "^2.4.7",
-    "@vivliostyle/cli": "^8.0.0",
     "@u1f992/rehype-spectroscope": "github:u1f992/rehype-spectroscope#v0.1.0",
-    "rimraf": "^5.0.0"
+    "@vivliostyle/cli": "^8.0.0",
+    "rimraf": "^5.0.0",
+    "yaml": "^2.9.0"
   },
   "engines": {
     "node": ">=18.0.0"
