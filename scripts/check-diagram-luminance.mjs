@@ -110,7 +110,17 @@ const CSS_COLOR_PROPERTY = /(?:fill|stroke|stop-color)\s*:/i;
  * @returns {string}
  */
 function stripXmlComments(svgText) {
-  return svgText.replace(/<!--[\s\S]*?-->/g, '');
+  // 入れ子・破損したコメント境界（例: `<!-- a <!-- b -->`）では 1 回の
+  // 置換では取り残しが生じ得るため，変化がなくなるまで繰り返す．
+  // CodeQL js/incomplete-multi-character-sanitization の指摘への対応．
+  let text = svgText;
+  for (;;) {
+    const next = text.replace(/<!--[\s\S]*?-->/g, '');
+    if (next === text) {
+      return next;
+    }
+    text = next;
+  }
 }
 
 /**

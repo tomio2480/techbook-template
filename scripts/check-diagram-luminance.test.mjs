@@ -165,6 +165,19 @@ test('checkDiagramColors: XML コメント内の色属性は検査対象にし�
   assert.deepEqual(checkDiagramColors(files, VALID_PALETTE_CSS), []);
 });
 
+test('checkDiagramColors: 破損した入れ子コメントで色指定を隠しても検出から漏れない', () => {
+  // XML に入れ子コメントは存在しないため，このような記述自体が不正である．
+  // 1 回限りの置換だと除去処理の境界判定を悪用して違反を検出から
+  // 隠せてしまう懸念（CodeQL: incomplete-multi-character-sanitization）があるため，
+  // 除去後に有彩色が残る＝検出側で捕捉されることを fail-closed の観点で確認する．
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><!-- a <!-- b --> fill="#cc0000" --></svg>',
+  });
+  const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+  assert.ok(violations.some(v => v.type === 'unregistered-chromatic' && v.file === 'a.svg'));
+});
+
 test('checkDiagramColors: トークンの色が除外ファイルのみで使われていても未使用扱いにしない', () => {
   const files = makeFiles({
     'a.svg': '<svg><path stroke="#2f5b8c"/></svg>',
