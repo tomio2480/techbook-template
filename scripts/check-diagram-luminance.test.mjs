@@ -13,6 +13,7 @@ import {
   extractSvgColors,
   checkDiagramColors,
 } from './check-diagram-luminance.mjs';
+import { parseCssVariables, resolveVar } from './check-contrast.mjs';
 
 const PALETTE_CSS_PATH = fileURLToPath(
   new URL('../config/themes/techbook/palette.css', import.meta.url)
@@ -147,6 +148,23 @@ test('checkDiagramColors: CSS プロパティ形式の色指定（style 属性�
   assert.ok(violations.some(v => v.type === 'style-color' && v.file === 'a.svg'));
 });
 
+test('checkDiagramColors: CSS プロパティ名は大文字小文字を区別せず検出する', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><path style="FILL:#cc0000"/></svg>',
+  });
+  const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+  assert.ok(violations.some(v => v.type === 'style-color' && v.file === 'a.svg'));
+});
+
+test('checkDiagramColors: XML コメント内の色属性は検査対象にしない', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><!-- <path fill="#cc0000"/> --><path fill="#5588bb"/></svg>',
+  });
+  assert.deepEqual(checkDiagramColors(files, VALID_PALETTE_CSS), []);
+});
+
 test('checkDiagramColors: トークンの色が除外ファイルのみで使われていても未使用扱いにしない', () => {
   const files = makeFiles({
     'a.svg': '<svg><path stroke="#2f5b8c"/></svg>',
@@ -254,7 +272,22 @@ test('実ファイル: 除外リストのファイルが実在する（改名時
   }
 });
 
-test('実ファイル: ' + ANNOTATION_TOKEN + ' が palette.css に定義されている', () => {
+test('実ファイル: ' + ANNOTATION_TOKEN + ' が palette.css で有効な hex 値として宣言されている', () => {
+  // コメント中の言及だけでは満たされないよう，宣言を実際にパースして検証する．
+  // css.includes(ANNOTATION_TOKEN) だと，宣言を削除してもヘッダコメントの
+  // 言及が残っていれば見逃す．
   const css = fs.readFileSync(PALETTE_CSS_PATH, 'utf-8');
-  assert.ok(css.includes(ANNOTATION_TOKEN), `${ANNOTATION_TOKEN} が見つからない`);
+  const vars = parseCssVariables(css);
+  const value = resolveVar(vars, ANNOTATION_TOKEN);
+  assert.match(
+    value,
+    /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/,
+    `${ANNOTATION_TOKEN} の値 ${value} が hex 色として解釈できない`
+  );
+});
+
+test(ANNOTATION_TOKEN + ': コメント中の言及だけでは宣言とみなされない', () => {
+  const commentOnlyCss = `/* ${ANNOTATION_TOKEN} の説明コメント */\n:root {\n}`;
+  const vars = parseCssVariables(commentOnlyCss);
+  assert.throws(() => resolveVar(vars, ANNOTATION_TOKEN), new RegExp(ANNOTATION_TOKEN));
 });

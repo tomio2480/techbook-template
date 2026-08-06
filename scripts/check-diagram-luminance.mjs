@@ -97,8 +97,21 @@ export function isChromatic(hex) {
   return Math.max(...channels) - Math.min(...channels) >= CHROMA_THRESHOLD;
 }
 
-/** CSS プロパティ形式の色指定（style 属性・style 要素の双方で違反）． */
-const CSS_COLOR_PROPERTY = /(?:fill|stroke|stop-color)\s*:/;
+/**
+ * CSS プロパティ形式の色指定（style 属性・style 要素の双方で違反）．
+ * CSS プロパティ名は ASCII 大文字小文字を区別しないため i フラグを付ける．
+ */
+const CSS_COLOR_PROPERTY = /(?:fill|stroke|stop-color)\s*:/i;
+
+/**
+ * XML コメントを除去する．コメント内に残る色指定（無効化済みの記述）を
+ * 検査対象から除外し，誤検出・誤通過の両方を防ぐ．
+ * @param {string} svgText
+ * @returns {string}
+ */
+function stripXmlComments(svgText) {
+  return svgText.replace(/<!--[\s\S]*?-->/g, '');
+}
 
 /**
  * SVG テキストから fill / stroke / stop-color の値を分類して集める．
@@ -109,10 +122,11 @@ const CSS_COLOR_PROPERTY = /(?:fill|stroke|stop-color)\s*:/;
  * @returns {{ colors: Set<string>, unsupported: string[] }}
  */
 function parseColorValues(svgText) {
+  const withoutComments = stripXmlComments(svgText);
   const colors = new Set();
   const unsupported = [];
   const attrPattern = /(?:fill|stroke|stop-color)\s*=\s*(?:"([^"]+)"|'([^']+)')/g;
-  for (const match of svgText.matchAll(attrPattern)) {
+  for (const match of withoutComments.matchAll(attrPattern)) {
     const value = (match[1] ?? match[2]).trim().toLowerCase();
     if (value === 'none') {
       continue;
@@ -190,7 +204,7 @@ export function checkDiagramColors(svgFiles, paletteCss, options = {}) {
         message: `${file} の色値 ${value} は hex へ解釈できず検査をすり抜けるため許可しない`,
       });
     }
-    if (CSS_COLOR_PROPERTY.test(svgText)) {
+    if (CSS_COLOR_PROPERTY.test(stripXmlComments(svgText))) {
       violations.push({
         type: 'style-color',
         file,
