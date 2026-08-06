@@ -21,6 +21,9 @@
  *
  * コードブロックは外装（背景・枠・行番号帯）を基調色トークンへ追従させ，
  * シンタックス色は --palette-code-* として差し替え可能にする．
+ *
+ * 図版 SVG の補助記載は --palette-diagram-annotation に追従させる．
+ * scripts/check-diagram-luminance.mjs が明度段パレットとの整合を検査する．
  * 差し替え時は全シンタックス色が背景 --code-bg に対して
  * コントラスト比 4.5:1 以上を維持すること．背景が暗いほど
  * コントラスト条件は厳しくなる．そのため背景は淡色（既定 #f0f4f8
@@ -35,6 +38,9 @@
   --palette-primary: #2f5b8c;
   --palette-primary-mid: #b0c4de;
   --palette-primary-light: #f0f4f8;
+
+  /* 図版 SVG の補助記載（矢印・注釈線等）に使う明度段パレット中央値 */
+  --palette-diagram-annotation: #5588bb;
 
   /* 無彩色の段階 */
   --palette-ink: #222;
