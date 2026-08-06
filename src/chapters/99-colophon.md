@@ -24,4 +24,6 @@ class: colophon
 
 {{errata}}
 
+{{isdn}}
+
 (C) 2025 著者名 All Rights Reserved.

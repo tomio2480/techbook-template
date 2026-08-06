@@ -100,6 +100,21 @@ $1`);
   console.log('Restored vivliostyle.config.js to use MD files');
 }
 
+// 目次に載せない補助ページ（表紙・目次自身・あとがき・奥付・裏表紙）。
+// href="…" に前方一致で照合するため，cover の指定は back-cover に掛からない
+const TOC_EXCLUDED_HREF_PATTERNS = [
+  'cover\\.html[^"]*',
+  'toc\\.html',
+  '98-afterword\\.html[^"]*',
+  '99-colophon\\.html[^"]*',
+  'back-cover\\.html[^"]*',
+];
+
+// 補助ページの li 項目を目次からまとめて除外する
+export function removeExcludedTocEntries(tocInner) {
+  return TOC_EXCLUDED_HREF_PATTERNS.reduce(removeLiContainingHref, tocInner);
+}
+
 // ネストされた li 要素を正しく削除するためのヘルパー関数
 function removeLiContainingHref(html, hrefPattern) {
   const regex = new RegExp(`href="${hrefPattern}"`, 'g');
@@ -384,11 +399,8 @@ function updateTocFromIndex() {
   // パスを相対パスに変換（src/chapters/ を削除）
   tocInner = tocInner.replace(/href="src\/chapters\//g, 'href="');
 
-  // 表紙、目次自体、あとがき、奥付の項目を削除
-  tocInner = removeLiContainingHref(tocInner, 'cover\\.html[^"]*');
-  tocInner = removeLiContainingHref(tocInner, 'toc\\.html');
-  tocInner = removeLiContainingHref(tocInner, '98-afterword\\.html[^"]*');
-  tocInner = removeLiContainingHref(tocInner, '99-colophon\\.html[^"]*');
+  // 表紙、目次自体、あとがき、奥付、裏表紙の項目を削除
+  tocInner = removeExcludedTocEntries(tocInner);
 
 
   // アンカー（#以降）を削除してファイル名のみにする（target-counter の解決を助ける）
