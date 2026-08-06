@@ -991,7 +991,10 @@ body.colophon h1 {
   padding: 0 0 6pt 0;
   margin-bottom: 12pt;
   margin-top: 0;
-  break-before: page;
+  /* 奥付は 1 文書 = 1 ページで組まれるため改ページ指定は持たせない．
+     著者紹介より後ろへタイトルを置く構成で，ここで改ページすると
+     奥付情報だけが次ページへ割れてしまう */
+  break-before: auto;
   counter-increment: none;
 }
 
@@ -1036,7 +1039,11 @@ body.colophon p {
 
 /* 奥付の著者紹介（{{authors}} マーカーから inject-colophon.mjs が生成する） */
 /* 著者紹介だけをページ上部へ置き，従来の奥付情報は下部寄せのまま保つ．
-   著者紹介が無い書籍では従来どおり全体が下部寄せになる */
+   著者紹介が無い書籍では従来どおり全体が下部寄せになる．
+   標準テンプレートはマーカーをタイトルより前に置くため，著者紹介は
+   body 直下の flex 子要素になり margin-bottom: auto だけで上部へ寄る．
+   タイトル見出しの後ろへ置いた場合は section 内に入るため，
+   次の :has ルールで section 側を flex 化して同じ挙動にする */
 .colophon > section:has(.colophon-authors),
 body.colophon > section:has(.colophon-authors) {
   display: flex;
