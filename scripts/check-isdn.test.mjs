@@ -1,7 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
-import { validateIsdnNumber, validateIsdn } from './check-isdn.mjs';
+import { validateIsdnNumber, validateIsdn, isRegularFile } from './check-isdn.mjs';
 
 /* チェックディジットはモジュラス 10 ウェイト 3・1 で計算した実在しうる値 */
 const VALID_NUMBER = 'ISDN278-4-123456-78-1';
@@ -40,6 +43,32 @@ describe('validateIsdnNumber', () => {
 
   it('YAML の数値として書かれた番号も文字列として検査する', () => {
     assert.deepEqual(validateIsdnNumber(2784123456781), []);
+  });
+});
+
+describe('isRegularFile', () => {
+  it('通常ファイルなら true を返す', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'isdn-test-'));
+    try {
+      const file = path.join(dir, 'barcode.png');
+      fs.writeFileSync(file, 'dummy');
+      assert.equal(isRegularFile(file), true);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('ディレクトリなら false を返す（img の src へ渡して静かに壊れる事故を防ぐ）', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'isdn-test-'));
+    try {
+      assert.equal(isRegularFile(dir), false);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('存在しないパスなら false を返す', () => {
+    assert.equal(isRegularFile(path.join(os.tmpdir(), 'isdn-test-not-exist', 'x.png')), false);
   });
 });
 

@@ -29,6 +29,22 @@ function isNonEmptyString(value) {
 }
 
 /**
+ * パスが通常ファイルを指すかどうかを判定する．
+ * existsSync はディレクトリでも true を返し，img の src へ渡すと
+ * 静かに壊れた参照になるため，ファイル種別まで確認する．
+ * @param {string | URL} filePath
+ * @returns {boolean}
+ */
+export function isRegularFile(filePath) {
+  try {
+    return fs.statSync(filePath).isFile();
+  } catch {
+    /* 存在しない・アクセス不能は「ファイルでない」として扱う */
+    return false;
+  }
+}
+
+/**
  * issued.number の生値を検査用の文字列へ整える．
  * YAML で引用符なしに書かれた番号は数値として読まれるため文字列へ寄せる．
  * @param {unknown} value
@@ -108,7 +124,7 @@ if (isMainModule) {
   const barcodePath = isNonEmptyString(data?.issued?.barcode)
     ? data.issued.barcode
     : DEFAULT_BARCODE_PATH;
-  const barcodeExists = fs.existsSync(fileURLToPath(new URL(barcodePath, root)));
+  const barcodeExists = isRegularFile(fileURLToPath(new URL(barcodePath, root)));
   const { errors, warnings } = validateIsdn(data, { barcodeExists });
   for (const warning of warnings) {
     console.warn(`警告 ${warning}`);

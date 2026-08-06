@@ -5,7 +5,7 @@ import { spectroscope } from '@u1f992/rehype-spectroscope';
 import { joinCjkLineBreaksPlugin } from './scripts/join-cjk-line-breaks.mjs';
 import { injectColophonPlugin } from './scripts/inject-colophon.mjs';
 import { injectIsdnPlugin } from './scripts/inject-isdn.mjs';
-import { DEFAULT_BARCODE_PATH } from './scripts/check-isdn.mjs';
+import { DEFAULT_BARCODE_PATH, isRegularFile } from './scripts/check-isdn.mjs';
 
 /* 奥付へ流し込む著者紹介・正誤表 URL を config/book.yaml から読み込む */
 const bookYaml =
@@ -25,7 +25,7 @@ if (!isdnBarcodePath.startsWith('src/')) {
 const isdnBarcode = {
   /* 生成 HTML は src/chapters/ に置かれるため 1 階層上がって参照する */
   src: isdnBarcodePath.replace(/^src\//, '../'),
-  exists: fs.existsSync(new URL(`./${isdnBarcodePath}`, import.meta.url)),
+  exists: isRegularFile(new URL(`./${isdnBarcodePath}`, import.meta.url)),
 };
 
 export default {
