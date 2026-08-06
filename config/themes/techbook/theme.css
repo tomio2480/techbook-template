@@ -991,7 +991,10 @@ body.colophon h1 {
   padding: 0 0 6pt 0;
   margin-bottom: 12pt;
   margin-top: 0;
-  break-before: page;
+  /* 奥付は 1 文書 = 1 ページで組まれるため改ページ指定は持たせない．
+     著者紹介より後ろへタイトルを置く構成で，ここで改ページすると
+     奥付情報だけが次ページへ割れてしまう */
+  break-before: auto;
   counter-increment: none;
 }
 
@@ -1032,6 +1035,61 @@ body.colophon p {
   text-indent: 0;
   margin: 6pt 0;
   color: var(--color-muted-dark);
+}
+
+/* 奥付の著者紹介（{{authors}} マーカーから inject-colophon.mjs が生成する） */
+/* 著者紹介だけをページ上部へ置き，従来の奥付情報は下部寄せのまま保つ．
+   著者紹介が無い書籍では従来どおり全体が下部寄せになる．
+   標準テンプレートはマーカーをタイトルより前に置くため，著者紹介は
+   body 直下の flex 子要素になり margin-bottom: auto だけで上部へ寄る．
+   タイトル見出しの後ろへ置いた場合は section 内に入るため，
+   次の :has ルールで section 側を flex 化して同じ挙動にする */
+.colophon > section:has(.colophon-authors),
+body.colophon > section:has(.colophon-authors) {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+}
+
+.colophon .colophon-authors,
+body.colophon .colophon-authors {
+  margin-bottom: auto;
+}
+
+/* 章見出し用の番号プレート・下罫線装飾を奥付では打ち消す */
+.colophon h2,
+body.colophon h2 {
+  font-size: 11pt;
+  margin: 0 0 8pt 0;
+  padding-bottom: 4pt;
+  border-bottom: 0.75pt solid var(--heading-rule);
+  counter-increment: none;
+}
+
+.colophon h2::before,
+body.colophon h2::before {
+  content: none !important;
+}
+
+.colophon .colophon-author,
+body.colophon .colophon-author {
+  margin-bottom: 10pt;
+}
+
+.colophon .colophon-author-name,
+body.colophon .colophon-author-name {
+  font-size: 10pt;
+  font-family: var(--font-gothic);
+  font-weight: bold;
+  color: var(--color-text);
+  margin: 0 0 2pt 0;
+}
+
+.colophon .colophon-author-bio,
+body.colophon .colophon-author-bio {
+  font-size: 9pt;
+  color: var(--color-text);
+  margin: 0 0 2pt 0;
 }
 
 /* まえがき・目次・あとがきのヘッダーを非表示 */

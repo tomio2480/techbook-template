@@ -92,6 +92,25 @@ describe('validateErrata: book 節', () => {
     assert.deepEqual(errors, []);
     assert.ok(warnings.some((w) => w.includes('title')));
   });
+
+  it('book.yaml の errata.url に slug が含まれない場合は警告になる', () => {
+    const context = {
+      ...initialContext,
+      bookYamlErrataUrl: 'https://example.github.io/errata/books/other-book/',
+    };
+    const { errors, warnings } = validateErrata(initialData(), context);
+    assert.deepEqual(errors, []);
+    assert.ok(warnings.some((w) => w.includes('errata.url')));
+  });
+
+  it('book.yaml の errata.url に slug が含まれれば警告は出ない', () => {
+    const context = {
+      ...initialContext,
+      bookYamlErrataUrl: 'https://example.github.io/errata/books/example-book/',
+    };
+    const { warnings } = validateErrata(initialData(), context);
+    assert.deepEqual(warnings, []);
+  });
 });
 
 describe('validateErrata: editions 節', () => {
@@ -279,5 +298,23 @@ describe('extractContext: version 情報の抽出', () => {
     assert.equal(ctx.bookYamlMajor, undefined);
     assert.equal(ctx.bookYamlTitle, undefined);
     assert.ok(ctx.warnings.length > 0);
+  });
+
+  it('book.yaml の errata.url を抽出する', () => {
+    const url = 'https://example.github.io/errata/books/example-book/';
+    const ctx = extractContext('1.0.0', { errata: { url } });
+    assert.equal(ctx.bookYamlErrataUrl, url);
+  });
+
+  it('errata 節はあるが url が文字列でない場合は警告を出す', () => {
+    const ctx = extractContext('1.0.0', { errata: { url: 123 } });
+    assert.equal(ctx.bookYamlErrataUrl, undefined);
+    assert.ok(ctx.warnings.some((w) => w.includes('errata.url')));
+  });
+
+  it('errata 節が無い場合は警告なしで突合を省略する', () => {
+    const ctx = extractContext('1.0.0', { title: 'T', version: '1.0.0' });
+    assert.equal(ctx.bookYamlErrataUrl, undefined);
+    assert.deepEqual(ctx.warnings, []);
   });
 });

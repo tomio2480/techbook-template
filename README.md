@@ -198,6 +198,40 @@ class: answers
 
 なお、解答の「A.」と最初の付録の「A.」は接頭辞が衝突する。併用する場合は、テーマ CSS の上書きで付録側の文字を変更するなどの調整を検討する。
 
+### 奥付（Colophon）
+
+奥付（`99-colophon.md`）は、ページ上部に著者紹介、下部に書籍タイトル・発行履歴・奥付情報・正誤表リンクを置く構成である。著者紹介と正誤表リンクは `config/book.yaml` のデータから流し込める。原稿には単独の段落としてマーカーを書く。
+
+- `{{authors}}`: 著者紹介（ページ上部に表示される）
+- `{{errata}}`: 正誤表ページへの案内（奥付情報の下部に表示される）
+
+発行履歴は書籍タイトル見出しの直下に手書きする。版や刷が増えたら、段落（空行区切り）として 1 行ずつ追記する。
+
+```markdown
+# 書籍タイトル
+
+2026年08月06日 初版第一刷発行
+
+2027年01月10日 第二版第一刷発行
+```
+
+データは `config/book.yaml` に書く。
+
+```yaml
+authors:
+  - name: "著者名"          # 必須
+    sns: "@example"          # 任意。氏名の後ろに（@example）と表示される
+    bio: "紹介文。140 文字程度を目安にする。"  # 任意
+    link:                    # 任意。title と url を 1 組だけ書く
+      title: "Web サイト"
+      url: "https://example.com/"
+
+errata:
+  url: "https://example.github.io/errata/books/example-book/"
+```
+
+データが無い場合、マーカーは出力から取り除かれ、ビルド時に警告が出る。`errata.url` が `errata/errata.yml` の slug と食い違う場合は `npm run check:errata` が警告する。要求・要件の詳細は `docs/spec/colophon.md` を参照。
+
 採番の除外一覧や拡張方法の詳細は [目次と特殊章の採番 要求・要件](docs/spec/toc-numbering.md) を参照。
 
 ### 見出し
