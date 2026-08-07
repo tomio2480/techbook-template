@@ -3,7 +3,24 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { parseListItems, mergeTocTrees, serializeTocTree, writeBuildMarker, stripHtmlTags, extractHeadingOrDefault } from './add-line-numbers.mjs';
+import { parseListItems, mergeTocTrees, serializeTocTree, writeBuildMarker, stripHtmlTags, extractHeadingOrDefault, removeExcludedTocEntries } from './add-line-numbers.mjs';
+
+// --- removeExcludedTocEntries ---
+
+test('removeExcludedTocEntries: 表紙・裏表紙・奥付などの補助ページを目次から除外する', () => {
+  const input =
+    '<ol>' +
+    '<li><a href="cover.html">表紙</a></li>' +
+    '<li><a href="01-introduction.html">第1章</a></li>' +
+    '<li><a href="99-colophon.html">奥付</a></li>' +
+    '<li><a href="back-cover.html">techbook-template</a></li>' +
+    '</ol>';
+  const result = removeExcludedTocEntries(input);
+  assert.ok(!result.includes('back-cover.html'));
+  assert.ok(!result.includes('cover.html'));
+  assert.ok(!result.includes('99-colophon.html'));
+  assert.ok(result.includes('01-introduction.html'));
+});
 
 // --- stripHtmlTags ---
 

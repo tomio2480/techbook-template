@@ -1120,6 +1120,56 @@ body.colophon {
   page: colophon;
 }
 
+/* 奥付の ISDN 番号（{{isdn}} マーカーから inject-isdn.mjs が生成する） */
+.colophon .colophon-isdn,
+body.colophon .colophon-isdn {
+  font-family: var(--font-gothic);
+  color: var(--color-text);
+}
+
+/* 裏表紙（表 4）．ヘッダー・フッターを消し，余白 0 で組む．
+   余白 0 により，バーコード位置を仕上がり端からの距離で指定できる */
+@page back-cover {
+  margin: 0;
+
+  @top-center {
+    content: none;
+  }
+
+  @bottom-center {
+    content: none;
+  }
+}
+
+.back-cover,
+body.back-cover {
+  page: back-cover;
+  /* バーコードの absolute 配置の基準を明示する（余白 0 のページ全面） */
+  position: relative;
+  /* ISDN バーコードの規定位置．ISDN 公式に配置規定は無いため，
+     商業書籍の書籍 JAN コードの慣行（表 4 左上）へ準拠した既定値とする．
+     入稿先の指定があればこの変数で調整する */
+  --isdn-barcode-top: 10mm;
+  --isdn-barcode-left: 12mm;
+  --isdn-barcode-width: 40mm;
+}
+
+/* ISDN バーコード（{{isdn-barcode}} マーカーから inject-isdn.mjs が生成する） */
+.back-cover .isdn-barcode,
+body.back-cover .isdn-barcode {
+  position: absolute;
+  top: var(--isdn-barcode-top);
+  left: var(--isdn-barcode-left);
+}
+
+.back-cover .isdn-barcode img,
+body.back-cover .isdn-barcode img {
+  width: var(--isdn-barcode-width);
+  height: auto;
+  /* 背景画像を敷いた場合でも読み取れるよう白地を保つ */
+  background: #fff;
+}
+
 /* あとがき */
 .afterword h1,
 body.afterword h1 {

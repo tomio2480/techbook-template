@@ -165,6 +165,7 @@ class: preface
 | あとがき | `afterword` |
 | 奥付 | `colophon` |
 | 表紙 | `cover` |
+| 裏表紙 | `back-cover` |
 | 付録 | `appendix` |
 | 解答 | `answers` |
 
@@ -233,6 +234,24 @@ errata:
 データが無い場合、マーカーは出力から取り除かれ、ビルド時に警告が出る。`errata.url` が `errata/errata.yml` の slug と食い違う場合は `npm run check:errata` が警告する。要求・要件の詳細は `docs/spec/colophon.md` を参照。
 
 採番の除外一覧や拡張方法の詳細は [目次と特殊章の採番 要求・要件](docs/spec/toc-numbering.md) を参照。
+
+### ISDN（国際標準同人誌番号）
+
+同人誌の作品識別子 [ISDN](https://isdn.jp/) に対応している。運用の流れは次のとおり。
+
+1. 執筆中に `config/isdn.yaml` の `application` 節へ申請情報（よみがな・レーティングなど）を書きためる。
+2. 書籍の完成後、`application` 節を見ながら [申請ページ](https://isdn.jp/mail/registrar/) へ入力して申請する。
+3. 運営からメールで届いた番号を `issued.number` へ書き、バーコード画像を `src/assets/isdn-barcode.png` へ置く。
+4. ビルドすると奥付へ番号が、裏表紙（`back-cover.md`）へバーコードが流し込まれる。
+
+原稿には単独の段落としてマーカーを書く。
+
+- `{{isdn}}`: ISDN 番号（奥付の正誤表リンクの下に表示される）
+- `{{isdn-barcode}}`: バーコード画像（裏表紙の左上規定位置に配置される）
+
+データが無い場合、マーカーは出力から取り除かれ、ビルド時に警告が出る。番号の形式（13 桁・プレフィックス 278/279・チェックディジット）は `npm run check:isdn` が検査し、`npm run build` の冒頭でも自動実行される。
+
+バーコードの位置・幅はテーマ CSS の変数（`--isdn-barcode-top` / `--isdn-barcode-left` / `--isdn-barcode-width`）で調整できる。申請フォームの管理用パスワードは `config/isdn.yaml` へ書かないこと。要求・要件の詳細は [ISDN 対応 要求・要件](docs/spec/isdn.md) を参照。
 
 ### 見出し
 
@@ -531,12 +550,14 @@ techbook-template/
 │   │   ├── 96-answers.md      # 解答
 │   │   ├── 97-appendix.md     # 付録
 │   │   ├── 98-afterword.md    # あとがき
-│   │   └── 99-colophon.md     # 奥付
+│   │   ├── 99-colophon.md     # 奥付
+│   │   └── back-cover.md      # 裏表紙（ISDN バーコード配置）
 │   ├── design-samples/        # 装飾スタイルカタログ原稿
 │   └── assets/
 │       ├── images/            # 写真・スクリーンショット
 │       └── diagrams/          # 回路図・図表
 ├── config/
+│   ├── isdn.yaml              # ISDN 申請情報・発行情報
 │   └── themes/
 │       └── techbook/
 │           ├── theme.css      # メインスタイル
@@ -550,6 +571,7 @@ techbook-template/
 │   ├── verify-build.mjs       # ビルド中断検知（フェイルセーフ）
 │   ├── tag-pdf.mjs            # タグ付き PDF 生成（ビルド後処理）
 │   ├── check-errata.mjs       # 正誤表スキーマ・版整合の検査
+│   ├── check-isdn.mjs         # ISDN 番号・バーコード整合の検査
 │   └── *.test.mjs             # 各スクリプトの単体テスト
 ├── dist/                      # 出力先（.gitignore 済）
 ├── package.json

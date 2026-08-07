@@ -5,8 +5,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/check-errata.mjs && vivliostyle build && node scripts/add-line-numbers.mjs && vivliostyle build && node scripts/add-line-numbers.mjs --restore && node scripts/verify-build.mjs && node scripts/tag-pdf.mjs",
+    "build": "node scripts/check-errata.mjs && node scripts/check-isdn.mjs && vivliostyle build && node scripts/add-line-numbers.mjs && vivliostyle build && node scripts/add-line-numbers.mjs --restore && node scripts/verify-build.mjs && node scripts/tag-pdf.mjs",
     "check:errata": "node scripts/check-errata.mjs",
+    "check:isdn": "node scripts/check-isdn.mjs",
     "test": "node --test scripts/*.test.mjs",
     "preview": "vivliostyle preview",
     "build:samples": "vivliostyle build -c vivliostyle.design-samples.config.js",
