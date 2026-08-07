@@ -5,7 +5,7 @@
     背景画像変数の上書きで行う（docs/spec/cover.md を参照）．
     配色は palette.css 第 1 層の既定値に対応させている
     （#2f5b8c / #b0c4de / #f0f4f8）．
-    左上は ISDN バーコードの規定位置（docs/spec/isdn.md）のため，
+    右上は ISDN バーコードの規定位置（docs/spec/isdn.md）のため，
     天側 60mm ほどは無地を保つ．
   -->
   <rect width="182" height="257" fill="#f0f4f8"/>

@@ -251,13 +251,13 @@ errata:
 原稿には単独の段落としてマーカーを書く。
 
 - `{{isdn}}`: ISDN 番号（奥付の正誤表リンクの下に表示される）
-- `{{isdn-barcode}}`: バーコードの情報ブロック（裏表紙の左上規定位置に白地プレートで配置される）
+- `{{isdn-barcode}}`: バーコードの情報ブロック（裏表紙の右上規定位置に白地プレートで配置される）
 
 情報ブロックはバーコード画像の脇へ文字情報を添える。内訳は ISDN 番号、コード行（`C0095 ¥1000E` 形式の C コード＋価格）、発行サークル名の 3 行である。コード行と発行者は `config/isdn.yaml` の `application` 節（`c_code`・`price`・`circle`）から流し込み、無い項目の行は出力しない。サークル名は情報ブロックが出力するため、`back-cover.md` の自由記述と重複させないこと。
 
 データが無い場合、マーカーは出力から取り除かれ、ビルド時に警告が出る。番号の形式（13 桁・プレフィックス 278/279・チェックディジット）は `npm run check:isdn` が検査し、`npm run build` の冒頭でも自動実行される。
 
-バーコードの位置・幅はテーマ CSS の変数（`--isdn-barcode-top` / `--isdn-barcode-left` / `--isdn-barcode-width`）で調整できる。申請フォームの管理用パスワードは `config/isdn.yaml` へ書かないこと。要求・要件の詳細は [ISDN 対応 要求・要件](docs/spec/isdn.md) を参照。
+バーコードの位置・幅はテーマ CSS の変数（`--isdn-barcode-top` / `--isdn-barcode-right` / `--isdn-barcode-width`）で調整できる。申請フォームの管理用パスワードは `config/isdn.yaml` へ書かないこと。要求・要件の詳細は [ISDN 対応 要求・要件](docs/spec/isdn.md) を参照。
 
 ### 見出し
 
@@ -698,7 +698,7 @@ Rec.601 輝度で 15 ポイント以上の差を機械検査する。実体配�
 | `--back-cover-font-size` | 裏表紙の文字サイズ | 10pt |
 | `--back-cover-text-align` | 裏表紙の文字揃え | center |
 
-文字色は `palette.css` の意味トークン（`--cover-title-color`・`--cover-author-color`・`--back-cover-text-color`）で変更する。裏表紙の ISDN バーコードは左上の規定位置に配置されるため、文字情報の既定余白はこの位置を避けている（詳細は `docs/spec/isdn.md`）。
+文字色は `palette.css` の意味トークン（`--cover-title-color`・`--cover-author-color`・`--back-cover-text-color`）で変更する。裏表紙の ISDN バーコードは右上の規定位置（左綴じ前提）に配置されるため、文字情報の既定余白はこの位置を避けている（詳細は `docs/spec/isdn.md`）。
 
 ### 扉直後ページの章タイトル帯（オプション）
 

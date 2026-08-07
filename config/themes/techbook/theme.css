@@ -1245,10 +1245,10 @@ body.back-cover {
   /* バーコードの absolute 配置の基準を明示する（余白 0 のページ全面） */
   position: relative;
   /* ISDN バーコードの規定位置．ISDN 公式に配置規定は無いため，
-     商業書籍の書籍 JAN コードの慣行（表 4 左上）へ準拠した既定値とする．
+     左綴じ本の裏表紙（表 4）右上を本テンプレートの規定位置とする．
      入稿先の指定があればこの変数で調整する */
   --isdn-barcode-top: 10mm;
-  --isdn-barcode-left: 12mm;
+  --isdn-barcode-right: 12mm;
   --isdn-barcode-width: 40mm;
   --isdn-info-font-size: 7pt;
 }
@@ -1256,7 +1256,7 @@ body.back-cover {
 /* 余白は body だけに与える（表紙の項と同じ理由．html への二重適用を防ぐ） */
 body.back-cover {
   box-sizing: border-box;
-  /* 文字情報はバーコード規定位置（左上）を避け，地側の余白内へ組む */
+  /* 文字情報はバーコード規定位置（右上）を避け，地側の余白内へ組む */
   padding: var(--back-cover-padding);
 }
 
@@ -1267,8 +1267,10 @@ body.back-cover {
 body.back-cover .isdn-barcode {
   position: absolute;
   top: var(--isdn-barcode-top);
-  left: var(--isdn-barcode-left);
+  right: var(--isdn-barcode-right);
   display: flex;
+  /* DOM 順（画像→文字）は読み上げ順を保ち，見た目は文字→画像の並びにする */
+  flex-direction: row-reverse;
   align-items: flex-start;
   gap: 3mm;
   background: #fff;
@@ -1283,14 +1285,14 @@ body.back-cover .isdn-barcode img {
   background: #fff;
 }
 
-/* バーコード脇の文字情報．書籍 JAN コード周りの慣行に合わせ，
-   小さめのゴシックで左揃えに組む */
+/* バーコード脇の文字情報．小さめのゴシックで組む．
+   バーコードが右・文字が左の並びのため，文字はバーコード側へ寄せる */
 .back-cover .isdn-info p,
 body.back-cover .isdn-info p {
   font-family: var(--font-gothic);
   font-size: var(--isdn-info-font-size);
   color: var(--back-cover-text-color);
-  text-align: left;
+  text-align: right;
   text-indent: 0;
   margin: 0 0 1.5mm;
   line-height: 1.5;
