@@ -16,6 +16,10 @@ const MARKERS = [
   { marker: '{{book-author}}', key: 'author', label: 'author' },
 ];
 
+/* 置換の対象外とするコード文脈．技術書の作例にマーカー文字列そのものを
+   載せられるよう，リテラルを保持すべき要素の配下へは踏み込まない */
+const SKIP_TAGS = new Set(['code', 'pre', 'script', 'style', 'samp', 'kbd']);
+
 function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim() !== '';
 }
@@ -51,6 +55,9 @@ export function injectBookMetaPlugin(options = {}) {
     };
     const visit = (node) => {
       if (!node) {
+        return;
+      }
+      if (node.type === 'element' && SKIP_TAGS.has(node.tagName)) {
         return;
       }
       if (node.type === 'text' && typeof node.value === 'string') {

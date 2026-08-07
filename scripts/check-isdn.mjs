@@ -9,6 +9,7 @@
  * 番号未発行（空値）は正常として扱う．申請前のリポジトリを壊さないため．
  */
 
+import crypto from 'crypto';
 import fs from 'fs';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { parse } from 'yaml';
@@ -22,6 +23,26 @@ export const DEFAULT_BARCODE_PATH = 'src/assets/isdn-barcode.png';
 /* テンプレート同梱のサンプル番号．config/isdn.yaml の初期値と揃える．
    このままの出版を防ぐため，検査で差し替え忘れを警告する */
 export const SAMPLE_ISDN_NUMBER = 'ISDN278-4-876543-21-9';
+
+/* テンプレート同梱のダミーバーコード画像の SHA-256．
+   番号だけ差し替えて画像を忘れる事故を，画像自体の一致で検出する */
+export const SAMPLE_BARCODE_SHA256 =
+  'aebdbd2ff5d7837ee40e0f746ed211906fc3a015f92bdab4a417c24ba961428e';
+
+/**
+ * パスの内容がテンプレート同梱のダミーバーコードかどうかを判定する．
+ * 読めないパスは「ダミーでない」として扱う（存在検査は別で行う）．
+ * @param {string | URL} filePath
+ * @returns {boolean}
+ */
+export function isSampleBarcode(filePath) {
+  try {
+    const digest = crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+    return digest === SAMPLE_BARCODE_SHA256;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * 値が空でない文字列かどうかを判定する．
@@ -106,9 +127,36 @@ export function validateCCode(value) {
 }
 
 /**
+ * 価格（application.price）を検査し，問題点の一覧を返す．
+ * 出版物のコード行へそのまま載るため，円単位の 0 以上の整数に限る．
+ * 桁区切りのカンマは許容する．小数・負数・単位付きは受け付けない．
+ * @param {unknown} value
+ * @returns {string[]}
+ */
+export function validatePrice(value) {
+  const problem = [
+    `application.price: 価格は円単位の 0 以上の整数で書く（現在 ${String(value).trim()}）`,
+  ];
+  if (typeof value === 'number') {
+    return Number.isInteger(value) && value >= 0 ? [] : problem;
+  }
+  const body = String(value ?? '').trim().replace(/,/g, '');
+  return /^\d+$/.test(body) ? [] : problem;
+}
+
+/**
+ * 価格をコード行用の数字列へ整える．検査合格が前提である．
+ * @param {unknown} value
+ * @returns {string}
+ */
+export function normalizePrice(value) {
+  return String(value ?? '').trim().replace(/,/g, '');
+}
+
+/**
  * isdn.yaml の内容を検査する．
  * @param {unknown} data isdn.yaml をパースしたオブジェクト
- * @param {{ barcodeExists: boolean }} context
+ * @param {{ barcodeExists: boolean, barcodeIsSample?: boolean }} context
  * @returns {{ errors: string[], warnings: string[] }}
  */
 export function validateIsdn(data, context) {
@@ -131,11 +179,19 @@ export function validateIsdn(data, context) {
   } else if (context.barcodeExists) {
     warnings.push('バーコード画像があるのに issued.number が無い．発行された番号を記入する');
   }
-  /* C コードは裏表紙の情報ブロックへ流し込むため，形式崩れを警告で知らせる */
-  const cCode =
-    data.application && typeof data.application === 'object' ? data.application.c_code : undefined;
+  if (context.barcodeExists && context.barcodeIsSample === true) {
+    warnings.push('バーコード画像がテンプレートのダミーのままである．運営から受領した画像へ差し替える');
+  }
+  /* C コード・価格は裏表紙の情報ブロックへ流し込むため，形式崩れを警告で知らせる */
+  const application =
+    data.application && typeof data.application === 'object' ? data.application : {};
+  const cCode = application.c_code;
   if (isNonEmptyString(cCode) || typeof cCode === 'number') {
     warnings.push(...validateCCode(cCode));
+  }
+  const price = application.price;
+  if (isNonEmptyString(price) || typeof price === 'number') {
+    warnings.push(...validatePrice(price));
   }
   return { errors, warnings };
 }
@@ -153,8 +209,10 @@ if (isMainModule) {
   const barcodePath = isNonEmptyString(data?.issued?.barcode)
     ? data.issued.barcode
     : DEFAULT_BARCODE_PATH;
-  const barcodeExists = isRegularFile(fileURLToPath(new URL(barcodePath, root)));
-  const { errors, warnings } = validateIsdn(data, { barcodeExists });
+  const barcodeFileUrl = new URL(barcodePath, root);
+  const barcodeExists = isRegularFile(fileURLToPath(barcodeFileUrl));
+  const barcodeIsSample = barcodeExists && isSampleBarcode(fileURLToPath(barcodeFileUrl));
+  const { errors, warnings } = validateIsdn(data, { barcodeExists, barcodeIsSample });
   for (const warning of warnings) {
     console.warn(`警告 ${warning}`);
   }

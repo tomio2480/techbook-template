@@ -140,6 +140,25 @@ describe('buildIsdnBarcodeSection の情報ブロック', () => {
     assert.equal(textOf(findByClass(section, 'isdn-info-code')[0]), 'C0095 ¥1000E');
   });
 
+  it('小数・負数など不正な価格は警告してコード行から外す', () => {
+    for (const price of ['1000.50', '-1000', '1000円']) {
+      const warnings = [];
+      const section = buildIsdnBarcodeSection(
+        VALID_NUMBER,
+        BARCODE,
+        { price },
+        (m) => warnings.push(m),
+      );
+      assert.equal(findByClass(section, 'isdn-info-code').length, 0, `price=${price}`);
+      assert.equal(warnings.length, 1, `price=${price}`);
+    }
+  });
+
+  it('桁区切りカンマ付きの価格は整数へ整えて出す', () => {
+    const section = buildIsdnBarcodeSection(VALID_NUMBER, BARCODE, { price: '1,000' }, () => {});
+    assert.equal(textOf(findByClass(section, 'isdn-info-code')[0]), '¥1000E');
+  });
+
   it('4 桁でない C コードは警告してコード行から外す', () => {
     const warnings = [];
     const section = buildIsdnBarcodeSection(

@@ -11,7 +11,12 @@
  * マーカー置換の方式は scripts/inject-colophon.mjs に合わせている．
  */
 
-import { validateCCode, validateIsdnNumber } from './check-isdn.mjs';
+import {
+  normalizePrice,
+  validateCCode,
+  validateIsdnNumber,
+  validatePrice,
+} from './check-isdn.mjs';
 
 const ISDN_MARKER = '{{isdn}}';
 const BARCODE_MARKER = '{{isdn-barcode}}';
@@ -66,9 +71,15 @@ function formatCodeLine(application, warn) {
       parts.push(`C${String(cCode).trim().replace(/^C/i, '')}`);
     }
   }
-  const priceDigits = String(price ?? '').replace(/[^\d]/g, '');
-  if (priceDigits !== '') {
-    parts.push(`¥${priceDigits}E`);
+  if (isNonEmptyString(price) || typeof price === 'number') {
+    const problems = validatePrice(price);
+    if (problems.length > 0) {
+      /* 数字だけ拾うと別の価格へ化ける（例: 1000.50 → 100050）ため，
+         不正値は載せずに知らせる */
+      warn(`config/isdn.yaml: ${problems[0]}．裏表紙のコード行から外す`);
+    } else {
+      parts.push(`¥${normalizePrice(price)}E`);
+    }
   }
   return parts.length > 0 ? parts.join(' ') : null;
 }

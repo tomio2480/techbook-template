@@ -83,4 +83,32 @@ describe('injectBookMetaPlugin', () => {
     injectBookMetaPlugin({ ...META, warn: () => {} })(tree);
     assert.equal(textOf(tree), 'ふつうの本文');
   });
+
+  it('code・pre などコード文脈内のマーカーは置き換えない', () => {
+    const tree = {
+      type: 'root',
+      children: [
+        el('p', [el('code', [textNode('{{book-title}}')])]),
+        el('pre', [el('code', [textNode('{{book-author}}')])]),
+        el('script', [textNode('{{book-title}}')]),
+        el('style', [textNode('{{book-title}}')]),
+      ],
+    };
+    const warnings = [];
+    injectBookMetaPlugin({ ...META, warn: (m) => warnings.push(m) })(tree);
+    assert.ok(textOf(tree).includes('{{book-title}}'));
+    assert.ok(textOf(tree).includes('{{book-author}}'));
+    assert.equal(warnings.length, 0);
+  });
+
+  it('コード文脈を含む段落でも地の文のマーカーは置き換える', () => {
+    const tree = {
+      type: 'root',
+      children: [
+        el('p', [textNode('{{book-title}}（'), el('code', [textNode('{{book-title}}')]), textNode('）')]),
+      ],
+    };
+    injectBookMetaPlugin({ ...META, warn: () => {} })(tree);
+    assert.equal(textOf(tree), '実際のタイトル（{{book-title}}）');
+  });
 });
