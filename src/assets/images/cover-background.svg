@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 182 257" width="182mm" height="257mm">
+  <!--
+    表紙（表 1）のプレースホルダー背景．執筆者が差し替える前提で置く．
+    差し替えは本ファイルの置換，またはテーマ CSS にある表紙の
+    背景画像変数の上書きで行う（docs/spec/cover.md を参照）．
+    配色は palette.css 第 1 層の既定値に対応させている
+    （#2f5b8c / #b0c4de / #f0f4f8）．パレットを差し替えた場合は
+    本ファイルの配色も合わせて調整する．
+    タイトル・著者名が重なる中央帯（y=80〜150 付近）は無地を保つ．
+  -->
+  <rect width="182" height="257" fill="#f0f4f8"/>
+
+  <!-- 天側の帯と罫線 -->
+  <rect width="182" height="48" fill="#b0c4de" opacity="0.4"/>
+  <rect y="48" width="182" height="1.2" fill="#2f5b8c" opacity="0.5"/>
+
+  <!-- 右上の角落とし（ドッグイヤー）モチーフ -->
+  <path d="M182 0 L182 30 L152 0 Z" fill="#2f5b8c" opacity="0.3"/>
+
+  <!-- 右下の円モチーフ（文字帯を避けた位置） -->
+  <circle cx="150" cy="192" r="42" fill="#b0c4de" opacity="0.25"/>
+
+  <!-- 地側の帯と罫線 -->
+  <rect y="219.8" width="182" height="1.2" fill="#b0c4de" opacity="0.6"/>
+  <rect y="221" width="182" height="36" fill="#2f5b8c" opacity="0.85"/>
+</svg>

@@ -92,6 +92,48 @@ h1::before {
   content: counter(chapter) ". ";
 }
 
+/* 表紙（表 1）．ヘッダー・フッターを消し，余白 0 で組む．
+   背景画像の上へ cover.md の実テキストを重ねる（文字は画像化しない） */
+@page cover {
+  margin: 0;
+  /* 背景はページ全面に敷く．:root の --cover-background-image で差し替える */
+  background-image: var(--cover-background-image);
+  background-size: cover;
+  background-position: center;
+
+  @top-center {
+    content: none;
+  }
+
+  @bottom-center {
+    content: none;
+  }
+}
+
+/* 表紙・裏表紙の調整点．背景画像は @page から参照するため :root に置く．
+   文字配置の変数も併置し，書籍側テーマの上書き先を 1 箇所に集約する．
+   文字色は palette.css の意味トークン（--cover-title-color 等）を使う */
+:root {
+  --cover-background-image: url('../../../src/assets/images/cover-background.svg');
+  --cover-padding: 30mm 20mm;
+  --cover-text-align: center;
+  --cover-title-offset-top: 60mm;
+  --cover-title-font-size: 32pt;
+  --cover-author-gap: 12mm;
+  --cover-author-font-size: 14pt;
+  --back-cover-background-image: url('../../../src/assets/images/back-cover-background.svg');
+  --back-cover-padding: 150mm 20mm 20mm;
+  --back-cover-text-align: center;
+  --back-cover-font-size: 10pt;
+}
+
+.cover,
+body.cover {
+  page: cover;
+  box-sizing: border-box;
+  padding: var(--cover-padding);
+}
+
 /* 表紙（タイトルページ）の h1 には番号を付けない */
 [role="doc-cover"] h1,
 section[role="doc-cover"] h1,
@@ -104,9 +146,10 @@ body.cover h1 {
   border-left: none;
   padding: 0;
   break-before: auto;
-  font-size: 32pt;
-  text-align: center;
-  margin-top: 40%;
+  font-size: var(--cover-title-font-size);
+  text-align: var(--cover-text-align);
+  color: var(--cover-title-color);
+  margin-top: var(--cover-title-offset-top);
 }
 
 [role="doc-cover"] h1::before,
@@ -119,9 +162,10 @@ body.cover h1::before {
 /* 表紙の著者名 */
 .cover p,
 body.cover p {
-  text-align: center;
-  font-size: 14pt;
-  margin-top: 20pt;
+  text-align: var(--cover-text-align);
+  font-size: var(--cover-author-font-size);
+  color: var(--cover-author-color);
+  margin-top: var(--cover-author-gap);
   text-indent: 0;
 }
 
@@ -1131,6 +1175,10 @@ body.colophon .colophon-isdn {
    余白 0 により，バーコード位置を仕上がり端からの距離で指定できる */
 @page back-cover {
   margin: 0;
+  /* 背景はページ全面に敷く．:root の --back-cover-background-image で差し替える */
+  background-image: var(--back-cover-background-image);
+  background-size: cover;
+  background-position: center;
 
   @top-center {
     content: none;
@@ -1146,6 +1194,9 @@ body.back-cover {
   page: back-cover;
   /* バーコードの absolute 配置の基準を明示する（余白 0 のページ全面） */
   position: relative;
+  box-sizing: border-box;
+  /* 文字情報はバーコード規定位置（左上）を避け，地側の余白内へ組む */
+  padding: var(--back-cover-padding);
   /* ISDN バーコードの規定位置．ISDN 公式に配置規定は無いため，
      商業書籍の書籍 JAN コードの慣行（表 4 左上）へ準拠した既定値とする．
      入稿先の指定があればこの変数で調整する */
@@ -1168,6 +1219,17 @@ body.back-cover .isdn-barcode img {
   height: auto;
   /* 背景画像を敷いた場合でも読み取れるよう白地を保つ */
   background: #fff;
+}
+
+/* 裏表紙の文字情報（紹介文・サークル名など）．ゴシックで小さく組む */
+.back-cover p,
+body.back-cover p {
+  font-family: var(--font-gothic);
+  font-size: var(--back-cover-font-size);
+  color: var(--back-cover-text-color);
+  text-align: var(--back-cover-text-align);
+  text-indent: 0;
+  margin: 0 0 4mm;
 }
 
 /* あとがき */

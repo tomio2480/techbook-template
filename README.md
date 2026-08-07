@@ -555,7 +555,7 @@ techbook-template/
 │   │   └── back-cover.md      # 裏表紙（ISDN バーコード配置）
 │   ├── design-samples/        # 装飾スタイルカタログ原稿
 │   └── assets/
-│       ├── images/            # 写真・スクリーンショット
+│       ├── images/            # 写真・スクリーンショット・表紙裏表紙の背景
 │       └── diagrams/          # 回路図・図表
 ├── config/
 │   ├── isdn.yaml              # ISDN 申請情報・発行情報
@@ -663,6 +663,34 @@ entry: [
 パレット）に登録した色のみで、グレースケール印刷でも判別できるよう
 Rec.601 輝度で 15 ポイント以上の差を機械検査する。実体配線図など実物の
 色をそのまま再現する図は `EXCLUDED_FILES` で個別に検査対象から外せる。
+
+### 表紙・裏表紙の変更
+
+表紙は `src/chapters/cover.md`、裏表紙は `src/chapters/back-cover.md` で書く。どちらも背景画像の上へ Markdown の文字をテキストのまま重ねて組む。文字を画像化しないため、スクリーンリーダー等の支援技術でも文字情報を読める。要求・要件は `docs/spec/cover.md` を参照。
+
+カスタマイズは次の 3 点で行う。
+
+1. 背景画像: `src/assets/images/` 配下の 2 つの SVG を差し替える。別パスの画像は下表の背景画像変数で指定する。
+2. 文字情報: `cover.md` のタイトル・著者名と、`back-cover.md` の紹介文・サークル名を書き換える。
+3. 文字配置: テーマ CSS（`theme.css` の `:root`）の変数を上書きする。
+
+主な変数は以下の通り。
+
+| 変数 | 用途 | デフォルト値 |
+|------|------|--------------|
+| `--cover-background-image` | 表紙の背景画像 | cover-background.svg |
+| `--back-cover-background-image` | 裏表紙の背景画像 | back-cover-background.svg |
+| `--cover-padding` | 表紙の内側余白 | 30mm 20mm |
+| `--cover-title-offset-top` | タイトルの天からのオフセット | 60mm |
+| `--cover-title-font-size` | タイトルの文字サイズ | 32pt |
+| `--cover-author-gap` | 著者名とタイトルの間隔 | 12mm |
+| `--cover-author-font-size` | 著者名の文字サイズ | 14pt |
+| `--cover-text-align` | 表紙の文字揃え | center |
+| `--back-cover-padding` | 裏表紙の内側余白 | 150mm 20mm 20mm |
+| `--back-cover-font-size` | 裏表紙の文字サイズ | 10pt |
+| `--back-cover-text-align` | 裏表紙の文字揃え | center |
+
+文字色は `palette.css` の意味トークン（`--cover-title-color`・`--cover-author-color`・`--back-cover-text-color`）で変更する。裏表紙の ISDN バーコードは左上の規定位置に配置されるため、文字情報の既定余白はこの位置を避けている（詳細は `docs/spec/isdn.md`）。
 
 ### 扉直後ページの章タイトル帯（オプション）
 

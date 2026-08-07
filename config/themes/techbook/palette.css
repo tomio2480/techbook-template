@@ -142,4 +142,9 @@
   --recap-accent: var(--palette-primary);
   --recap-bg: var(--palette-primary-light);
   --recap-border: var(--palette-primary-mid);
+
+  /* 表紙・裏表紙の文字情報（背景画像の上へ実テキストで重ねる） */
+  --cover-title-color: var(--palette-ink);
+  --cover-author-color: var(--palette-ink-soft);
+  --back-cover-text-color: var(--palette-ink-soft);
 }
