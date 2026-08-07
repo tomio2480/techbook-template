@@ -3,6 +3,7 @@ import { parse } from 'yaml';
 import { VFM } from '@vivliostyle/vfm';
 import { spectroscope } from '@u1f992/rehype-spectroscope';
 import { joinCjkLineBreaksPlugin } from './scripts/join-cjk-line-breaks.mjs';
+import { injectBookMetaPlugin } from './scripts/inject-book-meta.mjs';
 import { injectColophonPlugin } from './scripts/inject-colophon.mjs';
 import { injectIsdnPlugin } from './scripts/inject-isdn.mjs';
 import { DEFAULT_BARCODE_PATH, isRegularFile } from './scripts/check-isdn.mjs';
@@ -52,6 +53,8 @@ export default {
   documentProcessor: (opts, meta) =>
     VFM(opts, meta)
       .use(joinCjkLineBreaksPlugin)
+      /* 表紙・本扉の書名・著者名は book.yaml を単一の出所として流し込む */
+      .use(injectBookMetaPlugin, { title: bookYaml.title, author: bookYaml.author })
       .use(injectColophonPlugin, { authors: bookYaml.authors, errata: bookYaml.errata })
       .use(injectIsdnPlugin, {
         number: isdnYaml.issued?.number,

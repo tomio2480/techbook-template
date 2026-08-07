@@ -130,6 +130,12 @@ h1::before {
 .cover,
 body.cover {
   page: cover;
+}
+
+/* 余白は body だけに与える．VFM は frontmatter の class を html と body の
+   両方へ付けるため，html を含むクラスセレクタへ padding を書くと
+   二重適用でページから溢れる（裏表紙が 2 ページ化した実績あり） */
+body.cover {
   box-sizing: border-box;
   padding: var(--cover-padding);
 }
@@ -1238,9 +1244,6 @@ body.back-cover {
   page: back-cover;
   /* バーコードの absolute 配置の基準を明示する（余白 0 のページ全面） */
   position: relative;
-  box-sizing: border-box;
-  /* 文字情報はバーコード規定位置（左上）を避け，地側の余白内へ組む */
-  padding: var(--back-cover-padding);
   /* ISDN バーコードの規定位置．ISDN 公式に配置規定は無いため，
      商業書籍の書籍 JAN コードの慣行（表 4 左上）へ準拠した既定値とする．
      入稿先の指定があればこの変数で調整する */
@@ -1248,6 +1251,13 @@ body.back-cover {
   --isdn-barcode-left: 12mm;
   --isdn-barcode-width: 40mm;
   --isdn-info-font-size: 7pt;
+}
+
+/* 余白は body だけに与える（表紙の項と同じ理由．html への二重適用を防ぐ） */
+body.back-cover {
+  box-sizing: border-box;
+  /* 文字情報はバーコード規定位置（左上）を避け，地側の余白内へ組む */
+  padding: var(--back-cover-padding);
 }
 
 /* ISDN バーコード（{{isdn-barcode}} マーカーから inject-isdn.mjs が生成する）．

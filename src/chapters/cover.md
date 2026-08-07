@@ -2,6 +2,6 @@
 class: cover
 ---
 
-# 書籍タイトル
+# {{book-title}}
 
-著者名
+{{book-author}}

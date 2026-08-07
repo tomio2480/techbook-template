@@ -246,6 +246,8 @@ errata:
 3. 運営からメールで届いた番号を `issued.number` へ書き、バーコード画像を `src/assets/isdn-barcode.png` へ置く。
 4. ビルドすると奥付へ番号が、裏表紙（`back-cover.md`）へバーコードが流し込まれる。
 
+テンプレート初期状態では、サンプル番号・サンプル C コード・ダミーバーコード画像が設定されており、裏表紙の見た目をビルド直後から確認できる。ダミー画像は実際の読み取りができない。サンプル番号のままビルドすると `npm run check:isdn` が差し替え忘れを警告する。
+
 原稿には単独の段落としてマーカーを書く。
 
 - `{{isdn}}`: ISDN 番号（奥付の正誤表リンクの下に表示される）
@@ -560,7 +562,8 @@ techbook-template/
 │   ├── design-samples/        # 装飾スタイルカタログ原稿
 │   └── assets/
 │       ├── images/            # 写真・スクリーンショット・表紙裏表紙の背景
-│       └── diagrams/          # 回路図・図表
+│       ├── diagrams/          # 回路図・図表
+│       └── isdn-barcode.png   # ISDN バーコード（初期はダミー画像）
 ├── config/
 │   ├── isdn.yaml              # ISDN 申請情報・発行情報
 │   └── themes/
@@ -676,7 +679,7 @@ Rec.601 輝度で 15 ポイント以上の差を機械検査する。実体配�
 カスタマイズは次の 3 点で行う。
 
 1. 背景画像: `src/assets/images/` 配下の 2 つの SVG を差し替える。別パスの画像は下表の背景画像変数で指定する。
-2. 文字情報: `cover.md` と `title-page.md` のタイトル・著者名、`back-cover.md` の紹介文を書き換える。
+2. 文字情報: `config/book.yaml` の `title`・`author` を書き換える。原稿のマーカー（`{{book-title}}`・`{{book-author}}`）を通じて表紙・本扉の両方へ反映される。`back-cover.md` の紹介文は直接書き換える。
 3. 文字配置: テーマ CSS（`theme.css` の `:root`）の変数を上書きする。
 
 主な変数は以下の通り。

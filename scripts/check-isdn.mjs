@@ -19,6 +19,10 @@ const ISDN_DIGITS = 13;
 /* issued.barcode 未指定時の既定パス．vivliostyle.config.js と共有する */
 export const DEFAULT_BARCODE_PATH = 'src/assets/isdn-barcode.png';
 
+/* テンプレート同梱のサンプル番号．config/isdn.yaml の初期値と揃える．
+   このままの出版を防ぐため，検査で差し替え忘れを警告する */
+export const SAMPLE_ISDN_NUMBER = 'ISDN278-4-876543-21-9';
+
 /**
  * 値が空でない文字列かどうかを判定する．
  * @param {unknown} value
@@ -120,6 +124,9 @@ export function validateIsdn(data, context) {
     errors.push(...validateIsdnNumber(number));
     if (errors.length === 0 && !context.barcodeExists) {
       warnings.push('issued.number があるのにバーコード画像が無い．受領した画像を issued.barcode のパスへ置く');
+    }
+    if (normalizeNumber(number) === normalizeNumber(SAMPLE_ISDN_NUMBER)) {
+      warnings.push('issued.number がテンプレートのサンプル番号のままである．発行された番号へ差し替える');
     }
   } else if (context.barcodeExists) {
     warnings.push('バーコード画像があるのに issued.number が無い．発行された番号を記入する');

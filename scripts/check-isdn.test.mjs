@@ -4,7 +4,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { validateIsdnNumber, validateCCode, validateIsdn, isRegularFile } from './check-isdn.mjs';
+import {
+  validateIsdnNumber,
+  validateCCode,
+  validateIsdn,
+  isRegularFile,
+  SAMPLE_ISDN_NUMBER,
+} from './check-isdn.mjs';
 
 /* チェックディジットはモジュラス 10 ウェイト 3・1 で計算した実在しうる値 */
 const VALID_NUMBER = 'ISDN278-4-123456-78-1';
@@ -60,6 +66,26 @@ describe('validateCCode', () => {
 
   it('YAML の数値として書かれ先頭ゼロが落ちた値は問題として知らせる', () => {
     assert.equal(validateCCode(95).length, 1);
+  });
+});
+
+describe('validateIsdn のサンプル番号検査', () => {
+  it('テンプレートのサンプル番号のままなら警告を出す', () => {
+    const { errors, warnings } = validateIsdn(
+      { issued: { number: SAMPLE_ISDN_NUMBER } },
+      { barcodeExists: true },
+    );
+    assert.equal(errors.length, 0);
+    assert.equal(warnings.length, 1);
+    assert.ok(warnings[0].includes('サンプル'));
+  });
+
+  it('サンプル以外の正しい番号には警告を出さない', () => {
+    const { warnings } = validateIsdn(
+      { issued: { number: VALID_NUMBER_279 } },
+      { barcodeExists: true },
+    );
+    assert.equal(warnings.length, 0);
   });
 });
 
