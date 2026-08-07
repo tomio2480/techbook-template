@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-import { validateIsdnNumber, validateIsdn, isRegularFile } from './check-isdn.mjs';
+import { validateIsdnNumber, validateCCode, validateIsdn, isRegularFile } from './check-isdn.mjs';
 
 /* チェックディジットはモジュラス 10 ウェイト 3・1 で計算した実在しうる値 */
 const VALID_NUMBER = 'ISDN278-4-123456-78-1';
@@ -43,6 +43,43 @@ describe('validateIsdnNumber', () => {
 
   it('YAML の数値として書かれた番号も文字列として検査する', () => {
     assert.deepEqual(validateIsdnNumber(2784123456781), []);
+  });
+});
+
+describe('validateCCode', () => {
+  it('4 桁の C コード（C 接頭辞の有無を問わず）を受け入れる', () => {
+    assert.deepEqual(validateCCode('0095'), []);
+    assert.deepEqual(validateCCode('C0095'), []);
+  });
+
+  it('4 桁でない C コードへ問題を返す', () => {
+    assert.equal(validateCCode('95').length, 1);
+    assert.equal(validateCCode('00950').length, 1);
+    assert.equal(validateCCode('009X').length, 1);
+  });
+
+  it('YAML の数値として書かれ先頭ゼロが落ちた値は問題として知らせる', () => {
+    assert.equal(validateCCode(95).length, 1);
+  });
+});
+
+describe('validateIsdn の C コード検査', () => {
+  it('4 桁でない application.c_code へ警告を出す', () => {
+    const { errors, warnings } = validateIsdn(
+      { application: { c_code: '95' }, issued: { number: '' } },
+      { barcodeExists: false },
+    );
+    assert.equal(errors.length, 0);
+    assert.equal(warnings.length, 1);
+    assert.ok(warnings[0].includes('c_code'));
+  });
+
+  it('未設定の application.c_code は正常として扱う', () => {
+    const { warnings } = validateIsdn(
+      { application: { c_code: '' }, issued: { number: '' } },
+      { barcodeExists: false },
+    );
+    assert.equal(warnings.length, 0);
   });
 });
 

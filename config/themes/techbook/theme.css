@@ -169,6 +169,50 @@ body.cover p {
   text-indent: 0;
 }
 
+/* 本扉（表紙をめくった 1 枚目）．背景を敷かず，タイトル・著者名のみを
+   簡素に組む．柱・ノンブルは出さない */
+@page title-page {
+  @top-center {
+    content: none;
+  }
+
+  @bottom-center {
+    content: none;
+  }
+}
+
+.title-page,
+body.title-page {
+  page: title-page;
+}
+
+.title-page h1,
+body.title-page h1 {
+  counter-increment: none;
+  counter-reset: none;
+  clip-path: none;
+  background: none;
+  border-left: none;
+  padding: 0;
+  break-before: auto;
+  font-size: 32pt;
+  text-align: center;
+  margin-top: 40%;
+}
+
+.title-page h1::before,
+body.title-page h1::before {
+  content: none !important;
+}
+
+.title-page p,
+body.title-page p {
+  text-align: center;
+  font-size: 14pt;
+  margin-top: 20pt;
+  text-indent: 0;
+}
+
 /* まえがきなど番号不要の章 */
 section[data-preface] h1,
 .preface h1,
@@ -1203,14 +1247,22 @@ body.back-cover {
   --isdn-barcode-top: 10mm;
   --isdn-barcode-left: 12mm;
   --isdn-barcode-width: 40mm;
+  --isdn-info-font-size: 7pt;
 }
 
-/* ISDN バーコード（{{isdn-barcode}} マーカーから inject-isdn.mjs が生成する） */
+/* ISDN バーコード（{{isdn-barcode}} マーカーから inject-isdn.mjs が生成する）．
+   画像と文字情報（番号・コード行・発行者）を白地プレートの上へ横並びに組む．
+   背景画像を敷いてもバーコードの読み取りと文字の可読性を保つためである */
 .back-cover .isdn-barcode,
 body.back-cover .isdn-barcode {
   position: absolute;
   top: var(--isdn-barcode-top);
   left: var(--isdn-barcode-left);
+  display: flex;
+  align-items: flex-start;
+  gap: 3mm;
+  background: #fff;
+  padding: 2mm;
 }
 
 .back-cover .isdn-barcode img,
@@ -1219,6 +1271,19 @@ body.back-cover .isdn-barcode img {
   height: auto;
   /* 背景画像を敷いた場合でも読み取れるよう白地を保つ */
   background: #fff;
+}
+
+/* バーコード脇の文字情報．書籍 JAN コード周りの慣行に合わせ，
+   小さめのゴシックで左揃えに組む */
+.back-cover .isdn-info p,
+body.back-cover .isdn-info p {
+  font-family: var(--font-gothic);
+  font-size: var(--isdn-info-font-size);
+  color: var(--back-cover-text-color);
+  text-align: left;
+  text-indent: 0;
+  margin: 0 0 1.5mm;
+  line-height: 1.5;
 }
 
 /* 裏表紙の文字情報（紹介文・サークル名など）．ゴシックで小さく組む */

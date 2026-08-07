@@ -11,6 +11,7 @@ test('removeExcludedTocEntries: 表紙・裏表紙・奥付などの補助ペー
   const input =
     '<ol>' +
     '<li><a href="cover.html">表紙</a></li>' +
+    '<li><a href="title-page.html">書籍タイトル</a></li>' +
     '<li><a href="01-introduction.html">第1章</a></li>' +
     '<li><a href="99-colophon.html">奥付</a></li>' +
     '<li><a href="back-cover.html">techbook-template</a></li>' +
@@ -18,6 +19,7 @@ test('removeExcludedTocEntries: 表紙・裏表紙・奥付などの補助ペー
   const result = removeExcludedTocEntries(input);
   assert.ok(!result.includes('back-cover.html'));
   assert.ok(!result.includes('cover.html'));
+  assert.ok(!result.includes('title-page.html'));
   assert.ok(!result.includes('99-colophon.html'));
   assert.ok(result.includes('01-introduction.html'));
 });

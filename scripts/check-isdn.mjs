@@ -86,6 +86,22 @@ export function validateIsdnNumber(value) {
 }
 
 /**
+ * C コード（application.c_code）を検査し，問題点の一覧を返す．
+ * 「C」接頭辞の有無は問わない．先頭ゼロ落ち（YAML の数値扱い）も検出する．
+ * @param {unknown} value
+ * @returns {string[]}
+ */
+export function validateCCode(value) {
+  const body = String(value ?? '').trim().replace(/^C/i, '');
+  if (!/^\d{4}$/.test(body)) {
+    return [
+      `application.c_code: C コードは 4 桁の数字を引用符付きで書く（現在 ${body}）`,
+    ];
+  }
+  return [];
+}
+
+/**
  * isdn.yaml の内容を検査する．
  * @param {unknown} data isdn.yaml をパースしたオブジェクト
  * @param {{ barcodeExists: boolean }} context
@@ -107,6 +123,12 @@ export function validateIsdn(data, context) {
     }
   } else if (context.barcodeExists) {
     warnings.push('バーコード画像があるのに issued.number が無い．発行された番号を記入する');
+  }
+  /* C コードは裏表紙の情報ブロックへ流し込むため，形式崩れを警告で知らせる */
+  const cCode =
+    data.application && typeof data.application === 'object' ? data.application.c_code : undefined;
+  if (isNonEmptyString(cCode) || typeof cCode === 'number') {
+    warnings.push(...validateCCode(cCode));
   }
   return { errors, warnings };
 }

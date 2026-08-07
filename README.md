@@ -166,6 +166,7 @@ class: preface
 | あとがき | `afterword` |
 | 奥付 | `colophon` |
 | 表紙 | `cover` |
+| 本扉 | `title-page` |
 | 裏表紙 | `back-cover` |
 | 付録 | `appendix` |
 | 解答 | `answers` |
@@ -248,7 +249,9 @@ errata:
 原稿には単独の段落としてマーカーを書く。
 
 - `{{isdn}}`: ISDN 番号（奥付の正誤表リンクの下に表示される）
-- `{{isdn-barcode}}`: バーコード画像（裏表紙の左上規定位置に配置される）
+- `{{isdn-barcode}}`: バーコードの情報ブロック（裏表紙の左上規定位置に白地プレートで配置される）
+
+情報ブロックはバーコード画像の脇へ文字情報を添える。内訳は ISDN 番号、コード行（`C0095 ¥1000E` 形式の C コード＋価格）、発行サークル名の 3 行である。コード行と発行者は `config/isdn.yaml` の `application` 節（`c_code`・`price`・`circle`）から流し込み、無い項目の行は出力しない。サークル名は情報ブロックが出力するため、`back-cover.md` の自由記述と重複させないこと。
 
 データが無い場合、マーカーは出力から取り除かれ、ビルド時に警告が出る。番号の形式（13 桁・プレフィックス 278/279・チェックディジット）は `npm run check:isdn` が検査し、`npm run build` の冒頭でも自動実行される。
 
@@ -543,6 +546,7 @@ techbook-template/
 ├── src/
 │   ├── chapters/              # 原稿ファイル
 │   │   ├── cover.md           # 表紙
+│   │   ├── title-page.md      # 本扉
 │   │   ├── 00-preface.md      # まえがき
 │   │   ├── toc.html           # 目次（自動生成＋手動編集の保持）
 │   │   ├── 01-introduction.md # 第1章
@@ -605,6 +609,7 @@ export default {
 // 例: 第4章を追加する場合
 entry: [
   'src/chapters/cover.md',
+  'src/chapters/title-page.md',
   'src/chapters/00-preface.md',
   'src/chapters/toc.html',
   'src/chapters/01-introduction.md',
@@ -666,12 +671,12 @@ Rec.601 輝度で 15 ポイント以上の差を機械検査する。実体配�
 
 ### 表紙・裏表紙の変更
 
-表紙は `src/chapters/cover.md`、裏表紙は `src/chapters/back-cover.md` で書く。どちらも背景画像の上へ Markdown の文字をテキストのまま重ねて組む。文字を画像化しないため、スクリーンリーダー等の支援技術でも文字情報を読める。要求・要件は `docs/spec/cover.md` を参照。
+表紙は `src/chapters/cover.md`、裏表紙は `src/chapters/back-cover.md` で書く。どちらも背景画像の上へ Markdown の文字をテキストのまま重ねて組む。文字を画像化しないため、スクリーンリーダー等の支援技術でも文字情報を読める。表紙の直後には本扉（`src/chapters/title-page.md`）が入る。本扉は背景を敷かず、タイトル・著者名のみを簡素に組む。要求・要件は `docs/spec/cover.md` を参照。
 
 カスタマイズは次の 3 点で行う。
 
 1. 背景画像: `src/assets/images/` 配下の 2 つの SVG を差し替える。別パスの画像は下表の背景画像変数で指定する。
-2. 文字情報: `cover.md` のタイトル・著者名と、`back-cover.md` の紹介文・サークル名を書き換える。
+2. 文字情報: `cover.md` と `title-page.md` のタイトル・著者名、`back-cover.md` の紹介文を書き換える。
 3. 文字配置: テーマ CSS（`theme.css` の `:root`）の変数を上書きする。
 
 主な変数は以下の通り。

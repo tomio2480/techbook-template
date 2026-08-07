@@ -34,6 +34,7 @@ export default {
   theme: ['./config/themes/techbook/theme.css'],
   entry: [
     'src/chapters/cover.md',
+    'src/chapters/title-page.md',
     'src/chapters/00-preface.md',
     'src/chapters/toc.html',
     'src/chapters/01-introduction.md',
@@ -52,7 +53,16 @@ export default {
     VFM(opts, meta)
       .use(joinCjkLineBreaksPlugin)
       .use(injectColophonPlugin, { authors: bookYaml.authors, errata: bookYaml.errata })
-      .use(injectIsdnPlugin, { number: isdnYaml.issued?.number, barcode: isdnBarcode })
+      .use(injectIsdnPlugin, {
+        number: isdnYaml.issued?.number,
+        barcode: isdnBarcode,
+        /* 裏表紙の情報ブロック（コード行・発行者）は申請情報から引く */
+        application: {
+          cCode: isdnYaml.application?.c_code,
+          price: isdnYaml.application?.price,
+          circle: isdnYaml.application?.circle,
+        },
+      })
       .use(spectroscope, {
         languages: [
           'javascript', 'typescript', 'python', 'rust', 'go', 'bash',

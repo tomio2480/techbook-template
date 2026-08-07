@@ -11,7 +11,7 @@
  * マーカー置換の方式は scripts/inject-colophon.mjs に合わせている．
  */
 
-import { validateIsdnNumber } from './check-isdn.mjs';
+import { validateCCode, validateIsdnNumber } from './check-isdn.mjs';
 
 const ISDN_MARKER = '{{isdn}}';
 const BARCODE_MARKER = '{{isdn-barcode}}';
@@ -48,14 +48,44 @@ export function buildIsdnSection(number, warn = console.warn) {
 }
 
 /**
+ * C コードと価格を「C0095 ¥1000E」形式のコード行へ整形する．
+ * 書籍 JAN コードの 2 段目に併記される慣行へ合わせた表記である．
+ * 片方だけでもその部分を出す．形式が崩れた C コードは警告して外す．
+ * @param {{ cCode?: unknown, price?: unknown }} application
+ * @param {(message: string) => void} warn
+ * @returns {string | null}
+ */
+function formatCodeLine(application, warn) {
+  const parts = [];
+  const { cCode, price } = application;
+  if (isNonEmptyString(cCode) || typeof cCode === 'number') {
+    const problems = validateCCode(cCode);
+    if (problems.length > 0) {
+      warn(`config/isdn.yaml: ${problems[0]}．裏表紙のコード行から外す`);
+    } else {
+      parts.push(`C${String(cCode).trim().replace(/^C/i, '')}`);
+    }
+  }
+  const priceDigits = String(price ?? '').replace(/[^\d]/g, '');
+  if (priceDigits !== '') {
+    parts.push(`¥${priceDigits}E`);
+  }
+  return parts.length > 0 ? parts.join(' ') : null;
+}
+
+/**
  * 裏表紙へ置くバーコードブロックを組み立てる．
  * 画像が無い場合は警告して null を返す．
  * 番号が無効でも画像があれば配置する．画像自体が受領物の正であるため．
+ * 画像の隣へ，番号・コード行（C コード＋価格）・発行サークル名の
+ * 文字情報を添える（書籍 JAN コード周りの慣行に合わせた体裁）．
  * @param {unknown} number config/isdn.yaml の issued.number
  * @param {{ src: string, exists: boolean }} barcode 画像の参照情報
+ * @param {{ cCode?: unknown, price?: unknown, circle?: unknown }} [application]
+ *   config/isdn.yaml の application 節から引く付随情報
  * @param {(message: string) => void} warn
  */
-export function buildIsdnBarcodeSection(number, barcode, warn = console.warn) {
+export function buildIsdnBarcodeSection(number, barcode, application = {}, warn = console.warn) {
   if (!barcode || barcode.exists !== true || !isNonEmptyString(barcode.src)) {
     warn('ISDN バーコード画像が無いため裏表紙へ配置しない．受領した画像を issued.barcode のパスへ置く');
     return null;
@@ -64,9 +94,27 @@ export function buildIsdnBarcodeSection(number, barcode, warn = console.warn) {
     (isNonEmptyString(number) || typeof number === 'number') &&
     validateIsdnNumber(number).length === 0;
   const alt = isValidNumber ? `ISDN バーコード（${String(number).trim()}）` : 'ISDN バーコード';
-  return el('div', { className: ['isdn-barcode'] }, [
-    el('img', { src: barcode.src, alt }, []),
-  ]);
+
+  const infoLines = [];
+  if (isValidNumber) {
+    infoLines.push(el('p', { className: ['isdn-info-number'] }, [text(String(number).trim())]));
+  }
+  const codeLine = formatCodeLine(application ?? {}, warn);
+  if (codeLine !== null) {
+    infoLines.push(el('p', { className: ['isdn-info-code'] }, [text(codeLine)]));
+  }
+  const circle = (application ?? {}).circle;
+  if (isNonEmptyString(circle)) {
+    infoLines.push(
+      el('p', { className: ['isdn-info-publisher'] }, [text(`発行 ${circle.trim()}`)]),
+    );
+  }
+
+  const children = [el('img', { src: barcode.src, alt }, [])];
+  if (infoLines.length > 0) {
+    children.push(el('div', { className: ['isdn-info'] }, infoLines));
+  }
+  return el('div', { className: ['isdn-barcode'] }, children);
 }
 
 /**
@@ -98,7 +146,8 @@ export function injectIsdnPlugin(options = {}) {
   return (tree) => {
     const builders = {
       [ISDN_MARKER]: () => buildIsdnSection(options.number, warn),
-      [BARCODE_MARKER]: () => buildIsdnBarcodeSection(options.number, options.barcode, warn),
+      [BARCODE_MARKER]: () =>
+        buildIsdnBarcodeSection(options.number, options.barcode, options.application, warn),
     };
     const visit = (node) => {
       if (!node || !Array.isArray(node.children)) {

@@ -100,10 +100,11 @@ $1`);
   console.log('Restored vivliostyle.config.js to use MD files');
 }
 
-// 目次に載せない補助ページ（表紙・目次自身・あとがき・奥付・裏表紙）。
+// 目次に載せない補助ページ（表紙・本扉・目次自身・あとがき・奥付・裏表紙）。
 // href="…" に前方一致で照合するため，cover の指定は back-cover に掛からない
 const TOC_EXCLUDED_HREF_PATTERNS = [
   'cover\\.html[^"]*',
+  'title-page\\.html[^"]*',
   'toc\\.html',
   '98-afterword\\.html[^"]*',
   '99-colophon\\.html[^"]*',
