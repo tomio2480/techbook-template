@@ -55,7 +55,13 @@ export default {
       .use(joinCjkLineBreaksPlugin)
       /* 表紙・本扉の書名・著者名は book.yaml を単一の出所として流し込む */
       .use(injectBookMetaPlugin, { title: bookYaml.title, author: bookYaml.author })
-      .use(injectColophonPlugin, { authors: bookYaml.authors, errata: bookYaml.errata })
+      .use(injectColophonPlugin, {
+        authors: bookYaml.authors,
+        errata: bookYaml.errata,
+        copyright: bookYaml.copyright,
+        /* holder 省略時は表紙と同じ単一の著者名義にフォールバックする */
+        fallbackAuthor: bookYaml.author,
+      })
       .use(injectIsdnPlugin, {
         number: isdnYaml.issued?.number,
         barcode: isdnBarcode,

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   buildAuthorsSection,
   buildErrataSection,
+  buildCopyrightSection,
   injectColophonPlugin,
 } from './inject-colophon.mjs';
 
@@ -152,10 +153,124 @@ describe('buildErrataSection', () => {
   });
 });
 
+describe('buildCopyrightSection', () => {
+  const COPYRIGHT = { year: 2026, holder: '著者名' };
+
+  it('著作権表記から colophon-copyright セクションを組み立てる', () => {
+    const section = buildCopyrightSection(COPYRIGHT, undefined, () => {});
+    assert.equal(section.tagName, 'section');
+    assert.ok(section.properties.className.includes('colophon-copyright'));
+  });
+
+  it('© 行に year と holder を出力する', () => {
+    const section = buildCopyrightSection(COPYRIGHT, undefined, () => {});
+    const [line] = findByClass(section, 'colophon-copyright-line');
+    assert.equal(textOf(line), '© 2026 著者名');
+  });
+
+  it('notice 未指定時は既定の禁止文言を出力する', () => {
+    const section = buildCopyrightSection(COPYRIGHT, undefined, () => {});
+    const [notice] = findByClass(section, 'colophon-copyright-notice');
+    assert.ok(textOf(notice).includes('禁じます'));
+  });
+
+  it('notice を指定すると差し替わる', () => {
+    const section = buildCopyrightSection(
+      { ...COPYRIGHT, notice: '独自の文言。' },
+      undefined,
+      () => {},
+    );
+    const [notice] = findByClass(section, 'colophon-copyright-notice');
+    assert.equal(textOf(notice), '独自の文言。');
+  });
+
+  it('holder 省略時は fallbackHolder（book.yaml の author）を使う', () => {
+    const section = buildCopyrightSection({ year: 2026 }, 'フォールバック著者', () => {});
+    const [line] = findByClass(section, 'colophon-copyright-line');
+    assert.equal(textOf(line), '© 2026 フォールバック著者');
+  });
+
+  it('year が YYYY-YYYY 形式の文字列も受け付ける', () => {
+    const section = buildCopyrightSection(
+      { year: '2025-2026', holder: '著者名' },
+      undefined,
+      () => {},
+    );
+    const [line] = findByClass(section, 'colophon-copyright-line');
+    assert.equal(textOf(line), '© 2025-2026 著者名');
+  });
+
+  it('year が未設定の場合は警告して null を返す', () => {
+    const warnings = [];
+    assert.equal(
+      buildCopyrightSection({ holder: '著者名' }, undefined, (m) => warnings.push(m)),
+      null,
+    );
+    assert.equal(warnings.length, 1);
+  });
+
+  it('year が形式違反（2 桁）の場合は警告して null を返す', () => {
+    const warnings = [];
+    assert.equal(
+      buildCopyrightSection({ year: '26', holder: '著者名' }, undefined, (m) => warnings.push(m)),
+      null,
+    );
+    assert.equal(warnings.length, 1);
+  });
+
+  it('holder も fallbackHolder も無い場合は警告して null を返す', () => {
+    const warnings = [];
+    assert.equal(
+      buildCopyrightSection({ year: 2026 }, undefined, (m) => warnings.push(m)),
+      null,
+    );
+    assert.equal(warnings.length, 1);
+  });
+
+  it('holder と fallbackHolder が両方ある場合は holder を優先する', () => {
+    const section = buildCopyrightSection(
+      { year: 2026, holder: '個別著者' },
+      'フォールバック著者',
+      () => {},
+    );
+    const [line] = findByClass(section, 'colophon-copyright-line');
+    assert.equal(textOf(line), '© 2026 個別著者');
+  });
+
+  it('year が 0 の場合は警告して null を返す', () => {
+    const warnings = [];
+    assert.equal(
+      buildCopyrightSection({ year: 0, holder: '著者名' }, undefined, (m) => warnings.push(m)),
+      null,
+    );
+    assert.equal(warnings.length, 1);
+  });
+
+  it('year が null の場合は警告して null を返す', () => {
+    const warnings = [];
+    assert.equal(
+      buildCopyrightSection({ year: null, holder: '著者名' }, undefined, (m) => warnings.push(m)),
+      null,
+    );
+    assert.equal(warnings.length, 1);
+  });
+
+  it('copyright が未設定の場合は警告して null を返す', () => {
+    const warnings = [];
+    assert.equal(
+      buildCopyrightSection(undefined, '著者名', (m) => warnings.push(m)),
+      null,
+    );
+    assert.equal(warnings.length, 1);
+  });
+});
+
 describe('injectColophonPlugin', () => {
   const OPTIONS = {
     authors: [AUTHOR],
     errata: { url: 'https://example.github.io/errata/books/example-book/' },
+    copyright: { year: 2026, holder: '著者名' },
+    fallbackAuthor: '著者名',
     warn: () => {},
   };
 
@@ -168,6 +283,7 @@ describe('injectColophonPlugin', () => {
           markerParagraph('{{authors}}'),
           el('p', [textNode('本文の段落')]),
           markerParagraph('{{errata}}'),
+          markerParagraph('{{copyright}}'),
         ]),
       ],
     };
@@ -187,6 +303,13 @@ describe('injectColophonPlugin', () => {
     assert.ok(!textOf(tree).includes('{{errata}}'));
   });
 
+  it('{{copyright}} マーカーを著作権表記セクションへ置き換える', () => {
+    const tree = makeTree();
+    injectColophonPlugin(OPTIONS)(tree);
+    assert.equal(findByClass(tree, 'colophon-copyright').length, 1);
+    assert.ok(!textOf(tree).includes('{{copyright}}'));
+  });
+
   it('マーカー以外の段落は変更しない', () => {
     const tree = makeTree();
     injectColophonPlugin(OPTIONS)(tree);
@@ -199,7 +322,8 @@ describe('injectColophonPlugin', () => {
     injectColophonPlugin({ warn: (m) => warnings.push(m) })(tree);
     assert.ok(!textOf(tree).includes('{{authors}}'));
     assert.ok(!textOf(tree).includes('{{errata}}'));
-    assert.equal(warnings.length, 2);
+    assert.ok(!textOf(tree).includes('{{copyright}}'));
+    assert.equal(warnings.length, 3);
   });
 
   it('前後に空白があるマーカーも置き換える', () => {

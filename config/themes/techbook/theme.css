@@ -1221,6 +1221,20 @@ body.colophon .colophon-isdn {
   color: var(--color-text);
 }
 
+/* 奥付の著作権表記（{{copyright}} マーカーから inject-colophon.mjs が生成する） */
+.colophon .colophon-copyright-line,
+body.colophon .colophon-copyright-line {
+  font-family: var(--font-gothic);
+  color: var(--color-text);
+  margin-top: 8pt;
+}
+
+.colophon .colophon-copyright-notice,
+body.colophon .colophon-copyright-notice {
+  font-size: 7pt;
+  color: var(--color-muted-dark);
+}
+
 /* 裏表紙（表 4）．ヘッダー・フッターを消し，余白 0 で組む．
    余白 0 により，バーコード位置を仕上がり端からの距離で指定できる */
 @page back-cover {

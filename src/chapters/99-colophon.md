@@ -6,7 +6,7 @@ class: colophon
 
 # 書籍タイトル
 
-2026年08月06日 初版第一刷発行
+2026年08月06日 初版第1刷発行
 
 |   |   |
 |---|---|
@@ -26,4 +26,4 @@ class: colophon
 
 {{isdn}}
 
-(C) 2025 著者名 All Rights Reserved.
+{{copyright}}
