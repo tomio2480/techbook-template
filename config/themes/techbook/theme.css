@@ -1130,6 +1130,11 @@ body.colophon td {
   text-align: left;
   vertical-align: top;
   background-color: transparent;
+  /* auto テーブルレイアウトでは，空白を含むセル（日付＋イベント名等）の
+     列幅が，空白を持たない他行（メールアドレス等）の幅で決まり，
+     コンテナに十分な余白があっても不要に改行される．
+     奥付情報は短い 1 行キー・バリューの体裁を保つため折り返さない */
+  white-space: nowrap;
 }
 
 .colophon th,
