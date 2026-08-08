@@ -1106,7 +1106,12 @@ body.colophon h1::before {
 
 .colophon table,
 body.colophon table {
-  width: auto;
+  /* auto レイアウトでは列幅がセル内容に依存して不安定になり，
+     短い行が不要に折り返される一方で white-space: nowrap は
+     長い値のはみ出し・欠落を招く（詳細はセル側コメント）．
+     table-layout: fixed と実測の幅で列幅を固定し，両方を解消する */
+  table-layout: fixed;
+  width: 100mm;
   margin: 0 0 10pt 0;
   font-size: 9pt;
 }
@@ -1139,11 +1144,11 @@ body.colophon td {
   text-align: left;
   vertical-align: top;
   background-color: transparent;
-  /* auto テーブルレイアウトでは，空白を含むセル（日付＋イベント名等）の
-     列幅が，空白を持たない他行（メールアドレス等）の幅で決まり，
-     コンテナに十分な余白があっても不要に改行される．
-     奥付情報は短い 1 行キー・バリューの体裁を保つため折り返さない */
-  white-space: nowrap;
+  /* white-space: nowrap は，長い URL・メールアドレス等を手書きした際に
+     折り返せずページ幅を超えて PDF 上で欠落する事故につながるため
+     使わない．折り返しは既定（normal）のまま，区切り文字を持たない
+     長い値（URL 等）の保険として overflow-wrap だけ設定する */
+  overflow-wrap: break-word;
 }
 
 .colophon th,
