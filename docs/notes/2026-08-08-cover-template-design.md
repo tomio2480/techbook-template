@@ -52,8 +52,8 @@ ISDN 系は単独段落マーカー（置換漏れが出力に残らない設計
 
 **VFM の class は html と body の両方へ付く**．frontmatter の
 `class: back-cover` は `<html>` にも付与される．クラスセレクタ
-（`.back-cover`）へ `padding` を書くと html と body で二重適用され，
-裏表紙が 1 ページに収まらず 2 ページ化した．余白系プロパティは
+（`.back-cover`）へ `padding` を書くと，html と body で二重適用される．
+結果，裏表紙が 1 ページに収まらず 2 ページ化した．余白系プロパティは
 `body.<class>` 限定のルールへ書く．ページ数の機械カウント
 （PDF 内の `/Type /Page` 走査）が安価な回帰シグナルとして働いた．
 
