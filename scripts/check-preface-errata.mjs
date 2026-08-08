@@ -12,9 +12,15 @@ import { fileURLToPath, pathToFileURL } from 'url';
 
 const ERRATA_MARKER = '{{errata}}';
 
+const FENCE_PATTERN = /^ {0,3}(`{3,}|~{3,})/;
+const INDENTED_CODE_PATTERN = /^(?: {4,}|\t)\S/;
+
 /**
  * 原稿の生テキストに `{{errata}}` が単独行として含まれるか判定する．
  * 文中に埋め込まれた同じ文字列は対象にしない．
+ * フェンスドコードブロック・4 スペース／タブインデントのコードブロック内は
+ * VFM が `<pre><code>` へ変換し `injectColophonPlugin` が注入しないため，
+ * 対象から除外する．
  * @param {unknown} content 00-preface.md の生テキスト
  * @returns {boolean}
  */
@@ -22,7 +28,22 @@ export function hasErrataMarker(content) {
   if (typeof content !== 'string') {
     return false;
   }
-  return content.split('\n').some((line) => line.trim() === ERRATA_MARKER);
+  let fenceChar = null;
+  for (const line of content.split('\n')) {
+    const fenceMatch = line.match(FENCE_PATTERN);
+    if (fenceMatch) {
+      const char = fenceMatch[1][0];
+      fenceChar = fenceChar === null ? char : (fenceChar === char ? null : fenceChar);
+      continue;
+    }
+    if (fenceChar !== null || INDENTED_CODE_PATTERN.test(line)) {
+      continue;
+    }
+    if (line.trim() === ERRATA_MARKER) {
+      return true;
+    }
+  }
+  return false;
 }
 
 const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;

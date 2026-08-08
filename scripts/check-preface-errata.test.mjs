@@ -40,4 +40,35 @@ describe('hasErrataMarker: 異常系', () => {
     assert.equal(hasErrataMarker(undefined), false);
     assert.equal(hasErrataMarker(null), false);
   });
+
+  it('フェンスドコードブロック内のマーカーは対象外（VFM は <pre><code> になり注入されない）', () => {
+    const content = [
+      '# まえがき',
+      '',
+      '```markdown',
+      '{{errata}}',
+      '```',
+      '',
+    ].join('\n');
+    assert.equal(hasErrataMarker(content), false);
+  });
+
+  it('4 スペースインデントのコードブロック内のマーカーは対象外', () => {
+    const content = '# まえがき\n\n    {{errata}}\n';
+    assert.equal(hasErrataMarker(content), false);
+  });
+
+  it('コードブロックの外にある本物のマーカーは検出する（ブロック混在時）', () => {
+    const content = [
+      '# まえがき',
+      '',
+      '```markdown',
+      '{{errata}}',
+      '```',
+      '',
+      '{{errata}}',
+      '',
+    ].join('\n');
+    assert.equal(hasErrataMarker(content), true);
+  });
 });
