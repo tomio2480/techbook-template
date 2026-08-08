@@ -1256,8 +1256,7 @@ body.colophon .colophon-errata {
 /* 奥付の ISDN 番号（{{isdn}} マーカーから inject-isdn.mjs が生成する） */
 .colophon .colophon-isdn,
 body.colophon .colophon-isdn {
-  font-family: var(--font-gothic);
-  color: var(--color-text);
+  /* 明朝・muted-dark は .colophon p の既定を継承し，他の地の文と揃える */
   /* グループ区切り（表の下・正誤表前・© 前と同じ 10pt）を上に確保する */
   margin-top: 10pt;
 }
@@ -1265,8 +1264,7 @@ body.colophon .colophon-isdn {
 /* 奥付の著作権表記（{{copyright}} マーカーから inject-colophon.mjs が生成する） */
 .colophon .colophon-copyright-line,
 body.colophon .colophon-copyright-line {
-  font-family: var(--font-gothic);
-  color: var(--color-text);
+  /* 明朝・muted-dark は .colophon p の既定を継承し，他の地の文と揃える */
   margin-top: 10pt;
 }
 
