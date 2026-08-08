@@ -1073,6 +1073,13 @@ body.colophon {
   justify-content: flex-end;
   min-height: 100vh;
   padding-bottom: 20mm;
+  /* content-box のままだと min-height: 100vh に padding-bottom が
+     加算され，ページ高さを超えて末尾（著作権禁止文言）が欠落する．
+     border-box にして padding を 100vh の内側へ収める */
+  box-sizing: border-box;
+  /* 奥付は小活字（9pt）主体のため，本文の 1.8 より詰めて
+     表の行間と段落の行間のリズムを揃える */
+  line-height: 1.5;
 }
 
 .colophon h1,
@@ -1099,9 +1106,30 @@ body.colophon h1::before {
 
 .colophon table,
 body.colophon table {
-  width: auto;
-  margin: 0 0 12pt 0;
+  /* auto レイアウトでは列幅がセル内容に依存して不安定になり，
+     短い行が不要に折り返される一方で white-space: nowrap は
+     長い値のはみ出し・欠落を招く（詳細はセル側コメント）．
+     table-layout: fixed と実測の幅で列幅を固定し，両方を解消する */
+  table-layout: fixed;
+  width: 100mm;
+  margin: 0 0 10pt 0;
   font-size: 9pt;
+}
+
+/* 奥付情報テーブルは本文中の表とは異なり見出しキャプションを持たない．
+   直前の発行履歴の段落が「表の直前の段落」ルール（本ファイル前方）に
+   巻き込まれ，表番号（表0.-1: 等）が誤って付く事故を防ぐ */
+.colophon p:has(+ table),
+body.colophon p:has(+ table) {
+  text-align: left;
+  font-family: inherit;
+  counter-increment: none;
+  break-after: auto;
+}
+
+.colophon p:has(+ table)::before,
+body.colophon p:has(+ table)::before {
+  content: none !important;
 }
 
 .colophon th,
@@ -1110,10 +1138,17 @@ body.colophon th,
 body.colophon td {
   border: none;
   border-bottom: none;
-  padding: 4pt 8pt 4pt 0;
+  /* 上下 padding は段落の行間リズム（.colophon p の margin）と
+     揃うよう詰める．広すぎる行間に見える原因はここだった */
+  padding: 2pt 8pt 2pt 0;
   text-align: left;
   vertical-align: top;
   background-color: transparent;
+  /* white-space: nowrap は，長い URL・メールアドレス等を手書きした際に
+     折り返せずページ幅を超えて PDF 上で欠落する事故につながるため
+     使わない．折り返しは既定（normal）のまま，区切り文字を持たない
+     長い値（URL 等）の保険として overflow-wrap だけ設定する */
+  overflow-wrap: break-word;
 }
 
 .colophon th,
@@ -1125,9 +1160,10 @@ body.colophon th {
 
 .colophon p,
 body.colophon p {
-  font-size: 8pt;
+  /* 表（9pt）・著者紹介の紹介文（9pt）と揃える */
+  font-size: 9pt;
   text-indent: 0;
-  margin: 6pt 0;
+  margin: 4pt 0;
   color: var(--color-muted-dark);
 }
 
@@ -1214,11 +1250,34 @@ body.colophon {
   page: colophon;
 }
 
+/* 奥付の正誤表案内（{{errata}} マーカーから inject-colophon.mjs が生成する） */
+.colophon .colophon-errata,
+body.colophon .colophon-errata {
+  /* グループ区切り（表の下・ISDN 前・© 前と同じ 10pt）を上に確保する．
+     内側の p 要素どうしの間隔は .colophon p の margin（4pt）に委ねる */
+  margin-top: 10pt;
+}
+
 /* 奥付の ISDN 番号（{{isdn}} マーカーから inject-isdn.mjs が生成する） */
 .colophon .colophon-isdn,
 body.colophon .colophon-isdn {
-  font-family: var(--font-gothic);
-  color: var(--color-text);
+  /* 明朝・muted-dark は .colophon p の既定を継承し，他の地の文と揃える */
+  /* グループ区切り（表の下・正誤表前・© 前と同じ 10pt）を上に確保する */
+  margin-top: 10pt;
+}
+
+/* 奥付の著作権表記（{{copyright}} マーカーから inject-colophon.mjs が生成する） */
+.colophon .colophon-copyright-line,
+body.colophon .colophon-copyright-line {
+  /* 明朝・muted-dark は .colophon p の既定を継承し，他の地の文と揃える */
+  margin-top: 10pt;
+}
+
+.colophon .colophon-copyright-notice,
+body.colophon .colophon-copyright-notice {
+  /* 1pt 刻みの階調（14/11/10/9pt）の最下段に位置づける */
+  font-size: 8pt;
+  color: var(--color-muted-dark);
 }
 
 /* 裏表紙（表 4）．ヘッダー・フッターを消し，余白 0 で組む．
