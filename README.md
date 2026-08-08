@@ -623,6 +623,7 @@ entry: [
   'src/chapters/97-appendix.md',
   'src/chapters/98-afterword.md',
   'src/chapters/99-colophon.md',
+  'src/chapters/back-cover.md',
 ],
 ```
 
