@@ -62,8 +62,8 @@
 
 - まえがきの原稿に，単独の段落として `{{errata}}` マーカーを書く．
   `scripts/inject-colophon.mjs` が奥付と同じ案内文へ置き換える．
-- `config/book.yaml` の `errata.url` が未設定の場合，案内は出力されない
-  （マーカーが除去されるだけで，ビルドは失敗しない）．
+- `config/book.yaml` の `errata.url` が未設定の場合，案内は出力されない．
+  マーカーが除去されるだけで，ビルドは失敗しない．
 - マーカーの欠落は `npm run check:preface`（`scripts/check-preface-errata.mjs`）
   が警告する．`npm run build` の先頭でも自動実行される．
   欠落は警告であり，ビルド失敗はしない．
