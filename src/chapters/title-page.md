@@ -1,5 +1,5 @@
 ---
-class: cover
+class: title-page
 ---
 
 # {{book-title}}

@@ -92,6 +92,54 @@ h1::before {
   content: counter(chapter) ". ";
 }
 
+/* 表紙（表 1）．ヘッダー・フッターを消し，余白 0 で組む．
+   背景画像の上へ cover.md の実テキストを重ねる（文字は画像化しない） */
+@page cover {
+  margin: 0;
+  /* 背景はページ全面に敷く．:root の --cover-background-image で差し替える */
+  background-image: var(--cover-background-image);
+  background-size: cover;
+  background-position: center;
+
+  @top-center {
+    content: none;
+  }
+
+  @bottom-center {
+    content: none;
+  }
+}
+
+/* 表紙・裏表紙の調整点．背景画像は @page から参照するため :root に置く．
+   文字配置の変数も併置し，書籍側テーマの上書き先を 1 箇所に集約する．
+   文字色は palette.css の意味トークン（--cover-title-color 等）を使う */
+:root {
+  --cover-background-image: url('../../../src/assets/images/cover-background.svg');
+  --cover-padding: 30mm 20mm;
+  --cover-text-align: center;
+  --cover-title-offset-top: 60mm;
+  --cover-title-font-size: 32pt;
+  --cover-author-gap: 12mm;
+  --cover-author-font-size: 14pt;
+  --back-cover-background-image: url('../../../src/assets/images/back-cover-background.svg');
+  --back-cover-padding: 150mm 20mm 20mm;
+  --back-cover-text-align: center;
+  --back-cover-font-size: 10pt;
+}
+
+.cover,
+body.cover {
+  page: cover;
+}
+
+/* 余白は body だけに与える．VFM は frontmatter の class を html と body の
+   両方へ付けるため，html を含むクラスセレクタへ padding を書くと
+   二重適用でページから溢れる（裏表紙が 2 ページ化した実績あり） */
+body.cover {
+  box-sizing: border-box;
+  padding: var(--cover-padding);
+}
+
 /* 表紙（タイトルページ）の h1 には番号を付けない */
 [role="doc-cover"] h1,
 section[role="doc-cover"] h1,
@@ -104,9 +152,10 @@ body.cover h1 {
   border-left: none;
   padding: 0;
   break-before: auto;
-  font-size: 32pt;
-  text-align: center;
-  margin-top: 40%;
+  font-size: var(--cover-title-font-size);
+  text-align: var(--cover-text-align);
+  color: var(--cover-title-color);
+  margin-top: var(--cover-title-offset-top);
 }
 
 [role="doc-cover"] h1::before,
@@ -119,6 +168,51 @@ body.cover h1::before {
 /* 表紙の著者名 */
 .cover p,
 body.cover p {
+  text-align: var(--cover-text-align);
+  font-size: var(--cover-author-font-size);
+  color: var(--cover-author-color);
+  margin-top: var(--cover-author-gap);
+  text-indent: 0;
+}
+
+/* 本扉（表紙をめくった 1 枚目）．背景を敷かず，タイトル・著者名のみを
+   簡素に組む．柱・ノンブルは出さない */
+@page title-page {
+  @top-center {
+    content: none;
+  }
+
+  @bottom-center {
+    content: none;
+  }
+}
+
+.title-page,
+body.title-page {
+  page: title-page;
+}
+
+.title-page h1,
+body.title-page h1 {
+  counter-increment: none;
+  counter-reset: none;
+  clip-path: none;
+  background: none;
+  border-left: none;
+  padding: 0;
+  break-before: auto;
+  font-size: 32pt;
+  text-align: center;
+  margin-top: 40%;
+}
+
+.title-page h1::before,
+body.title-page h1::before {
+  content: none !important;
+}
+
+.title-page p,
+body.title-page p {
   text-align: center;
   font-size: 14pt;
   margin-top: 20pt;
@@ -1131,6 +1225,10 @@ body.colophon .colophon-isdn {
    余白 0 により，バーコード位置を仕上がり端からの距離で指定できる */
 @page back-cover {
   margin: 0;
+  /* 背景はページ全面に敷く．:root の --back-cover-background-image で差し替える */
+  background-image: var(--back-cover-background-image);
+  background-size: cover;
+  background-position: center;
 
   @top-center {
     content: none;
@@ -1147,19 +1245,36 @@ body.back-cover {
   /* バーコードの absolute 配置の基準を明示する（余白 0 のページ全面） */
   position: relative;
   /* ISDN バーコードの規定位置．ISDN 公式に配置規定は無いため，
-     商業書籍の書籍 JAN コードの慣行（表 4 左上）へ準拠した既定値とする．
+     左綴じ本の裏表紙（表 4）右上を本テンプレートの規定位置とする．
      入稿先の指定があればこの変数で調整する */
   --isdn-barcode-top: 10mm;
-  --isdn-barcode-left: 12mm;
+  --isdn-barcode-right: 12mm;
   --isdn-barcode-width: 40mm;
+  --isdn-info-font-size: 7pt;
 }
 
-/* ISDN バーコード（{{isdn-barcode}} マーカーから inject-isdn.mjs が生成する） */
+/* 余白は body だけに与える（表紙の項と同じ理由．html への二重適用を防ぐ） */
+body.back-cover {
+  box-sizing: border-box;
+  /* 文字情報はバーコード規定位置（右上）を避け，地側の余白内へ組む */
+  padding: var(--back-cover-padding);
+}
+
+/* ISDN バーコード（{{isdn-barcode}} マーカーから inject-isdn.mjs が生成する）．
+   画像と文字情報（番号・コード行・発行者）を白地プレートの上へ横並びに組む．
+   背景画像を敷いてもバーコードの読み取りと文字の可読性を保つためである */
 .back-cover .isdn-barcode,
 body.back-cover .isdn-barcode {
   position: absolute;
   top: var(--isdn-barcode-top);
-  left: var(--isdn-barcode-left);
+  right: var(--isdn-barcode-right);
+  display: flex;
+  /* DOM 順（画像→文字）は読み上げ順を保ち，見た目は文字→画像の並びにする */
+  flex-direction: row-reverse;
+  align-items: flex-start;
+  gap: 3mm;
+  background: #fff;
+  padding: 2mm;
 }
 
 .back-cover .isdn-barcode img,
@@ -1168,6 +1283,30 @@ body.back-cover .isdn-barcode img {
   height: auto;
   /* 背景画像を敷いた場合でも読み取れるよう白地を保つ */
   background: #fff;
+}
+
+/* バーコード脇の文字情報．小さめのゴシックで組む．
+   バーコードが右・文字が左の並びのため，文字はバーコード側へ寄せる */
+.back-cover .isdn-info p,
+body.back-cover .isdn-info p {
+  font-family: var(--font-gothic);
+  font-size: var(--isdn-info-font-size);
+  color: var(--back-cover-text-color);
+  text-align: right;
+  text-indent: 0;
+  margin: 0 0 1.5mm;
+  line-height: 1.5;
+}
+
+/* 裏表紙の文字情報（紹介文・サークル名など）．ゴシックで小さく組む */
+.back-cover p,
+body.back-cover p {
+  font-family: var(--font-gothic);
+  font-size: var(--back-cover-font-size);
+  color: var(--back-cover-text-color);
+  text-align: var(--back-cover-text-align);
+  text-indent: 0;
+  margin: 0 0 4mm;
 }
 
 /* あとがき */

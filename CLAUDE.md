@@ -9,6 +9,8 @@ Claude が作業する際の必須事項を定める．
   作業の前に，必ず `docs/spec/colophon.md` を読むこと．
 - ISDN（`config/isdn.yaml`・`back-cover.md`・奥付の `{{isdn}}`）に関わる
   作業の前に，必ず `docs/spec/isdn.md` を読むこと．
+- 表紙・裏表紙（`cover.md`・`back-cover.md`・背景画像・テーマ CSS 変数）に
+  関わる作業の前に，必ず `docs/spec/cover.md` を読むこと．
 - `config/isdn.yaml` へ申請フォームのパスワード等の認証情報を書かない．
   氏名・メールアドレスなどの個人情報も既定では書かない．
 - 出版・版番号の変更・正誤の追記を行ったら，`npm run check:errata` で

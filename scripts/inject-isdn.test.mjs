@@ -76,20 +76,20 @@ describe('buildIsdnSection', () => {
 
 describe('buildIsdnBarcodeSection', () => {
   it('バーコード画像を isdn-barcode ブロックとして出力する', () => {
-    const section = buildIsdnBarcodeSection(VALID_NUMBER, BARCODE, () => {});
+    const section = buildIsdnBarcodeSection(VALID_NUMBER, BARCODE, {}, () => {});
     assert.ok(section.properties.className.includes('isdn-barcode'));
     const img = findImg(section);
     assert.equal(img.properties.src, BARCODE.src);
   });
 
   it('代替テキストへ番号を含める', () => {
-    const section = buildIsdnBarcodeSection(VALID_NUMBER, BARCODE, () => {});
+    const section = buildIsdnBarcodeSection(VALID_NUMBER, BARCODE, {}, () => {});
     const img = findImg(section);
     assert.equal(img.properties.alt, `ISDN バーコード（${VALID_NUMBER}）`);
   });
 
   it('番号が無効でも画像があれば配置し，代替テキストは番号なしにする', () => {
-    const section = buildIsdnBarcodeSection('', BARCODE, () => {});
+    const section = buildIsdnBarcodeSection('', BARCODE, {}, () => {});
     const img = findImg(section);
     assert.equal(img.properties.alt, 'ISDN バーコード');
   });
@@ -99,10 +99,89 @@ describe('buildIsdnBarcodeSection', () => {
     const section = buildIsdnBarcodeSection(
       VALID_NUMBER,
       { src: '../assets/isdn-barcode.png', exists: false },
+      {},
       (m) => warnings.push(m),
     );
     assert.equal(section, null);
     assert.equal(warnings.length, 1);
+  });
+});
+
+describe('buildIsdnBarcodeSection の情報ブロック', () => {
+  const APPLICATION = { cCode: '0095', price: '1000', circle: 'サークル名' };
+
+  it('番号・C コードと価格・発行サークル名の 3 行を出力する', () => {
+    const section = buildIsdnBarcodeSection(VALID_NUMBER, BARCODE, APPLICATION, () => {});
+    assert.equal(findByClass(section, 'isdn-info').length, 1);
+    assert.equal(textOf(findByClass(section, 'isdn-info-number')[0]), VALID_NUMBER);
+    assert.equal(textOf(findByClass(section, 'isdn-info-code')[0]), 'C0095 ¥1000E');
+    assert.equal(textOf(findByClass(section, 'isdn-info-publisher')[0]), '発行 サークル名');
+  });
+
+  it('番号が無効なら番号行を出さない', () => {
+    const section = buildIsdnBarcodeSection('', BARCODE, APPLICATION, () => {});
+    assert.equal(findByClass(section, 'isdn-info-number').length, 0);
+  });
+
+  it('C コードだけ・価格だけでもコード行を出す', () => {
+    const withCode = buildIsdnBarcodeSection(VALID_NUMBER, BARCODE, { cCode: '0095' }, () => {});
+    assert.equal(textOf(findByClass(withCode, 'isdn-info-code')[0]), 'C0095');
+    const withPrice = buildIsdnBarcodeSection(VALID_NUMBER, BARCODE, { price: '500' }, () => {});
+    assert.equal(textOf(findByClass(withPrice, 'isdn-info-code')[0]), '¥500E');
+  });
+
+  it('C 接頭辞付きの C コードや数値の価格も整形する', () => {
+    const section = buildIsdnBarcodeSection(
+      VALID_NUMBER,
+      BARCODE,
+      { cCode: 'C0095', price: 1000 },
+      () => {},
+    );
+    assert.equal(textOf(findByClass(section, 'isdn-info-code')[0]), 'C0095 ¥1000E');
+  });
+
+  it('小数・負数など不正な価格は警告してコード行から外す', () => {
+    for (const price of ['1000.50', '-1000', '1000円']) {
+      const warnings = [];
+      const section = buildIsdnBarcodeSection(
+        VALID_NUMBER,
+        BARCODE,
+        { price },
+        (m) => warnings.push(m),
+      );
+      assert.equal(findByClass(section, 'isdn-info-code').length, 0, `price=${price}`);
+      assert.equal(warnings.length, 1, `price=${price}`);
+    }
+  });
+
+  it('桁区切りカンマ付きの価格は整数へ整えて出す', () => {
+    const section = buildIsdnBarcodeSection(VALID_NUMBER, BARCODE, { price: '1,000' }, () => {});
+    assert.equal(textOf(findByClass(section, 'isdn-info-code')[0]), '¥1000E');
+  });
+
+  it('4 桁でない C コードは警告してコード行から外す', () => {
+    const warnings = [];
+    const section = buildIsdnBarcodeSection(
+      VALID_NUMBER,
+      BARCODE,
+      { cCode: '95' },
+      (m) => warnings.push(m),
+    );
+    assert.equal(findByClass(section, 'isdn-info-code').length, 0);
+    assert.equal(warnings.length, 1);
+  });
+
+  it('番号も付随情報も無ければ情報ブロック自体を出さない', () => {
+    const section = buildIsdnBarcodeSection('', BARCODE, {}, () => {});
+    assert.equal(findByClass(section, 'isdn-info').length, 0);
+  });
+
+  it('application 未指定でも番号行だけの情報ブロックを出す', () => {
+    const section = buildIsdnBarcodeSection(VALID_NUMBER, BARCODE, undefined, () => {});
+    assert.ok(findImg(section));
+    assert.equal(findByClass(section, 'isdn-info-number').length, 1);
+    assert.equal(findByClass(section, 'isdn-info-code').length, 0);
+    assert.equal(findByClass(section, 'isdn-info-publisher').length, 0);
   });
 });
 

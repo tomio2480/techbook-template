@@ -166,6 +166,7 @@ class: preface
 | あとがき | `afterword` |
 | 奥付 | `colophon` |
 | 表紙 | `cover` |
+| 本扉 | `title-page` |
 | 裏表紙 | `back-cover` |
 | 付録 | `appendix` |
 | 解答 | `answers` |
@@ -245,14 +246,18 @@ errata:
 3. 運営からメールで届いた番号を `issued.number` へ書き、バーコード画像を `src/assets/isdn-barcode.png` へ置く。
 4. ビルドすると奥付へ番号が、裏表紙（`back-cover.md`）へバーコードが流し込まれる。
 
+テンプレート初期状態では、サンプル番号・サンプル C コード・ダミーバーコード画像が設定されており、裏表紙の見た目をビルド直後から確認できる。ダミー画像は実際の読み取りができない。サンプル番号やダミー画像のままビルドすると `npm run check:isdn` が差し替え忘れをそれぞれ警告する。
+
 原稿には単独の段落としてマーカーを書く。
 
 - `{{isdn}}`: ISDN 番号（奥付の正誤表リンクの下に表示される）
-- `{{isdn-barcode}}`: バーコード画像（裏表紙の左上規定位置に配置される）
+- `{{isdn-barcode}}`: バーコードの情報ブロック（裏表紙の右上規定位置に白地プレートで配置される）
+
+情報ブロックはバーコード画像の脇へ文字情報を添える。内訳は ISDN 番号、コード行、発行サークル名の 3 行である。コード行は `C0095 ¥1000E` 形式で C コードと価格を併記する。コード行と発行者は `application` 節（`c_code`・`price`・`circle`）から流し込む。無い項目の行は出力しない。サークル名は情報ブロックが出力するため、`back-cover.md` の自由記述と重複させないこと。
 
 データが無い場合、マーカーは出力から取り除かれ、ビルド時に警告が出る。番号の形式（13 桁・プレフィックス 278/279・チェックディジット）は `npm run check:isdn` が検査し、`npm run build` の冒頭でも自動実行される。
 
-バーコードの位置・幅はテーマ CSS の変数（`--isdn-barcode-top` / `--isdn-barcode-left` / `--isdn-barcode-width`）で調整できる。申請フォームの管理用パスワードは `config/isdn.yaml` へ書かないこと。要求・要件の詳細は [ISDN 対応 要求・要件](docs/spec/isdn.md) を参照。
+バーコードの位置・幅はテーマ CSS の変数で調整できる。対象は `--isdn-barcode-top`・`--isdn-barcode-right`・`--isdn-barcode-width` である。申請フォームの管理用パスワードは `config/isdn.yaml` へ書かないこと。要求・要件の詳細は [ISDN 対応 要求・要件](docs/spec/isdn.md) を参照。
 
 ### 見出し
 
@@ -543,6 +548,7 @@ techbook-template/
 ├── src/
 │   ├── chapters/              # 原稿ファイル
 │   │   ├── cover.md           # 表紙
+│   │   ├── title-page.md      # 本扉
 │   │   ├── 00-preface.md      # まえがき
 │   │   ├── toc.html           # 目次（自動生成＋手動編集の保持）
 │   │   ├── 01-introduction.md # 第1章
@@ -555,8 +561,9 @@ techbook-template/
 │   │   └── back-cover.md      # 裏表紙（ISDN バーコード配置）
 │   ├── design-samples/        # 装飾スタイルカタログ原稿
 │   └── assets/
-│       ├── images/            # 写真・スクリーンショット
-│       └── diagrams/          # 回路図・図表
+│       ├── images/            # 写真・スクリーンショット・表紙裏表紙の背景
+│       ├── diagrams/          # 回路図・図表
+│       └── isdn-barcode.png   # ISDN バーコード（初期はダミー画像）
 ├── config/
 │   ├── isdn.yaml              # ISDN 申請情報・発行情報
 │   └── themes/
@@ -605,6 +612,7 @@ export default {
 // 例: 第4章を追加する場合
 entry: [
   'src/chapters/cover.md',
+  'src/chapters/title-page.md',
   'src/chapters/00-preface.md',
   'src/chapters/toc.html',
   'src/chapters/01-introduction.md',
@@ -663,6 +671,34 @@ entry: [
 パレット）に登録した色のみで、グレースケール印刷でも判別できるよう
 Rec.601 輝度で 15 ポイント以上の差を機械検査する。実体配線図など実物の
 色をそのまま再現する図は `EXCLUDED_FILES` で個別に検査対象から外せる。
+
+### 表紙・裏表紙の変更
+
+表紙は `src/chapters/cover.md`、裏表紙は `src/chapters/back-cover.md` で書く。どちらも背景画像の上へ Markdown の文字をテキストのまま重ねて組む。文字を画像化しないため、スクリーンリーダー等の支援技術でも文字情報を読める。表紙の直後には本扉（`src/chapters/title-page.md`）が入る。本扉は背景を敷かず、タイトル・著者名のみを簡素に組む。要求・要件は `docs/spec/cover.md` を参照。
+
+カスタマイズは次の 3 点で行う。
+
+1. 背景画像: `src/assets/images/` 配下の 2 つの SVG を差し替える。別パスの画像は下表の背景画像変数で指定する。
+2. 文字情報: `config/book.yaml` の `title`・`author` を書き換える。原稿のマーカー（`{{book-title}}`・`{{book-author}}`）を通じて表紙・本扉の両方へ反映される。`back-cover.md` の紹介文は直接書き換える。
+3. 文字配置: テーマ CSS（`theme.css` の `:root`）の変数を上書きする。
+
+主な変数は以下の通り。
+
+| 変数 | 用途 | デフォルト値 |
+|------|------|--------------|
+| `--cover-background-image` | 表紙の背景画像 | cover-background.svg |
+| `--back-cover-background-image` | 裏表紙の背景画像 | back-cover-background.svg |
+| `--cover-padding` | 表紙の内側余白 | 30mm 20mm |
+| `--cover-title-offset-top` | タイトルの天からのオフセット | 60mm |
+| `--cover-title-font-size` | タイトルの文字サイズ | 32pt |
+| `--cover-author-gap` | 著者名とタイトルの間隔 | 12mm |
+| `--cover-author-font-size` | 著者名の文字サイズ | 14pt |
+| `--cover-text-align` | 表紙の文字揃え | center |
+| `--back-cover-padding` | 裏表紙の内側余白 | 150mm 20mm 20mm |
+| `--back-cover-font-size` | 裏表紙の文字サイズ | 10pt |
+| `--back-cover-text-align` | 裏表紙の文字揃え | center |
+
+文字色は `palette.css` の意味トークンで変更する。対象は `--cover-title-color`・`--cover-author-color`・`--back-cover-text-color` である。裏表紙の ISDN バーコードは右上の規定位置（左綴じ前提）に配置される。文字情報の既定余白はこの位置を避けている（詳細は `docs/spec/isdn.md`）。
 
 ### 扉直後ページの章タイトル帯（オプション）
 
