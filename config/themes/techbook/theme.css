@@ -1104,6 +1104,22 @@ body.colophon table {
   font-size: 9pt;
 }
 
+/* 奥付情報テーブルは本文中の表とは異なり見出しキャプションを持たない．
+   直前の発行履歴の段落が「表の直前の段落」ルール（本ファイル前方）に
+   巻き込まれ，表番号（表0.-1: 等）が誤って付く事故を防ぐ */
+.colophon p:has(+ table),
+body.colophon p:has(+ table) {
+  text-align: left;
+  font-family: inherit;
+  counter-increment: none;
+  break-after: auto;
+}
+
+.colophon p:has(+ table)::before,
+body.colophon p:has(+ table)::before {
+  content: none !important;
+}
+
 .colophon th,
 .colophon td,
 body.colophon th,
