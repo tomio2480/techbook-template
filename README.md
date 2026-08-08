@@ -516,7 +516,7 @@ Vivliostyle CLI が生成する PDF は，タグ付き PDF（Tagged PDF）にな
 
 タグ付け処理には Java 11 以上が必要である．`java -version` で確認し，
 未導入の場合は [Adoptium](https://adoptium.net/) 等から JDK を導入する．
-GitHub Actions（`ubuntu-latest`）では `actions/setup-java@v4` で
+GitHub Actions（`ubuntu-latest`）では `actions/setup-java@v5` で
 Java 11 を導入している．
 
 ### veraPDF による手動検証手順
