@@ -1,9 +1,10 @@
 /**
  * 奥付（99-colophon.md）のマーカーを config/book.yaml のデータで置き換える
- * rehype プラグイン．マーカーは単独の段落として書かれた次の 2 つに限る．
+ * rehype プラグイン．マーカーは単独の段落として書かれた次の 3 つに限る．
  *
  * - `{{authors}}`: 著者紹介セクション（氏名・SNS ID・紹介文・リンク 1 つ）
  * - `{{errata}}`: 公開正誤表ページへの案内とリンク
+ * - `{{copyright}}`: © 表記（年・権利者名）と無断複製・転載の禁止文言
  *
  * データが無い・不正な場合はマーカーを取り除いたうえで警告を出す．
  * 出版物に `{{authors}}` の文字列が残る事故を防ぐためである．
@@ -12,6 +13,10 @@
 
 const AUTHORS_MARKER = '{{authors}}';
 const ERRATA_MARKER = '{{errata}}';
+const COPYRIGHT_MARKER = '{{copyright}}';
+const COPYRIGHT_YEAR_PATTERN = /^\d{4}(-\d{4})?$/;
+const DEFAULT_COPYRIGHT_NOTICE =
+  '本書の一部または全部を、著作権者の許諾なく複製・転載・改変・公衆送信することを禁じます。';
 
 function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim() !== '';
@@ -105,6 +110,41 @@ export function buildErrataSection(errata, warn = console.warn) {
 }
 
 /**
+ * 著作権表記セクションを組み立てる．year が無い・不正な場合，
+ * および holder・fallbackHolder がどちらも無い場合は null を返す．
+ * @param {unknown} copyright config/book.yaml の copyright 節
+ * @param {unknown} fallbackHolder holder 省略時に使う名義（book.yaml の author）
+ * @param {(message: string) => void} warn
+ */
+export function buildCopyrightSection(copyright, fallbackHolder, warn = console.warn) {
+  const source = copyright && typeof copyright === 'object' ? copyright : {};
+  const rawYear = source.year;
+  const yearText = isNonEmptyString(rawYear)
+    ? rawYear.trim()
+    : typeof rawYear === 'number'
+      ? String(rawYear)
+      : '';
+  if (yearText === '' || !COPYRIGHT_YEAR_PATTERN.test(yearText)) {
+    warn('config/book.yaml: copyright.year が無い・不正なため著作権表記を出力しない');
+    return null;
+  }
+  const holder = isNonEmptyString(source.holder)
+    ? source.holder
+    : isNonEmptyString(fallbackHolder)
+      ? fallbackHolder
+      : null;
+  if (holder === null) {
+    warn('config/book.yaml: copyright.holder も author も無いため著作権表記を出力しない');
+    return null;
+  }
+  const notice = isNonEmptyString(source.notice) ? source.notice : DEFAULT_COPYRIGHT_NOTICE;
+  return el('section', { className: ['colophon-copyright'] }, [
+    paragraph('colophon-copyright-line', [text(`© ${yearText} ${holder}`)]),
+    paragraph('colophon-copyright-notice', [text(notice)]),
+  ]);
+}
+
+/**
  * 単独段落のマーカーを判定する．空白だけのテキストノードは無視する．
  * @param {Record<string, unknown>} node
  * @returns {string | null} マーカー文字列（該当しなければ null）
@@ -120,13 +160,15 @@ function markerOf(node) {
     return null;
   }
   const value = meaningful[0].value.trim();
-  return value === AUTHORS_MARKER || value === ERRATA_MARKER ? value : null;
+  return [AUTHORS_MARKER, ERRATA_MARKER, COPYRIGHT_MARKER].includes(value) ? value : null;
 }
 
 /**
  * プラグイン本体．vivliostyle.config.js の documentProcessor から
- * `.use(injectColophonPlugin, { authors, errata })` の形で組み込む．
- * @param {{ authors?: unknown, errata?: unknown, warn?: (m: string) => void }} options
+ * `.use(injectColophonPlugin, { authors, errata, copyright, fallbackAuthor })`
+ * の形で組み込む．
+ * @param {{ authors?: unknown, errata?: unknown, copyright?: unknown,
+ *   fallbackAuthor?: unknown, warn?: (m: string) => void }} options
  */
 export function injectColophonPlugin(options = {}) {
   const warn = options.warn ?? console.warn;
@@ -134,6 +176,8 @@ export function injectColophonPlugin(options = {}) {
     const builders = {
       [AUTHORS_MARKER]: () => buildAuthorsSection(options.authors, warn),
       [ERRATA_MARKER]: () => buildErrataSection(options.errata, warn),
+      [COPYRIGHT_MARKER]: () =>
+        buildCopyrightSection(options.copyright, options.fallbackAuthor, warn),
     };
     const visit = (node) => {
       if (!node || !Array.isArray(node.children)) {

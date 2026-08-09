@@ -20,6 +20,14 @@ authors:
 errata:
   url: "https://example.github.io/errata/books/example-book/"
 
+# 奥付の著作権表記（99-colophon.md の {{copyright}} マーカーへ流し込まれる）
+# year は初版発行年．4 桁の数値，または "YYYY-YYYY" 形式の文字列
+# holder 省略時は上部の author を使う．notice 省略時は既定の禁止文言を使う
+copyright:
+  year: 2026
+  # holder: "著者名"
+  # notice: "本書の一部または全部を、著作権者の許諾なく複製・転載・改変・公衆送信することを禁じます。"
+
 chapters:
   - src/chapters/00-preface.md
   - src/chapters/01-introduction.md

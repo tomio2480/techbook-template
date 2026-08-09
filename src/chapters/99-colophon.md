@@ -26,4 +26,4 @@ class: colophon
 
 {{isdn}}
 
-(C) 2025 著者名 All Rights Reserved.
+{{copyright}}
