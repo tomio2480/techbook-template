@@ -14,6 +14,8 @@ const ERRATA_MARKER = '{{errata}}';
 
 const FENCE_PATTERN = /^ {0,3}(`{3,}|~{3,})/;
 const INDENTED_CODE_PATTERN = /^(?: {4,}|\t)\S/;
+const COMMENT_OPEN = '<!--';
+const COMMENT_CLOSE = '-->';
 
 /**
  * 原稿の生テキストに `{{errata}}` が単独行として含まれるか判定する．
@@ -21,6 +23,9 @@ const INDENTED_CODE_PATTERN = /^(?: {4,}|\t)\S/;
  * フェンスドコードブロック・4 スペース／タブインデントのコードブロック内は
  * VFM が `<pre><code>` へ変換し `injectColophonPlugin` が注入しないため，
  * 対象から除外する．
+ * HTML コメント（複数行にまたがるものを含む）も同様に除外する．
+ * コメント内のマーカーは段落にならず注入されないため，存在すると見なすと
+ * 誌面から正誤表案内が欠落したまま検査が通ってしまう．
  * @param {unknown} content 00-preface.md の生テキスト
  * @returns {boolean}
  */
@@ -29,7 +34,15 @@ export function hasErrataMarker(content) {
     return false;
   }
   let fenceChar = null;
+  let inComment = false;
   for (const line of content.split('\n')) {
+    if (inComment) {
+      /* 終了行も HTML ブロックの一部であり，`-->` の後ろは段落にならない */
+      if (line.includes(COMMENT_CLOSE)) {
+        inComment = false;
+      }
+      continue;
+    }
     const fenceMatch = line.match(FENCE_PATTERN);
     if (fenceMatch) {
       const char = fenceMatch[1][0];
@@ -37,6 +50,11 @@ export function hasErrataMarker(content) {
       continue;
     }
     if (fenceChar !== null || INDENTED_CODE_PATTERN.test(line)) {
+      continue;
+    }
+    const opened = line.lastIndexOf(COMMENT_OPEN);
+    if (opened !== -1 && !line.slice(opened).includes(COMMENT_CLOSE)) {
+      inComment = true;
       continue;
     }
     if (line.trim() === ERRATA_MARKER) {
