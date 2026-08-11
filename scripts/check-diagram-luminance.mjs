@@ -164,6 +164,18 @@ export function extractSvgColors(svgText) {
 }
 
 /**
+ * 除外リストのうち実在しないファイル名を返す．
+ * 図版を改名すると除外リストが古びて検査が素通りするため，その取り残しを拾う．
+ * @param {Iterable<string>} realFileNames 実在する図版のファイル名
+ * @param {string[]} [excludedFiles] 検査から除外するファイル
+ * @returns {string[]}
+ */
+export function findMissingExcludedFiles(realFileNames, excludedFiles = EXCLUDED_FILES) {
+  const names = new Set(realFileNames);
+  return excludedFiles.filter(name => !names.has(name));
+}
+
+/**
  * 図版 SVG 群と palette.css を配色規約に照らして検査する．
  * @param {Map<string, string>} svgFiles ファイル名 → SVG テキスト
  * @param {string} paletteCss palette.css の内容

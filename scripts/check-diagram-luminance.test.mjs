@@ -8,6 +8,7 @@ import {
   EXCLUDED_FILES,
   MIN_SEPARATION,
   ANNOTATION_TOKEN,
+  findMissingExcludedFiles,
   rec601Luminance,
   isChromatic,
   extractSvgColors,
@@ -232,6 +233,20 @@ test('明度段パレット: 相互の Rec.601 輝度差が 15 ポイント以�
   }
 });
 
+// --- findMissingExcludedFiles ---
+
+test('findMissingExcludedFiles: 除外リストが全て実在すれば空配列を返す', () => {
+  assert.deepEqual(findMissingExcludedFiles(['led-circuit.svg', 'other.svg']), []);
+});
+
+test('findMissingExcludedFiles: 改名で失われたファイル名を返す', () => {
+  assert.deepEqual(findMissingExcludedFiles(['led-circuit-renamed.svg']), EXCLUDED_FILES);
+});
+
+test('findMissingExcludedFiles: 除外リストを明示すれば既定より優先する', () => {
+  assert.deepEqual(findMissingExcludedFiles(['a.svg'], ['a.svg', 'b.svg']), ['b.svg']);
+});
+
 // --- 実ファイル検証 ---
 //
 // テンプレートは本文執筆前の初期状態で配布される．同梱の led-circuit.svg は
@@ -240,6 +255,11 @@ test('明度段パレット: 相互の Rec.601 輝度差が 15 ポイント以�
 // 図版が 0 件になり得る．0 件のときに実ファイル検証を空振り（無意味な green）
 // させず，かつ新規プロジェクトの npm test を赤くもしないよう，検査対象なしの
 // 場合は理由付きで skip する．
+//
+// skip の条件は検査ごとに異なる．配色規約の検査は「除外リスト外の図版が 0 件」
+// で省略する．一方で除外リストの実在検査は，図版そのものが 1 件も無いときだけ
+// 省略する．テンプレート同梱の led-circuit.svg は除外リスト外の図版を持たない
+// 状態のため，前者の条件を流用すると改名検出が働かなくなる．
 
 function loadRealFiles() {
   let names;
@@ -279,11 +299,14 @@ test(
   }
 );
 
-test('実ファイル: 除外リストのファイルが実在する（改名時の silent pass 防止）', () => {
-  for (const name of EXCLUDED_FILES) {
-    assert.ok(realFiles.has(name), `除外リストの ${name} が見つからない`);
+test(
+  '実ファイル: 除外リストのファイルが実在する（改名時の silent pass 防止）',
+  { skip: realFiles.size === 0 ? '図版がまだ 1 件も無い初期状態のため省略する' : false },
+  () => {
+    const missing = findMissingExcludedFiles(realFiles.keys());
+    assert.deepEqual(missing, [], `除外リストの ${missing.join('・')} が見つからない`);
   }
-});
+);
 
 test('実ファイル: ' + ANNOTATION_TOKEN + ' が palette.css で有効な hex 値として宣言されている', () => {
   // コメント中の言及だけでは満たされないよう，宣言を実際にパースして検証する．
