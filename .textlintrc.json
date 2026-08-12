@@ -1,0 +1,71 @@
+{
+  "_comment": "tomio2480/github-workflows の templates/.textlintrc.json を基に，原稿向けの overrides を足したもの．rules 部分は中央テンプレートと同じ内容であり，中央を更新したときは追随させること．overrides は中央テンプレートの _example_overrides が示す方式に従う（docs/rule-rationale.md の「文体使い分けと no-mix-dearu-desumasu」節）．原稿は読者へ語りかける本を想定し，ですます調を既定とする．である調で書く場合は overrides の preferInBody を である へ変えること．ignore による除外ではなく文体を宣言する方式のため，宣言した文体の中へ別の文体が混ざる事故は検出できる状態を保つ．",
+  "overrides": [
+    {
+      "files": [
+        "src/chapters/**/*.md"
+      ],
+      "rules": {
+        "preset-ja-technical-writing": {
+          "no-mix-dearu-desumasu": {
+            "preferInHeader": "",
+            "preferInBody": "ですます",
+            "preferInList": "ですます",
+            "strict": false
+          }
+        }
+      }
+    }
+  ],
+  "rules": {
+    "preset-ja-technical-writing": {
+      "sentence-length": {
+        "max": 80
+      },
+      "max-kanji-continuous-len": {
+        "max": 6,
+        "allow": []
+      },
+      "no-mix-dearu-desumasu": {
+        "preferInHeader": "",
+        "preferInBody": "である",
+        "preferInList": "である",
+        "strict": false
+      },
+      "ja-no-mixed-period": {
+        "periodMark": "．"
+      },
+      "no-doubled-joshi": {
+        "min_interval": 1
+      },
+      "no-doubled-conjunctive-particle-ga": true,
+      "no-doubled-conjunction": true,
+      "no-dropping-the-ra": true,
+      "no-exclamation-question-mark": false
+    },
+    "preset-ja-spacing": {
+      "ja-space-around-code": {
+        "before": true,
+        "after": true
+      },
+      "ja-space-around-link": {
+        "before": "always",
+        "after": "always"
+      },
+      "ja-space-between-half-and-full-width": {
+        "space": "always",
+        "exceptPunctuation": true
+      },
+      "ja-no-space-between-full-width": true
+    },
+    "prh": {
+      "rulePaths": [
+        "./prh.yml"
+      ]
+    }
+  },
+  "filters": {
+    "comments": true,
+    "allowlist": {}
+  }
+}
