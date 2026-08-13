@@ -6,6 +6,7 @@ import {
   parseDocumentStartPages,
   planPrintLayout,
   renderMemoHtml,
+  resolveFillerBefore,
   resolvePageMultiple,
   resolveSectionSides,
   sideForEntry,
@@ -86,8 +87,8 @@ test('recto・verso 以外の面を指定したら例外を投げる', () => {
 
 // --- planPrintLayout ---
 
-function plan({ entries, pageCounts, sources, pageMultiple = 4, sides = SIDES }) {
-  return planPrintLayout({ entries, pageCounts, sources, sides, pageMultiple });
+function plan({ entries, pageCounts, sources, pageMultiple = 4, sides = SIDES, fillerBefore }) {
+  return planPrintLayout({ entries, pageCounts, sources, sides, pageMultiple, fillerBefore });
 }
 
 test('面がずれる区分の前へ MEMO ページを差し込む', () => {
@@ -136,6 +137,88 @@ test('面が合っていれば MEMO ページを差し込まない', () => {
   ]);
   assert.deepStrictEqual(result.memoDocuments, []);
   assert.strictEqual(result.totalPages, 4);
+});
+
+test('調整ページは奥付の直前へ寄せ，端数の 1 ページだけを奥付の後ろへ残す', () => {
+  // 表紙 1 + あとがき 1 + 奥付 1 + 裏表紙 1 = 4 ページ．あとがきを recto へ寄せる
+  // 1 ページが入って 5 ページとなり，8 の倍数まで 3 ページ足りない
+  const result = plan({
+    entries: [
+      'src/chapters/cover.md',
+      'src/chapters/98-afterword.md',
+      'src/chapters/99-colophon.md',
+      'src/chapters/back-cover.md',
+    ],
+    pageCounts: [1, 1, 1, 1],
+    sources: ['', '', '', ''],
+    pageMultiple: 8,
+  });
+
+  assert.deepStrictEqual(result.entry, [
+    'src/chapters/cover.md',
+    'src/chapters/print-memo-1.html', // あとがきを奇数ページへ寄せる
+    'src/chapters/98-afterword.md',
+    'src/chapters/print-memo-2.html', // 調整ページのうち偶数分
+    'src/chapters/99-colophon.md',
+    'src/chapters/print-memo-3.html', // 端数の 1 ページ
+    'src/chapters/back-cover.md',
+  ]);
+  assert.deepStrictEqual(
+    result.memoDocuments.map(memo => memo.pages),
+    [1, 2, 1]
+  );
+  assert.strictEqual(result.totalPages, 8);
+});
+
+test('端数が無ければ調整ページはすべて奥付の前へ入る', () => {
+  /* 表紙 1 + 奥付 1 + 裏表紙 2 = 4 ページ．8 の倍数まで 4 ページ（偶数）足りない */
+  const result = plan({
+    entries: [
+      'src/chapters/cover.md',
+      'src/chapters/99-colophon.md',
+      'src/chapters/back-cover.md',
+    ],
+    pageCounts: [1, 1, 2],
+    sources: ['', '', ''],
+    pageMultiple: 8,
+  });
+
+  assert.deepStrictEqual(result.entry, [
+    'src/chapters/cover.md',
+    'src/chapters/print-memo-1.html',
+    'src/chapters/99-colophon.md',
+    'src/chapters/back-cover.md',
+  ]);
+  assert.strictEqual(result.memoDocuments[0].pages, 4);
+  assert.strictEqual(result.totalPages, 8);
+});
+
+test('寄せ先を指定しなければ調整ページは裏表紙の直前へまとめる', () => {
+  const result = plan({
+    entries: ['src/chapters/cover.md', 'src/chapters/99-colophon.md', 'src/chapters/back-cover.md'],
+    pageCounts: [1, 1, 1],
+    sources: ['', '', ''],
+    pageMultiple: 8,
+    fillerBefore: '',
+  });
+
+  assert.deepStrictEqual(result.entry, [
+    'src/chapters/cover.md',
+    'src/chapters/99-colophon.md',
+    'src/chapters/print-memo-1.html',
+    'src/chapters/back-cover.md',
+  ]);
+  assert.strictEqual(result.memoDocuments[0].pages, 5);
+  assert.strictEqual(result.totalPages, 8);
+});
+
+test('寄せ先は book.yaml で変えられる', () => {
+  assert.strictEqual(resolveFillerBefore({}), '99-colophon');
+  assert.strictEqual(resolveFillerBefore({ print: { filler_before: '98-afterword' } }), '98-afterword');
+  assert.throws(
+    () => resolveFillerBefore({ print: { filler_before: 3 } }),
+    /文字列で指定/
+  );
 });
 
 test('総ページ数を倍数へ揃える調整ページは裏表紙の直前へ入れる', () => {

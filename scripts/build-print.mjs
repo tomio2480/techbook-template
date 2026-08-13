@@ -31,6 +31,7 @@ import {
   parseDocumentStartPages,
   planPrintLayout,
   renderMemoHtml,
+  resolveFillerBefore,
   resolvePageMultiple,
   resolveSectionSides,
   toDocumentPageCounts,
@@ -160,7 +161,7 @@ export function verifyPageMultiple(pageCount, pageMultiple) {
 
 /* 面付けの計画を立てる。測定パスの PDF から各原稿のページ数を読み取り、
    MEMO ページを差し込んだエントリ構成を返す */
-function planFromMeasuredPdf(pdfPath, { entries, sides, pageMultiple }) {
+function planFromMeasuredPdf(pdfPath, { entries, sides, pageMultiple, fillerBefore }) {
   const totalPages = countPdfPagesFile(pdfPath);
   const startPages = parseDocumentStartPages(extractTextWithPageMarks(pdfPath));
 
@@ -173,7 +174,7 @@ function planFromMeasuredPdf(pdfPath, { entries, sides, pageMultiple }) {
   const pageCounts = toDocumentPageCounts(startPages, totalPages);
   const sources = entries.map(entry => fs.readFileSync(path.join(repoRoot, entry), 'utf-8'));
 
-  return planPrintLayout({ entries, pageCounts, sources, sides, pageMultiple });
+  return planPrintLayout({ entries, pageCounts, sources, sides, pageMultiple, fillerBefore });
 }
 
 function writeMemoDocuments(memoDocuments) {
@@ -208,6 +209,7 @@ async function main() {
     parse(fs.readFileSync(path.join(repoRoot, 'config', 'book.yaml'), 'utf-8')) ?? {};
   const pageMultiple = resolvePageMultiple(bookYaml);
   const sides = resolveSectionSides(bookYaml);
+  const fillerBefore = resolveFillerBefore(bookYaml);
   const pdfPath = path.join(repoRoot, 'dist', PRINT_PDF_NAME);
   const planPath = path.join(repoRoot, PLAN_FILE);
 
@@ -228,6 +230,7 @@ async function main() {
       entries: await loadPrintEntries(),
       sides,
       pageMultiple,
+      fillerBefore,
     });
     console.log(
       `MEMO ページを ${plan.memoDocuments.length} 箇所（計 ` +

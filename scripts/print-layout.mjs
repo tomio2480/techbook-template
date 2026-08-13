@@ -34,6 +34,8 @@ const DEFAULT_SECTION_START = {
   '99-colophon': 'verso',
 };
 const DEFAULT_CHAPTER_START = 'recto';
+/* 面付けの調整ページを寄せる先。既定では奥付の直前へまとめる */
+const DEFAULT_FILLER_BEFORE = '99-colophon';
 const SIDES = ['recto', 'verso'];
 
 function assertPositiveInteger(value, label) {
@@ -76,6 +78,17 @@ export function resolveSectionSides(bookYaml) {
   return { patterns, chapterSide };
 }
 
+/* 面付けの調整ページを寄せる先（原稿ファイル名に含まれる文字列）を読む。
+   空文字を指定すると寄せ先を持たず、すべて裏表紙の直前へ入れる */
+export function resolveFillerBefore(bookYaml) {
+  const configured = bookYaml?.print?.filler_before;
+  if (configured === undefined || configured === null) return DEFAULT_FILLER_BEFORE;
+  if (typeof configured !== 'string') {
+    throw new Error('config/book.yaml の print.filler_before は文字列で指定してください。');
+  }
+  return configured;
+}
+
 /* 1 つのエントリを開始すべき面を返す。指定が無い区分では null を返す。
    章の判定はファイル名ではなく扉（chapter-opening）の有無で行う。
    原稿を改名しても判定が壊れないようにするためである */
@@ -100,32 +113,47 @@ function memoDocument(index, pages) {
 /**
  * 改丁と面付けを満たすエントリ構成を組み立てる。
  *
+ * 面付けの調整ページは fillerBefore が指す区分（既定では奥付）の直前へ寄せる。
+ * その区分に面の指定があるときは，面を保つために入れられるのは偶数ページ分に
+ * 限られる。端数の 1 ページは裏表紙の直前（奥付の後ろ）へ残す。
+ *
  * @param {object} params
  * @param {string[]} params.entries      ビルド対象のエントリ（電子書籍用と同じ並び）
  * @param {number[]} params.pageCounts   各エントリの素のページ数（測定ビルドの実測値）
  * @param {string[]} params.sources      各エントリの原稿内容（章扉の有無の判定に使う）
  * @param {object}   params.sides        resolveSectionSides の戻り値
  * @param {number}   params.pageMultiple 綴じの単位
+ * @param {string}   params.fillerBefore 調整ページを寄せる先（省略時は奥付）
  * @returns {{entry: string[], memoDocuments: object[], totalPages: number}}
  */
-export function planPrintLayout({ entries, pageCounts, sources, sides, pageMultiple }) {
+export function planPrintLayout({
+  entries,
+  pageCounts,
+  sources,
+  sides,
+  pageMultiple,
+  fillerBefore = DEFAULT_FILLER_BEFORE,
+}) {
   if (entries.length !== pageCounts.length || entries.length !== sources.length) {
     throw new Error('エントリ・ページ数・原稿内容の件数が一致しません。');
   }
 
+  /* MEMO ページは印（{ memoPages }）として並べ，最後にページ順で番号を振る */
   const entry = [];
-  const memoDocuments = [];
   let pageNumber = 1;
+  let fillerAnchor = null;
 
   entries.forEach((current, index) => {
     const side = sideForEntry(current, sources[index], sides);
     const aligning = side ? pagesToAlign(pageNumber, side) : 0;
 
     if (aligning > 0) {
-      const memo = memoDocument(memoDocuments.length + 1, aligning);
-      memoDocuments.push(memo);
-      entry.push(memo.entry);
+      entry.push({ memoPages: aligning });
       pageNumber += aligning;
+    }
+
+    if (fillerBefore && current.includes(fillerBefore)) {
+      fillerAnchor = { index: entry.length, hasSide: side !== null };
     }
 
     entry.push(current);
@@ -136,14 +164,38 @@ export function planPrintLayout({ entries, pageCounts, sources, sides, pageMulti
   const fillerPages = calcFillerPages(contentPages, pageMultiple);
 
   if (fillerPages > 0) {
-    /* 調整ページは裏表紙の直前へ入れ、裏表紙を最終ページに保つ */
-    const memo = memoDocument(memoDocuments.length + 1, fillerPages);
-    memoDocuments.push(memo);
-    const backCoverIndex = entry.findIndex(item => /back-cover\.(md|html)$/.test(item));
-    entry.splice(backCoverIndex === -1 ? entry.length : backCoverIndex, 0, memo.entry);
+    /* 寄せ先に面の指定があるときは，その面を崩さない偶数ページ分だけを前へ入れる */
+    const anchored = fillerAnchor
+      ? fillerAnchor.hasSide
+        ? fillerPages - (fillerPages % 2)
+        : fillerPages
+      : 0;
+    const trailing = fillerPages - anchored;
+
+    /* 端数は裏表紙の直前へ入れ，裏表紙を最終ページに保つ */
+    const backCoverIndex = entry.findIndex(
+      item => typeof item === 'string' && /back-cover\.(md|html)$/.test(item)
+    );
+    const insertions = [
+      { at: backCoverIndex === -1 ? entry.length : backCoverIndex, pages: trailing },
+      { at: fillerAnchor ? fillerAnchor.index : 0, pages: anchored },
+    ].filter(insertion => insertion.pages > 0);
+
+    /* 後ろから入れる。先に前へ入れると後ろの挿入位置がずれる */
+    for (const insertion of insertions.sort((a, b) => b.at - a.at)) {
+      entry.splice(insertion.at, 0, { memoPages: insertion.pages });
+    }
   }
 
-  return { entry, memoDocuments, totalPages: contentPages + fillerPages };
+  const memoDocuments = [];
+  const finalEntry = entry.map(item => {
+    if (typeof item === 'string') return item;
+    const memo = memoDocument(memoDocuments.length + 1, item.memoPages);
+    memoDocuments.push(memo);
+    return memo.entry;
+  });
+
+  return { entry: finalEntry, memoDocuments, totalPages: contentPages + fillerPages };
 }
 
 /* MEMO ページの原稿を組み立てる。体裁（見出しと枠）は print.css が持ち、
