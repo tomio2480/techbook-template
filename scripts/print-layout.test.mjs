@@ -3,9 +3,12 @@ import assert from 'node:assert';
 import {
   DOC_START_MARKER,
   calcFillerPages,
+  hasChapterOpening,
+  injectTabClass,
   parseDocumentStartPages,
   planPrintLayout,
   renderMemoHtml,
+  renderTabStylesheet,
   resolveFillerBefore,
   resolvePageMultiple,
   resolveSectionSides,
@@ -286,6 +289,53 @@ test('MEMO ページの原稿は指定した枚数分のページを持つ', () 
 
 test('MEMO ページを 1 枚以上求めない呼び出しは例外を投げる', () => {
   assert.throws(() => renderMemoHtml(0), /1 以上/);
+});
+
+// --- injectTabClass・renderTabStylesheet ---
+
+test('章のクラスを html 要素の既存クラスへ足す', () => {
+  const html = '<!doctype html><html lang="ja" class="chapter"><head></head><body></body></html>';
+  assert.match(injectTabClass(html, 3), /<html lang="ja" class="chapter print-tab-3">/);
+});
+
+test('クラス属性が無い html 要素にも足せる', () => {
+  const html = '<!doctype html><html lang="ja"><head></head><body></body></html>';
+  assert.match(injectTabClass(html, 1), /<html class="print-tab-1" lang="ja">/);
+});
+
+test('本文中の html という語をクラス挿入の対象にしない', () => {
+  const html = '<!doctype html><html lang="ja"><body><p>html の話</p></body></html>';
+  const result = injectTabClass(html, 2);
+  assert.strictEqual((result.match(/print-tab-2/g) ?? []).length, 1);
+  assert.match(result, /<p>html の話<\/p>/);
+});
+
+test('html 要素が無ければ例外を投げる', () => {
+  assert.throws(() => injectTabClass('<div></div>', 1), /html 要素が見つかりません/);
+});
+
+test('つめの位置は章の順に等間隔で下がる', () => {
+  const css = renderTabStylesheet(4);
+  assert.match(css, /html\.print-tab-1 \{[\s\S]*?\* 0 \/ 3\)/);
+  assert.match(css, /html\.print-tab-4 \{[\s\S]*?\* 3 \/ 3\)/);
+  assert.strictEqual((css.match(/html\.print-tab-/g) ?? []).length, 4);
+});
+
+test('章が 1 つだけなら範囲の中央へ置く', () => {
+  assert.match(renderTabStylesheet(1), /\* 1 \/ 2\)/);
+});
+
+test('章が無ければ位置の指定を持たない CSS を返す', () => {
+  const css = renderTabStylesheet(0);
+  assert.doesNotMatch(css, /html\.print-tab-/);
+  assert.match(css, /@charset "UTF-8";/);
+});
+
+// --- hasChapterOpening ---
+
+test('章かどうかは扉の有無で判定する', () => {
+  assert.strictEqual(hasChapterOpening('<section class="chapter-opening">'), true);
+  assert.strictEqual(hasChapterOpening('<h1>まえがき</h1>'), false);
 });
 
 // --- parseDocumentStartPages・toDocumentPageCounts ---

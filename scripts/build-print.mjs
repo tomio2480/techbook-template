@@ -28,9 +28,13 @@ import { countPdfPagesFile } from './count-pdf-pages.mjs';
 import {
   MEMO_FILE_PREFIX,
   PAGE_SEPARATOR,
+  TAB_STYLESHEET_FILE,
+  hasChapterOpening,
+  injectTabClass,
   parseDocumentStartPages,
   planPrintLayout,
   renderMemoHtml,
+  renderTabStylesheet,
   resolveFillerBefore,
   resolvePageMultiple,
   resolveSectionSides,
@@ -50,6 +54,7 @@ const MEASURE_STYLE = path.join('config', 'themes', 'techbook', 'print-measure.c
 const PLAN_FILE = path.join('dist', '.print-plan.json');
 const BUILD_MARKER = path.join('dist', '.build-marker');
 const CHAPTERS_DIR = path.join('src', 'chapters');
+const TAB_STYLESHEET = path.join('config', 'themes', 'techbook', TAB_STYLESHEET_FILE);
 /* ビルド前に走らせる機械検査。npm run build と同じ内容を同じ順で実行する */
 const CHECK_SCRIPTS = ['check-errata.mjs', 'check-isdn.mjs', 'check-preface-errata.mjs'];
 /* npx を介さず CLI のエントリポイントを node で直接起動する（tag-pdf.mjs と同じ方針） */
@@ -159,9 +164,8 @@ export function verifyPageMultiple(pageCount, pageMultiple) {
   return { ok: true };
 }
 
-/* 面付けの計画を立てる。測定パスの PDF から各原稿のページ数を読み取り、
-   MEMO ページを差し込んだエントリ構成を返す */
-function planFromMeasuredPdf(pdfPath, { entries, sides, pageMultiple, fillerBefore }) {
+/* 測定パスの PDF から、各原稿が何ページになるかを読み取る */
+function measurePageCounts(pdfPath, entries) {
   const totalPages = countPdfPagesFile(pdfPath);
   const startPages = parseDocumentStartPages(extractTextWithPageMarks(pdfPath));
 
@@ -171,10 +175,28 @@ function planFromMeasuredPdf(pdfPath, { entries, sides, pageMultiple, fillerBefo
     );
   }
 
-  const pageCounts = toDocumentPageCounts(startPages, totalPages);
-  const sources = entries.map(entry => fs.readFileSync(path.join(repoRoot, entry), 'utf-8'));
+  return toDocumentPageCounts(startPages, totalPages);
+}
 
-  return planPrintLayout({ entries, pageCounts, sources, sides, pageMultiple, fillerBefore });
+/* 小口のつめを仕込む。章の順序を生成 HTML のクラスで示し、
+   位置を決める CSS を書き出す。つめは体裁のみで組版結果を変えないため、
+   面付けの計画（ページ数）へは影響しない */
+function applyChapterTabs(entries, sources) {
+  const chapters = entries.filter((entry, index) => hasChapterOpening(sources[index]));
+
+  fs.writeFileSync(
+    path.join(repoRoot, TAB_STYLESHEET),
+    renderTabStylesheet(chapters.length),
+    'utf-8'
+  );
+
+  chapters.forEach((entry, index) => {
+    const filePath = path.join(repoRoot, entry);
+    const html = fs.readFileSync(filePath, 'utf-8');
+    fs.writeFileSync(filePath, injectTabClass(html, index + 1), 'utf-8');
+  });
+
+  return chapters.length;
 }
 
 function writeMemoDocuments(memoDocuments) {
@@ -219,6 +241,10 @@ async function main() {
 
   let plan;
   try {
+    /* つめの位置を決める CSS は print.css から読み込まれる。
+       組版パスの前に，章がまだ確定していない状態の中身で用意しておく */
+    fs.writeFileSync(path.join(repoRoot, TAB_STYLESHEET), renderTabStylesheet(0), 'utf-8');
+
     /* 組版パス: Markdown から HTML を生成する */
     buildPdf({ style: PRINT_STYLE });
     /* 生成 HTML へ行番号を入れ、設定を HTML 参照へ切り替える */
@@ -226,8 +252,14 @@ async function main() {
 
     /* 測定パス: 改丁を外して各原稿のページ数を実測する */
     buildPdf({ style: MEASURE_STYLE });
-    plan = planFromMeasuredPdf(pdfPath, {
-      entries: await loadPrintEntries(),
+    const entries = await loadPrintEntries();
+    const sources = entries.map(entry => fs.readFileSync(path.join(repoRoot, entry), 'utf-8'));
+    const pageCounts = measurePageCounts(pdfPath, entries);
+
+    plan = planPrintLayout({
+      entries,
+      pageCounts,
+      sources,
       sides,
       pageMultiple,
       fillerBefore,
@@ -237,8 +269,9 @@ async function main() {
         `${plan.memoDocuments.reduce((sum, memo) => sum + memo.pages, 0)} ページ）挿入します。`
     );
 
-    /* 本番パス: MEMO ページを入れて組み直す */
+    /* 本番パス: MEMO ページと小口のつめを入れて組み直す */
     writeMemoDocuments(plan.memoDocuments);
+    console.log(`小口のつめを ${applyChapterTabs(entries, sources)} 章分入れます。`);
     fs.writeFileSync(planPath, JSON.stringify(plan, null, 2), 'utf-8');
     buildPdf({ style: PRINT_STYLE, planPath });
   } finally {

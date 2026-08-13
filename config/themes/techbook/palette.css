@@ -152,4 +152,8 @@
      地の文より淡くし，本文ページの記述と混同されないようにする */
   --memo-frame-color: var(--palette-gray-mid);
   --memo-label-color: var(--palette-gray-mid);
+
+  /* 紙入稿用の小口のつめ（章の位置を示す帯）．
+     閉じた本の小口で見分けられるよう，基調色の濃い側を使う */
+  --tab-bg: var(--palette-primary);
 }

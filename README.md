@@ -34,7 +34,7 @@ Vivliostyle を使用した技術書執筆のためのテンプレートリポ�
 - 2 パスビルド中断時の検証（フェイルセーフ）
 - 全角文字間の文中改行を自動で詰める処理（意図しない半角スペースの防止）
 - ビルド後処理によるタグ付き PDF（Tagged PDF）の自動生成
-- 紙入稿用 PDF の別出力（改丁・面付け・MEMO ページの自動挿入）
+- 紙入稿用 PDF の別出力（改丁・面付け・MEMO ページの自動挿入・小口のつめ）
 - GitHub Actions による CI/CD
 - Issue テンプレートによる進捗管理
 
@@ -82,19 +82,22 @@ npm run build:print
 紙で印刷・製本するための PDF が `dist/book-print.pdf` に出力される．
 `npm run build` の出力（`dist/book.pdf`）はそのまま電子書籍用として残る．
 
-紙用の出力では次の 2 つを施す．
+紙用の出力では次の 3 つを施す．
 
 - 改丁．区分の始まりを指定した面から始める．既定ではまえがき・あとがきと
   章の扉が奇数ページ（開いて右），目次・奥付が偶数ページ（開いて左）である．
 - 面付け．総ページ数を綴じの単位（既定 4 ページ）の倍数へ揃える．
   調整分は奥付の直前へ寄せ，奥付を最後の記載として残す．
   奥付の面を保つ都合で，端数の 1 ページだけが奥付の後ろに残ることがある．
+- 小口のつめ．章の位置を示す帯を，各章の奇数ページ（開いて右）の
+  外側の端へ刷る．高さは章の順に下がり，閉じた本の小口で章を見分けられる．
+  章扉のページには出ない．
 
 改丁と面付けで空くページは白紙にせず，`MEMO` の見出しと枠を持つページで埋める．
 落丁（ページの抜け）と読者や印刷所に誤解されないためである．
 
 内部では 3 パスでビルドする．1 パス目で HTML を生成し，2 パス目（測定パス）で
-各区分のページ数を実測し，3 パス目で MEMO ページを入れて組み直す．
+各区分のページ数を実測し，3 パス目で MEMO ページとつめを入れて組み直す．
 最後にページ数を検査し，タグ付き PDF へ変換する．
 要求・要件の詳細は `docs/spec/print-layout.md` を参照．
 
@@ -111,6 +114,11 @@ print:
   chapter_start: recto    # 章扉を持つ原稿の始まりの面
   filler_before: "99-colophon" # 調整ページを寄せる先の原稿
 ```
+
+つめの大きさ・色・並べる範囲は `config/themes/techbook/print.css` の
+変数（`--tab-width`・`--tab-height`・`--tab-area-top`・`--tab-area-height`）と
+`palette.css` の `--tab-bg` で調整する．章ごとの高さを定める
+`print-tabs.generated.css` はビルドが生成するため，直接編集しない．
 
 `section_start` のキーは原稿ファイル名に含まれる文字列である．
 指定を変えたときは `config/themes/techbook/print.css` の改丁指定も揃えること．
@@ -640,8 +648,9 @@ techbook-template/
 │       └── techbook/
 │           ├── theme.css      # メインスタイル
 │           ├── palette.css    # カラーパレット（2 層トークン）
-│           ├── print.css      # 紙入稿用の改丁・MEMO ページ
+│           ├── print.css      # 紙入稿用の改丁・MEMO ページ・小口のつめ
 │           ├── print-measure.css # 紙入稿用ビルドの測定パス専用
+│           ├── print-tabs.generated.css # つめの位置（ビルドが生成．.gitignore 済）
 │           ├── design-variants.css # カタログ用補助スタイル
 │           └── code-highlight.css
 ├── errata/

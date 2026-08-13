@@ -1,5 +1,8 @@
 @charset "UTF-8";
 
+/* 章ごとのつめの位置（npm run build:print が生成する） */
+@import url('./print-tabs.generated.css');
+
 /* 紙入稿用の追加スタイル
  *
  * theme.css の上へ重ねて使う（vivliostyle build の --style で全ドキュメントへ適用する）．
@@ -69,4 +72,36 @@ body.memo-pages {
 
 .memo-page:last-child {
   break-after: auto;
+}
+
+/* ── 小口のつめ ────────────────────────────────────────
+ * 本を閉じたときに小口（外側の端）へ章の位置が並んで見えるよう，
+ * 各章の本文ページの外側へ帯を刷る．
+ * 帯は開いて右のページ（奇数ページ）だけに出す．左ページの小口は
+ * 反対側の端であり，同じ高さへ刷ると裏から透けて重なって見えるためである．
+ * 章の扉ページには出ない（扉は @page chapter-opening で組まれる）．
+ *
+ * 章ごとの高さは print-tabs.generated.css が --tab-offset で与える．
+ * 章の数に応じて下の範囲へ均等に散る．
+ */
+:root {
+  --tab-width: 8mm;
+  --tab-height: 18mm;
+  /* つめを並べる範囲．紙の上端からの距離と，範囲の高さで指定する */
+  --tab-area-top: 30mm;
+  --tab-area-height: 190mm;
+  /* 生成 CSS が無いときの退避先．先頭の章と同じ高さへ置く */
+  --tab-offset: var(--tab-area-top);
+}
+
+html[class*="print-tab-"] body {
+  page: tab;
+}
+
+@page tab:right {
+  /* 単色の帯を背景として敷く．小口へ届かせるため右端へ寄せる */
+  background-image: linear-gradient(var(--tab-bg), var(--tab-bg));
+  background-repeat: no-repeat;
+  background-size: var(--tab-width) var(--tab-height);
+  background-position: right var(--tab-offset);
 }

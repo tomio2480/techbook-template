@@ -24,6 +24,10 @@ const PAGE_SEPARATOR_PATTERN = /^@@@PAGE (\d+)$/;
 export const MEMO_FILE_PREFIX = 'print-memo-';
 const MEMO_ENTRY_DIR = 'src/chapters/';
 
+/* 小口のつめ。章ごとの位置は生成した CSS が持ち、原稿側はクラスで章を示す */
+export const TAB_CLASS_PREFIX = 'print-tab-';
+export const TAB_STYLESHEET_FILE = 'print-tabs.generated.css';
+
 /* 既定の綴じ単位。用紙 1 枚の表裏 2 面で 4 ページになる */
 const DEFAULT_PAGE_MULTIPLE = 4;
 /* 既定の改丁指定。印刷会社の指定に応じて config/book.yaml で上書きする */
@@ -89,13 +93,17 @@ export function resolveFillerBefore(bookYaml) {
   return configured;
 }
 
-/* 1 つのエントリを開始すべき面を返す。指定が無い区分では null を返す。
-   章の判定はファイル名ではなく扉（chapter-opening）の有無で行う。
-   原稿を改名しても判定が壊れないようにするためである */
+/* 章かどうかは扉（chapter-opening）の有無で判定する。
+   ファイル名に依存させず、原稿を改名しても判定が壊れないようにする */
+export function hasChapterOpening(source) {
+  return source.includes('chapter-opening');
+}
+
+/* 1 つのエントリを開始すべき面を返す。指定が無い区分では null を返す */
 export function sideForEntry(entry, source, sides) {
   const matched = sides.patterns.find(([pattern]) => entry.includes(pattern));
   if (matched) return matched[1];
-  if (source.includes('chapter-opening')) return sides.chapterSide;
+  if (hasChapterOpening(source)) return sides.chapterSide;
   return null;
 }
 
@@ -220,6 +228,55 @@ ${pages}
   </body>
 </html>
 `;
+}
+
+export function tabClassName(chapterNumber) {
+  assertPositiveInteger(chapterNumber, 'つめの章番号');
+  return `${TAB_CLASS_PREFIX}${chapterNumber}`;
+}
+
+/* 生成 HTML の html 要素へ，章を示すクラスを足す。
+   つめの位置を決める変数（--tab-offset）は html 要素で解決され、
+   ページ余白の外側（@page）から参照できる */
+export function injectTabClass(html, chapterNumber) {
+  const className = tabClassName(chapterNumber);
+  const openingTag = html.match(/<html\b[^>]*>/i);
+  if (!openingTag) {
+    throw new Error('生成 HTML に html 要素が見つかりません。');
+  }
+
+  const tag = openingTag[0];
+  const replaced = /\sclass\s*=\s*"[^"]*"/i.test(tag)
+    ? tag.replace(/(\sclass\s*=\s*")([^"]*)(")/i, `$1$2 ${className}$3`)
+    : tag.replace(/<html\b/i, `<html class="${className}"`);
+
+  return html.replace(tag, replaced);
+}
+
+/* 章ごとのつめの位置を定める CSS を組み立てる。
+   つめは版面の上下いっぱいへ均等に散らす。位置の基準・大きさ・色は
+   print.css の変数が持ち，ここでは章の順序に応じた割合だけを与える */
+export function renderTabStylesheet(chapterCount) {
+  const rules = Array.from({ length: chapterCount }, (_, index) => {
+    /* 章が 1 つだけのときは範囲の中央へ置く */
+    const numerator = chapterCount === 1 ? 1 : index;
+    const denominator = chapterCount === 1 ? 2 : chapterCount - 1;
+    return (
+      `html.${tabClassName(index + 1)} {\n` +
+      `  --tab-offset: calc(var(--tab-area-top) + ` +
+      `(var(--tab-area-height) - var(--tab-height)) * ${numerator} / ${denominator});\n` +
+      `}`
+    );
+  });
+
+  return `@charset "UTF-8";
+
+/* 小口のつめの位置（章ごと）
+ *
+ * このファイルは npm run build:print が生成する．直接編集しない．
+ * つめの大きさ・色・並べる範囲は print.css の変数で調整する．
+ */
+${rules.join('\n')}${rules.length > 0 ? '\n' : ''}`;
 }
 
 /* 測定ビルドの抽出結果から、各原稿が始まるページ番号を拾う。
