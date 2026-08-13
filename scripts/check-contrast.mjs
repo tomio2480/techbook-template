@@ -18,6 +18,12 @@ export const WCAG_AA_CONTRAST = 4.5;
 const CODE_TOKEN_PREFIX = '--palette-code-';
 const CODE_BG_TOKEN = '--code-bg';
 
+/* 地色の上へ置く文字の対．地色を薄くしたときに文字が沈むのを防ぐ */
+const TEXT_ON_FILL_PAIRS = [
+  /* 紙入稿用の小口のつめ（章番号の帯と白抜き文字） */
+  { color: '--tab-label-color', background: '--tab-bg' },
+];
+
 /**
  * CSS テキストからカスタムプロパティ宣言を抽出する．
  * @param {string} cssText
@@ -121,13 +127,37 @@ export function checkCodeContrast(cssText) {
   });
 }
 
+/**
+ * 地色の上へ白抜きで置く文字の組み合わせを検証する．
+ * 地色を薄くすると文字が読めなくなるため，対の関係を機械で守る．
+ * @param {string} cssText palette.css の内容
+ * @param {Array<{ color: string, background: string }>} pairs 検証する対
+ * @returns {Array<{ token: string, color: string, background: string, ratio: number, ok: boolean }>}
+ */
+export function checkTextOnFillContrast(cssText, pairs = TEXT_ON_FILL_PAIRS) {
+  const vars = parseCssVariables(cssText);
+  return pairs.map(({ color, background }) => {
+    const textColor = resolveVar(vars, color);
+    const fillColor = resolveVar(vars, background);
+    const ratio = contrastRatio(textColor, fillColor);
+    return {
+      token: color,
+      color: textColor,
+      background: fillColor,
+      ratio,
+      ok: ratio >= WCAG_AA_CONTRAST,
+    };
+  });
+}
+
 const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isMainModule) {
   const palettePath = fileURLToPath(
     new URL('../config/themes/techbook/palette.css', import.meta.url)
   );
-  const results = checkCodeContrast(fs.readFileSync(palettePath, 'utf-8'));
+  const paletteCss = fs.readFileSync(palettePath, 'utf-8');
+  const results = [...checkCodeContrast(paletteCss), ...checkTextOnFillContrast(paletteCss)];
   for (const r of results) {
     const mark = r.ok ? 'ok' : 'NG';
     console.log(`${mark} ${r.token}: ${r.color} on ${r.background} = ${r.ratio.toFixed(2)}:1`);

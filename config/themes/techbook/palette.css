@@ -36,6 +36,8 @@
 
   /* 基調色（章扉・見出し・コラムなどの主装飾） */
   --palette-primary: #2f5b8c;
+  /* 基調色を薄めた地色．白抜き文字を載せられる濃さ（白に対し 4.70:1）に留める */
+  --palette-primary-soft: #4a76ab;
   --palette-primary-mid: #b0c4de;
   --palette-primary-light: #f0f4f8;
 
@@ -156,8 +158,10 @@
   --memo-label-color: var(--palette-gray-mid);
 
   /* 紙入稿用の小口のつめ（章番号の帯と章タイトル）．
-     閉じた本の小口で見分けられるよう，帯は基調色の濃い側を使う */
-  --tab-bg: var(--palette-primary);
+     誌面から浮かないよう帯は基調色の薄い側を使う．
+     これ以上薄くする場合は --tab-label-color を濃色へ変える
+     （白抜き文字が読めなくなるため．npm test のコントラスト検査が検出する） */
+  --tab-bg: var(--palette-primary-soft);
   --tab-label-color: var(--palette-paper);
   --tab-title-color: var(--palette-ink);
 }
