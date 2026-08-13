@@ -608,6 +608,7 @@ techbook-template/
 │   ├── check-isdn.mjs         # ISDN 番号・バーコード整合の検査
 │   └── *.test.mjs             # 各スクリプトの単体テスト
 ├── dist/                      # 出力先（.gitignore 済）
+├── .textlintrc.json           # 日本語文章検査の設定（原稿の文体宣言を含む）
 ├── package.json
 ├── vivliostyle.config.js
 ├── vivliostyle.design-samples.config.js # カタログ用ビルド設定
@@ -698,6 +699,8 @@ entry: [
 `scripts/check-diagram-luminance.mjs` の `DIAGRAM_TIER_COLORS` で定義する．グレースケール印刷でも判別できるよう，
 Rec.601 輝度で 15 ポイント以上の差を機械検査する．実体配線図など実物の
 色をそのまま再現する図は `EXCLUDED_FILES` で個別に検査対象から外せる．
+図版を改名すると除外の記載だけが取り残されるため，実在しない名前が
+残っていないかも `npm test` で検査する．
 
 ### 表紙・裏表紙の変更
 
@@ -772,6 +775,21 @@ Tips・注釈・注意の枠 3 種も基調色系トークンへ統一してい�
 2. ブランチを切って執筆
 3. PR を作成すると `npm test`（スクリプトの単体テスト）が実行され，プレビュー PDF が生成される
 4. main へマージするとリリース PDF が生成される
+
+### 日本語文章の検査
+
+PR では `markdownlint` と `textlint` が走り，指摘は差分行へコメントされる．
+設定はルートの `.textlintrc.json` にある．ローカルの実行環境は持たず，
+CI の結果を正とする．
+
+- 原稿（`src/chapters/**`）はですます調を宣言している．
+  である調で書く本は `overrides` の `preferInBody`・`preferInList` を
+  `である` へ変える．除外ではなく宣言のため，宣言した文体の中へ
+  別の文体が混ざる事故は検出できる．
+- 漢字の連続は 6 字までを既定とする．崩すと別物を指す正式名称だけを
+  `max-kanji-continuous-len` の `allow` へ足す．
+- `rules` は中央テンプレート（`tomio2480/github-workflows`）の写しである．
+  中央を更新したときは追随させる．
 
 ## 📚 版管理と正誤表
 
