@@ -87,7 +87,7 @@ body.memo-pages {
  * 章ごとの高さは print-tabs.generated.css が --tab-offset で与える．
  */
 :root {
-  --tab-width: 10mm;
+  --tab-width: 8mm;
   --tab-height: 16mm;
   /* つめを並べる範囲．紙の上端からの距離と，範囲の高さで指定する */
   --tab-area-top: 30mm;
@@ -157,4 +157,7 @@ html[class*="print-tab-"] body {
   font-family: var(--font-gothic);
   font-size: 7pt;
   color: var(--tab-title-color);
+  /* 章番号と同じ行の高さ（縦組みでは横幅）にして，帯とタイトルの
+     中心を縦一列へ揃える */
+  line-height: var(--tab-width);
 }
