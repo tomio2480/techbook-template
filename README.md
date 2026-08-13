@@ -1,4 +1,4 @@
-# 技術書自動組版テンプレート
+# 技術書の自動組版テンプレート
 
 Vivliostyle を使用した技術書執筆のためのテンプレートリポジトリ．Markdown で執筆し、GitHub Actions で PDF を自動生成する．
 
@@ -62,9 +62,9 @@ npm install
 npm run build
 ```
 
-生成された PDF は `dist/book.pdf` に出力される．内部的にはページ番号解決のための
-2 パスビルドを行っており，`scripts/verify-build.mjs` によるビルド完了検証の後，
-`scripts/tag-pdf.mjs` が `dist/book.pdf` にアクセシビリティタグを付与して
+生成された PDF は `dist/book.pdf` に出力される．内部ではページ番号を解決するため
+2 パスでビルドする．続いて `scripts/verify-build.mjs` がビルド完了を検証する．
+最後に `scripts/tag-pdf.mjs` が `dist/book.pdf` へアクセシビリティタグを付与して
 上書きする．検証またはタグ付けに失敗した場合はコマンドが非 0 で終了するため，
 `dist/book.pdf` の内容を確認せず配布しないこと．タグ付き PDF 対応の詳細は
 「[アクセシビリティ（タグ付き PDF）](#アクセシビリティタグ付き-pdf)」を参照．
@@ -79,9 +79,9 @@ npm test
 ```
 
 `scripts/` 配下の全テストスクリプト（`*.test.mjs`）をまとめて実行する．
-対象には行番号付与・ビルド検証・PDF タグ付けのほか，
+対象は行番号付与・ビルド検証・PDF タグ付けの各検査である．
 配色コントラスト・透過ハードストップ・図版 SVG の配色（グレースケール
-輝度差）の回帰検査も含まれる．
+輝度差）の回帰検査も併せて走る．
 
 ### プレビュー
 
@@ -183,7 +183,7 @@ body:
 ---
 ```
 
-`counter-set: chapter 0` の場合、h1 で A になる．`counter-set: chapter 1` の場合は B になる．図・表・数式の番号も自動的にアルファベット形式（例: 図A.-1）となる．扉ページの章番号は HTML に直接「A」等を記述する．
+`counter-set: chapter 0` の場合、h1 で A になる．`counter-set: chapter 1` の場合は B になる．図・表・数式の番号も自動的にアルファベット形式（例: `図A.-1`）となる．扉ページの章番号は HTML に直接「A」等を記述する．
 
 目次では付録が通常の章番号カウントから除外され、出現順に A. / A.1. / A.1.1. 形式で採番される．本文側で `counter-set` の開始値を変えた場合は、目次側の文字と一致しなくなるためカスタム CSS での上書きが必要になる．
 
@@ -263,7 +263,7 @@ copyright:
 
 情報ブロックはバーコード画像の脇へ文字情報を添える．内訳は ISDN 番号、コード行、発行サークル名の 3 行である．コード行は `C0095 ¥1000E` 形式で C コードと価格を併記する．コード行と発行者は `application` 節（`c_code`・`price`・`circle`）から流し込む．無い項目の行は出力しない．サークル名は情報ブロックが出力するため、`back-cover.md` の自由記述と重複させないこと．
 
-データが無い場合、マーカーは出力から取り除かれ、ビルド時に警告が出る．番号の形式（13 桁・プレフィックス 278/279・チェックディジット）は `npm run check:isdn` が検査し、`npm run build` の冒頭でも自動実行される．
+データが無い場合、マーカーは出力から取り除かれ、ビルド時に警告が出る．番号の形式（13 桁・プレフィックス 278/279・チェックディジット）は `npm run check:isdn` が検査する．この検査は `npm run build` の冒頭でも自動実行される．
 
 バーコードの位置・幅はテーマ CSS の変数で調整できる．対象は `--isdn-barcode-top`・`--isdn-barcode-right`・`--isdn-barcode-width` である．申請フォームの管理用パスワードは `config/isdn.yaml` へ書かないこと．要求・要件の詳細は [ISDN 対応 要求・要件](docs/spec/isdn.md) を参照．
 
@@ -291,7 +291,10 @@ def hello():
 
  **対応言語**
 
-javascript, typescript, python, rust, go, bash, json, yaml, markup（HTML）, css, markdown, c, cpp
+```text
+javascript, typescript, python, rust, go, bash, json, yaml,
+markup（HTML）, css, markdown, c, cpp
+```
 
 ### コラム
 
@@ -315,7 +318,7 @@ javascript, typescript, python, rust, go, bash, json, yaml, markup（HTML）, cs
 </div>
 ```
 
-コラムや Tips 内に図（`<figure>`）や数式（`<span class="math display">`）を配置した場合も、図番号・式番号は正しく連番で付与される．
+コラムや Tips 内へ図（`<figure>`）や数式（`<span class="math display">`）を配置できる．その場合も図番号・式番号は正しく連番で付与される．
 
 ### 注釈・注意
 
@@ -371,7 +374,11 @@ HTML ブロック内で数式を表示するには、 `data-math-typeset="true"`
 ![LED点滅回路](../assets/diagrams/led-circuit.svg)
 ```
 
-出力例：図3.2.-1: LED点滅回路
+出力例は次のとおり．
+
+```text
+図3.2.-1: LED点滅回路
+```
 
  **番号の形式**
 
@@ -391,7 +398,7 @@ HTML ブロック内で数式を表示するには、 `data-math-typeset="true"`
 
 ### 表の挿入
 
-表の直前にキャプション（タイトル）を1行で記述する．番号は自動で付与される．
+表の直前にキャプション（タイトル）を 1 行で記述する．番号は自動で付与される．
 
 ```markdown
 Arduino Uno を使った温度計の部品表
@@ -402,7 +409,11 @@ Arduino Uno を使った温度計の部品表
 | 温度センサ | LM35DZ | 1 | 200 |
 ```
 
-出力例：表2.3.-1: Arduino Uno を使った温度計の部品表
+出力例は次のとおり．
+
+```text
+表2.3.-1: Arduino Uno を使った温度計の部品表
+```
 
  **注意点**
 
@@ -484,31 +495,36 @@ $$
 挙動を確認します．
 ```
 
-出力例：これはテストです．改行の直後にも全角文字が続く場合の挙動を確認します．
+出力例は次のとおり．
+
+```text
+これはテストです．改行の直後にも全角文字が続く場合の挙動を確認します．
+```
 
 コードブロック・`script`/`style`・数式（`class="math ..."` を持つ範囲）
 内の改行は対象外であり，そのまま保持される．
 
 既知の制限として，`**強調**` や `[リンク]` 等のインライン要素の直前・
-直後で改行した場合，テキストノードが分割されるため詰められないことが
+直後で改行した場合，テキストノードの分割により詰められないことが
 ある．改行位置をインライン要素の外側に置くことで回避できる．
 
 ## ♿ アクセシビリティ（タグ付き PDF）
 
 ### 対応状況
 
-Vivliostyle CLI が生成する PDF は，タグ付き PDF（Tagged PDF）になって
-いない既知の不具合がある
+Vivliostyle CLI が生成する PDF は，タグ付き PDF（Tagged PDF）にならない．
+既知の不具合である
 （[vivliostyle-cli#539](https://github.com/vivliostyle/vivliostyle-cli/issues/539)）．
 本テンプレートでは，`npm run build` の後処理として
 [OpenDataLoader PDF](https://github.com/opendataloader-project/opendataloader-pdf)
-（`@opendataloader/pdf`，Apache License 2.0）を実行し，`dist/book.pdf` に
-`/StructTreeRoot`・`/MarkInfo`・`/Marked true` 等のタグ構造を自動付与する．
+を実行する．依存は `@opendataloader/pdf`（Apache License 2.0）である．
+その結果 `dist/book.pdf` へ `/StructTreeRoot`・`/MarkInfo`・`/Marked true` 等の
+タグ構造が付く．
 
-無料範囲は Tagged PDF の生成までであり，PDF/UA-1・PDF/UA-2 への正式
+無料範囲は Tagged PDF の生成までである．PDF/UA-1・PDF/UA-2 への正式
 準拠エクスポートは OpenDataLoader PDF の Enterprise 限定機能である．
-また，レイアウト解析による見出し・表・読み順の自動検出は完全ではない
-可能性がある．書籍ごとに，実際の読み上げ順を後述の手順で検証すること．
+また，レイアウト解析による見出し・表・読み順の自動検出が完全でない
+可能性もある．書籍ごとに，実際の読み上げ順を後述の手順で検証すること．
 
 図版の代替テキストは PDF へ引き継がれない．原稿側 `alt` 属性から
 `Figure` タグ `/Alt` へ反映する経路が現行構成に存在しないためである．
@@ -533,10 +549,10 @@ Java 11 を導入している．
 [veraPDF](https://verapdf.org/) で確認できる．CI への自動組み込みは
 スコープ外とし，以下の手動手順を用いる．
 
-1. [veraPDF のインストーラ](https://verapdf.org/software/)を入手し，
+1. [veraPDF のインストーラ](https://verapdf.org/software/) を入手し，
    ローカル環境にインストールする．
 2. GUI 版を使う場合，`dist/book.pdf` を読み込み，検証プロファイルに
-   `PDF/UA-1` を選択して検証を実行する．
+   `PDF/UA-1` を選択して検証する．
 3. CLI 版を使う場合，以下のコマンドで検証結果を確認する．
 
    ```bash
@@ -544,10 +560,12 @@ Java 11 を導入している．
    ```
 
 4. 検証レポートで `/StructTreeRoot`・`/MarkInfo`・`/Marked true` の
-   有無と，見出し・段落の読み上げ順が原稿の意図と一致するかを確認する．
-5. 自動検出精度に起因する誤りが見つかった場合，OpenDataLoader PDF
-   Enterprise 版の視覚エディタか，他の PDF 編集ツールでの手動修正を
-   検討する（本テンプレートの無料構成の対応範囲外）．
+   有無を確かめる．見出し・段落の読み上げ順が原稿の意図と一致するかも
+   確認する．
+5. 自動検出精度に起因する誤りが見つかった場合の対処を検討する．
+   候補は OpenDataLoader PDF Enterprise 版の視覚エディタである．
+   他の PDF 編集ツールでの手動修正も選べる．いずれも本テンプレートの
+   対応範囲外となる．
 
 ## 📂 ディレクトリ構造
 
@@ -669,15 +687,15 @@ entry: [
 変更結果は `npm run build:samples` のカタログ PDF で一覧確認できる．
 
 コードブロックも配色に追従する．外装（背景・枠・行番号帯）は基調色
-（primary）系トークンを参照し、シンタックスハイライトの色は第 1 層の
+（primary）系トークンを参照する．シンタックスハイライトの色は第 1 層の
 `--palette-code-*` で差し替えられる．差し替え時は全シンタックス色が
 背景（`--code-bg`）に対してコントラスト比 4.5:1 以上を維持すること．
 背景を暗くするほど条件が厳しくなるため、背景は淡色を保つ．
 
 図版 SVG（`src/assets/diagrams/*.svg`）の補助記載（矢印・注釈線等）も
 配色に追従する．使ってよい色は `--palette-diagram-annotation` と
-`scripts/check-diagram-luminance.mjs` の `DIAGRAM_TIER_COLORS`（明度段
-パレット）に登録した色のみで、グレースケール印刷でも判別できるよう
+明度段パレットに登録した色のみである．明度段パレットは
+`scripts/check-diagram-luminance.mjs` の `DIAGRAM_TIER_COLORS` で定義する．グレースケール印刷でも判別できるよう，
 Rec.601 輝度で 15 ポイント以上の差を機械検査する．実体配線図など実物の
 色をそのまま再現する図は `EXCLUDED_FILES` で個別に検査対象から外せる．
 
@@ -757,7 +775,7 @@ Tips・注釈・注意の枠 3 種も基調色系トークンへ統一してい�
 
 ## 📚 版管理と正誤表
 
-書籍の版（初版・第 2 版……）と正誤情報を管理する仕組みを備える．
+書籍の版（初版・第 2 版ほか）と正誤情報を管理する仕組みを備える．
 詳細な運用ルールは [docs/spec/edition-errata.md](docs/spec/edition-errata.md) を参照．
 
 - 版番号は `package.json` の semver の major と一致させる（`v1.x.x` が初版）．
@@ -815,7 +833,7 @@ npm run build
 - Java 11 以上が導入されていない，または `PATH` から見えない．
   `java -version` で確認し，未導入なら [Adoptium](https://adoptium.net/)
   等から JDK を導入する．詳細は
-  「[アクセシビリティ（タグ付き PDF）](#アクセシビリティタグ付き-pdf)」を参照．
+  [アクセシビリティ（タグ付き PDF）](#アクセシビリティタグ付き-pdf) を参照．
 - `dist/book.pdf` が存在しない．`vivliostyle build` や
   `scripts/verify-build.mjs` が先に失敗していないか確認する．
 
