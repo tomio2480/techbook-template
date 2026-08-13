@@ -99,6 +99,20 @@ describe('validatePrice', () => {
     assert.deepEqual(validatePrice('0'), []);
   });
 
+  it('正しく 3 桁区切りされた価格を受け入れる', () => {
+    assert.deepEqual(validatePrice('1,234,567'), []);
+    assert.deepEqual(validatePrice('999'), []);
+  });
+
+  it('区切り位置が誤ったカンマへ問題を返す', () => {
+    assert.equal(validatePrice('1,,000').length, 1);
+    assert.equal(validatePrice('10,00').length, 1);
+    assert.equal(validatePrice('1,0000').length, 1);
+    assert.equal(validatePrice(',1000').length, 1);
+    assert.equal(validatePrice('1000,').length, 1);
+    assert.equal(validatePrice('1,234,56').length, 1);
+  });
+
   it('小数・負数・数字以外を含む価格へ問題を返す', () => {
     assert.equal(validatePrice('1000.50').length, 1);
     assert.equal(validatePrice('-1000').length, 1);

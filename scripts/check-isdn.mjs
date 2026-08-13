@@ -130,6 +130,8 @@ export function validateCCode(value) {
  * 価格（application.price）を検査し，問題点の一覧を返す．
  * 出版物のコード行へそのまま載るため，円単位の 0 以上の整数に限る．
  * 桁区切りのカンマは許容する．小数・負数・単位付きは受け付けない．
+ * カンマは 3 桁区切りとして正しい位置にある場合だけ認める．
+ * 除去してから数字列を検査すると `1,,000` や `10,00` を見逃すためである．
  * @param {unknown} value
  * @returns {string[]}
  */
@@ -140,8 +142,8 @@ export function validatePrice(value) {
   if (typeof value === 'number') {
     return Number.isInteger(value) && value >= 0 ? [] : problem;
   }
-  const body = String(value ?? '').trim().replace(/,/g, '');
-  return /^\d+$/.test(body) ? [] : problem;
+  const body = String(value ?? '').trim();
+  return /^(?:\d+|\d{1,3}(?:,\d{3})+)$/.test(body) ? [] : problem;
 }
 
 /**
