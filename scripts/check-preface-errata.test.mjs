@@ -58,6 +58,71 @@ describe('hasErrataMarker: 異常系', () => {
     assert.equal(hasErrataMarker(content), false);
   });
 
+  it('複数行の HTML コメント内のマーカーは対象外（VFM が段落化せず注入されない）', () => {
+    const content = [
+      '# まえがき',
+      '',
+      '<!--',
+      '{{errata}}',
+      '-->',
+      '',
+    ].join('\n');
+    assert.equal(hasErrataMarker(content), false);
+  });
+
+  it('同一行で閉じた HTML コメント内のマーカーは対象外', () => {
+    const content = '# まえがき\n\n<!-- {{errata}} -->\n';
+    assert.equal(hasErrataMarker(content), false);
+  });
+
+  it('コメント終了行に続けて書かれたマーカーは対象外（HTML ブロックは行末まで続く）', () => {
+    const content = '# まえがき\n\n<!--\n注釈\n--> {{errata}}\n';
+    assert.equal(hasErrataMarker(content), false);
+  });
+
+  it('HTML コメントの外にある本物のマーカーは検出する', () => {
+    const content = [
+      '# まえがき',
+      '',
+      '<!--',
+      '{{errata}}',
+      '-->',
+      '',
+      '{{errata}}',
+      '',
+    ].join('\n');
+    assert.equal(hasErrataMarker(content), true);
+  });
+
+  it('コードフェンス内の <!-- はコメント開始とみなさない', () => {
+    const content = [
+      '# まえがき',
+      '',
+      '```markdown',
+      '<!--',
+      '```',
+      '',
+      '{{errata}}',
+      '',
+    ].join('\n');
+    assert.equal(hasErrataMarker(content), true);
+  });
+
+  it('終了行で別のコメントが開いた場合，後続のマーカーは対象外', () => {
+    const content = '# まえがき\n\n<!--\n注釈\n--> <!--\n{{errata}}\n-->\n';
+    assert.equal(hasErrataMarker(content), false);
+  });
+
+  it('インラインコード内の <!-- はコメント開始とみなさない', () => {
+    const content = '# まえがき\n\n`<!--` で注釈を書ける．\n\n{{errata}}\n';
+    assert.equal(hasErrataMarker(content), true);
+  });
+
+  it('エスケープされた \\<!-- はコメント開始とみなさない', () => {
+    const content = '# まえがき\n\n\\<!-- はそのまま表示される．\n\n{{errata}}\n';
+    assert.equal(hasErrataMarker(content), true);
+  });
+
   it('コードブロックの外にある本物のマーカーは検出する（ブロック混在時）', () => {
     const content = [
       '# まえがき',
