@@ -253,6 +253,55 @@ export function injectTabClass(html, chapterNumber) {
   return html.replace(tag, replaced);
 }
 
+/* 生成 HTML から、章の扉に書かれた章番号と章タイトルを取り出す。
+   番号・タイトルとも扉の記述（.chapter-number・.chapter-title）を出所とし、
+   つめと扉で表示が食い違わないようにする */
+function textOfClass(html, className) {
+  const pattern = new RegExp(
+    `<([a-z][a-z0-9]*)\\b[^>]*class="[^"]*\\b${className}\\b[^"]*"[^>]*>([\\s\\S]*?)</\\1>`,
+    'i'
+  );
+  const matched = html.match(pattern);
+  return matched ? matched[2].replace(/<[^>]*>/g, '').trim() : '';
+}
+
+export function extractChapterLabel(html) {
+  const heading = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i);
+  return {
+    number: textOfClass(html, 'chapter-number'),
+    title:
+      textOfClass(html, 'chapter-title') ||
+      (heading ? heading[1].replace(/<[^>]*>/g, '').trim() : ''),
+  };
+}
+
+/* つめの中身を組み立てる。体裁は print.css が持つ。
+   章番号が数字のときだけ「第」「章」を添える（付録の A などには添えない）。
+   読み上げ対象からは外す。扉と同じ内容が重複して読まれるためである */
+export function renderTabMark({ number, title }) {
+  if (!number && !title) return '';
+
+  const numbered = /^\d+$/.test(number) ? ' is-numbered' : '';
+  const numberSpan = number
+    ? `<span class="print-tab-mark-number${numbered}">${number}</span>`
+    : '';
+  const titleSpan = title ? `<span class="print-tab-mark-title">${title}</span>` : '';
+
+  return `<aside class="print-tab-mark" aria-hidden="true">${numberSpan}${titleSpan}</aside>`;
+}
+
+/* つめの中身を body の先頭へ入れる。print.css の position: running() で
+   流し込みから外れるため、組版結果（ページ数）は変わらない */
+export function injectTabMark(html, markup) {
+  if (!markup) return html;
+
+  const bodyTag = html.match(/<body\b[^>]*>/i);
+  if (!bodyTag) {
+    throw new Error('生成 HTML に body 要素が見つかりません。');
+  }
+  return html.replace(bodyTag[0], `${bodyTag[0]}\n${markup}`);
+}
+
 /* 章ごとのつめの位置を定める CSS を組み立てる。
    つめは版面の上下いっぱいへ均等に散らす。位置の基準・大きさ・色は
    print.css の変数が持ち，ここでは章の順序に応じた割合だけを与える */

@@ -29,11 +29,14 @@ import {
   MEMO_FILE_PREFIX,
   PAGE_SEPARATOR,
   TAB_STYLESHEET_FILE,
+  extractChapterLabel,
   hasChapterOpening,
   injectTabClass,
+  injectTabMark,
   parseDocumentStartPages,
   planPrintLayout,
   renderMemoHtml,
+  renderTabMark,
   renderTabStylesheet,
   resolveFillerBefore,
   resolvePageMultiple,
@@ -178,9 +181,9 @@ function measurePageCounts(pdfPath, entries) {
   return toDocumentPageCounts(startPages, totalPages);
 }
 
-/* 小口のつめを仕込む。章の順序を生成 HTML のクラスで示し、
-   位置を決める CSS を書き出す。つめは体裁のみで組版結果を変えないため、
-   面付けの計画（ページ数）へは影響しない */
+/* 小口のつめを仕込む。章の順序を生成 HTML のクラスで示し、位置を決める CSS を
+   書き出し、章番号と章タイトルを各章の HTML へ入れる。
+   つめは流し込みから外れるため、面付けの計画（ページ数）へは影響しない */
 function applyChapterTabs(entries, sources) {
   const chapters = entries.filter((entry, index) => hasChapterOpening(sources[index]));
 
@@ -193,7 +196,8 @@ function applyChapterTabs(entries, sources) {
   chapters.forEach((entry, index) => {
     const filePath = path.join(repoRoot, entry);
     const html = fs.readFileSync(filePath, 'utf-8');
-    fs.writeFileSync(filePath, injectTabClass(html, index + 1), 'utf-8');
+    const marked = injectTabMark(html, renderTabMark(extractChapterLabel(html)));
+    fs.writeFileSync(filePath, injectTabClass(marked, index + 1), 'utf-8');
   });
 
   return chapters.length;

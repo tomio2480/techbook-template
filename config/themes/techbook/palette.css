@@ -44,6 +44,8 @@
 
   /* 無彩色の段階 */
   --palette-ink: #222;
+  /* 紙の色．濃い地の上へ置く文字に使う */
+  --palette-paper: #fff;
   --palette-ink-soft: #333;
   --palette-gray-dark: #444;
   --palette-gray-mid: #999;
@@ -153,7 +155,9 @@
   --memo-frame-color: var(--palette-gray-mid);
   --memo-label-color: var(--palette-gray-mid);
 
-  /* 紙入稿用の小口のつめ（章の位置を示す帯）．
-     閉じた本の小口で見分けられるよう，基調色の濃い側を使う */
+  /* 紙入稿用の小口のつめ（章番号の帯と章タイトル）．
+     閉じた本の小口で見分けられるよう，帯は基調色の濃い側を使う */
   --tab-bg: var(--palette-primary);
+  --tab-label-color: var(--palette-paper);
+  --tab-title-color: var(--palette-ink);
 }

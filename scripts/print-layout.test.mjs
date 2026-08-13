@@ -3,11 +3,14 @@ import assert from 'node:assert';
 import {
   DOC_START_MARKER,
   calcFillerPages,
+  extractChapterLabel,
   hasChapterOpening,
   injectTabClass,
+  injectTabMark,
   parseDocumentStartPages,
   planPrintLayout,
   renderMemoHtml,
+  renderTabMark,
   renderTabStylesheet,
   resolveFillerBefore,
   resolvePageMultiple,
@@ -329,6 +332,55 @@ test('章が無ければ位置の指定を持たない CSS を返す', () => {
   const css = renderTabStylesheet(0);
   assert.doesNotMatch(css, /html\.print-tab-/);
   assert.match(css, /@charset "UTF-8";/);
+});
+
+// --- extractChapterLabel・renderTabMark・injectTabMark ---
+
+const CHAPTER_HTML = `<!doctype html><html lang="ja"><body>
+<section class="chapter-opening">
+<p class="chapter-number">2</p>
+<p class="chapter-title">応用編</p>
+</section>
+<section class="level1"><h1 id="応用編">応用編</h1></section>
+</body></html>`;
+
+test('章番号と章タイトルを扉の記述から取り出す', () => {
+  assert.deepStrictEqual(extractChapterLabel(CHAPTER_HTML), { number: '2', title: '応用編' });
+});
+
+test('扉にタイトルが無ければ h1 から補う', () => {
+  const html = '<html><body><h1 id="x">解答</h1></body></html>';
+  assert.deepStrictEqual(extractChapterLabel(html), { number: '', title: '解答' });
+});
+
+test('つめには章番号とタイトルを並べる', () => {
+  const markup = renderTabMark({ number: '2', title: '応用編' });
+  assert.match(markup, /class="print-tab-mark-number is-numbered">2</);
+  assert.match(markup, /class="print-tab-mark-title">応用編</);
+  assert.match(markup, /aria-hidden="true"/);
+});
+
+test('数字でない章番号には「第」「章」を添えない', () => {
+  const markup = renderTabMark({ number: 'A', title: '付録: 参考資料' });
+  assert.doesNotMatch(markup, /is-numbered/);
+  assert.match(markup, /class="print-tab-mark-number">A</);
+});
+
+test('番号もタイトルも無ければつめを作らない', () => {
+  assert.strictEqual(renderTabMark({ number: '', title: '' }), '');
+});
+
+test('つめは body の直後へ入れる', () => {
+  const result = injectTabMark(CHAPTER_HTML, renderTabMark({ number: '2', title: '応用編' }));
+  assert.match(result, /<body>\n<aside class="print-tab-mark"/);
+});
+
+test('つめが空なら HTML を変えない', () => {
+  assert.strictEqual(injectTabMark(CHAPTER_HTML, ''), CHAPTER_HTML);
+});
+
+test('body 要素が無ければ例外を投げる', () => {
+  assert.throws(() => injectTabMark('<div></div>', '<aside></aside>'), /body 要素が見つかりません/);
 });
 
 // --- hasChapterOpening ---

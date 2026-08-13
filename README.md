@@ -34,7 +34,7 @@ Vivliostyle を使用した技術書執筆のためのテンプレートリポ�
 - 2 パスビルド中断時の検証（フェイルセーフ）
 - 全角文字間の文中改行を自動で詰める処理（意図しない半角スペースの防止）
 - ビルド後処理によるタグ付き PDF（Tagged PDF）の自動生成
-- 紙入稿用 PDF の別出力（改丁・面付け・MEMO ページの自動挿入・小口のつめ）
+- 紙入稿用 PDF の別出力（改丁・面付け・MEMO ページ・章名入りの小口のつめ）
 - GitHub Actions による CI/CD
 - Issue テンプレートによる進捗管理
 
@@ -89,8 +89,9 @@ npm run build:print
 - 面付け．総ページ数を綴じの単位（既定 4 ページ）の倍数へ揃える．
   調整分は奥付の直前へ寄せ，奥付を最後の記載として残す．
   奥付の面を保つ都合で，端数の 1 ページだけが奥付の後ろに残ることがある．
-- 小口のつめ．章の位置を示す帯を，各章の奇数ページ（開いて右）の
-  外側の端へ刷る．高さは章の順に下がり，閉じた本の小口で章を見分けられる．
+- 小口のつめ．章番号の帯と章タイトルを，各章の奇数ページ（開いて右）の
+  外側の端へ縦組みで刷る．高さは章の順に下がり，閉じた本の小口で章を
+  見分けられる．章番号と章タイトルは章扉の記述から取る．
   章扉のページには出ない．
 
 改丁と面付けで空くページは白紙にせず，`MEMO` の見出しと枠を持つページで埋める．
@@ -115,10 +116,14 @@ print:
   filler_before: "99-colophon" # 調整ページを寄せる先の原稿
 ```
 
-つめの大きさ・色・並べる範囲は `config/themes/techbook/print.css` の
-変数（`--tab-width`・`--tab-height`・`--tab-area-top`・`--tab-area-height`）と
-`palette.css` の `--tab-bg` で調整する．章ごとの高さを定める
+つめの大きさ・並べる範囲は `config/themes/techbook/print.css` の変数
+（`--tab-width`・`--tab-height`・`--tab-area-top`・`--tab-area-height`・
+`--tab-title-length`）で調整する．配色は `palette.css` の `--tab-bg`・
+`--tab-label-color`・`--tab-title-color` で変える．章ごとの高さを定める
 `print-tabs.generated.css` はビルドが生成するため，直接編集しない．
+
+`--tab-page-margin-top` は `theme.css` の `@page` 上余白と揃える．
+版面の余白を変えたときは，この値も同じ量へ直すこと．
 
 `section_start` のキーは原稿ファイル名に含まれる文字列である．
 指定を変えたときは `config/themes/techbook/print.css` の改丁指定も揃えること．
@@ -648,7 +653,7 @@ techbook-template/
 │       └── techbook/
 │           ├── theme.css      # メインスタイル
 │           ├── palette.css    # カラーパレット（2 層トークン）
-│           ├── print.css      # 紙入稿用の改丁・MEMO ページ・小口のつめ
+│           ├── print.css      # 紙入稿用の改丁・MEMO ページ・小口のつめ（章名入り）
 │           ├── print-measure.css # 紙入稿用ビルドの測定パス専用
 │           ├── print-tabs.generated.css # つめの位置（ビルドが生成．.gitignore 済）
 │           ├── design-variants.css # カタログ用補助スタイル
