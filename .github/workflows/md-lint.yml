@@ -6,10 +6,18 @@ name: Markdown Lint
 #   .markdownlint-cli2.yaml / .textlintrc.json / prh.yml / .textlintignore
 # 詳細は https://github.com/tomio2480/github-workflows の README を参照．
 
+# lint 設定そのものを変えた PR でも走らせる．設定だけを変更した PR で
+# 検査が動かないと，設定の効き目を PR 上で確認できないため．
 on:
   pull_request:
     paths:
       - "**/*.md"
+      - ".textlintrc.json"
+      - ".textlintignore"
+      - ".textlint-allowlist.yml"
+      - ".markdownlint-cli2.yaml"
+      - "prh.yml"
+      - ".github/workflows/md-lint.yml"
 
 permissions:
   contents: read
