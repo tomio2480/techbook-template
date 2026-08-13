@@ -147,4 +147,9 @@
   --cover-title-color: var(--palette-ink);
   --cover-author-color: var(--palette-ink-soft);
   --back-cover-text-color: var(--palette-ink-soft);
+
+  /* 紙入稿用の MEMO ページ（改丁で生じる白ページ・面付けの調整ページ）．
+     地の文より淡くし，本文ページの記述と混同されないようにする */
+  --memo-frame-color: var(--palette-gray-mid);
+  --memo-label-color: var(--palette-gray-mid);
 }

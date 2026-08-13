@@ -1,0 +1,36 @@
+@charset "UTF-8";
+
+/* 紙入稿用ビルドの測定パス専用スタイル
+ *
+ * 各原稿が何ページになるかを実測するために使う（scripts/build-print.mjs）．
+ * 成果物の PDF には使わない．
+ *
+ * 測定では改丁を無効にする．改丁で空くページが混ざると，
+ * 原稿そのもののページ数を取り違えるためである．
+ */
+
+/* 各原稿の 1 ページ目へ目印を出す．:nth(1) は複数文書の刊行物で
+   文書ごとの 1 ページ目に一致する（Vivliostyle の仕様）．
+   目印は余白ボックスへ置くため，本文の組版結果（ページ数）へ影響しない．
+   文字列は scripts/print-layout.mjs の DOC_START_MARKER と一致させること */
+@page :nth(1) {
+  @top-left {
+    content: "DOCSTARTMARK";
+    font-family: monospace;
+    font-size: 8pt;
+    color: #000;
+  }
+}
+
+/* 表紙・裏表紙は余白 0 で組むため，目印を入れるページ余白ボックスが生じない．
+   測定パスでは上余白と背景だけ戻し，目印を読み取れるようにする．
+   どちらも 1 ページの原稿であり，測定したいページ数は変わらない */
+@page cover, back-cover {
+  margin-top: 10mm;
+  background-image: none;
+}
+
+/* 章の扉の改丁（theme.css の break-before: right）を測定中だけ無効にする */
+.chapter-opening {
+  break-before: page;
+}

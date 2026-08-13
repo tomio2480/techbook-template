@@ -34,6 +34,7 @@ Vivliostyle を使用した技術書執筆のためのテンプレートリポ�
 - 2 パスビルド中断時の検証（フェイルセーフ）
 - 全角文字間の文中改行を自動で詰める処理（意図しない半角スペースの防止）
 - ビルド後処理によるタグ付き PDF（Tagged PDF）の自動生成
+- 紙入稿用 PDF の別出力（改丁・面付け・MEMO ページの自動挿入）
 - GitHub Actions による CI/CD
 - Issue テンプレートによる進捗管理
 
@@ -71,6 +72,46 @@ npm run build
 
 `src/chapters/toc.html` の `<nav>` 内は手動編集してよい．追加した項目や
 言い換えたリンク文言は，次回 `npm run build` 実行後も保持される．
+
+### 紙入稿用 PDF のビルド
+
+```bash
+npm run build:print
+```
+
+紙で印刷・製本するための PDF が `dist/book-print.pdf` に出力される．
+`npm run build` の出力（`dist/book.pdf`）はそのまま電子書籍用として残る．
+
+紙用の出力では次の 2 つを施す．
+
+- 改丁．区分の始まりを指定した面から始める．既定ではまえがき・あとがきと
+  章の扉が奇数ページ（開いて右），目次・奥付が偶数ページ（開いて左）である．
+- 面付け．総ページ数を綴じの単位（既定 4 ページ）の倍数へ揃える．
+
+改丁と面付けで空くページは白紙にせず，`MEMO` の見出しと枠を持つページで埋める．
+落丁（ページの抜け）と読者や印刷所に誤解されないためである．
+
+内部では 3 パスでビルドする．1 パス目で HTML を生成し，2 パス目（測定パス）で
+各区分のページ数を実測し，3 パス目で MEMO ページを入れて組み直す．
+最後にページ数を検査し，タグ付き PDF へ変換する．
+要求・要件の詳細は `docs/spec/print-layout.md` を参照．
+
+面の指定と綴じの単位は `config/book.yaml` の `print` で変える．
+
+```yaml
+print:
+  page_multiple: 4        # 綴じの単位．総ページ数をこの倍数へ揃える
+  section_start:          # 区分の始まりの面（recto: 奇数／verso: 偶数）
+    "00-preface": recto
+    "toc": verso
+    "98-afterword": recto
+    "99-colophon": verso
+  chapter_start: recto    # 章扉を持つ原稿の始まりの面
+```
+
+`section_start` のキーは原稿ファイル名に含まれる文字列である．
+指定を変えたときは `config/themes/techbook/print.css` の改丁指定も揃えること．
+食い違うとページ数の検査が失敗し，ビルドが止まる．
 
 ### スクリプトのテスト
 
@@ -596,6 +637,8 @@ techbook-template/
 │       └── techbook/
 │           ├── theme.css      # メインスタイル
 │           ├── palette.css    # カラーパレット（2 層トークン）
+│           ├── print.css      # 紙入稿用の改丁・MEMO ページ
+│           ├── print-measure.css # 紙入稿用ビルドの測定パス専用
 │           ├── design-variants.css # カタログ用補助スタイル
 │           └── code-highlight.css
 ├── errata/
@@ -604,12 +647,16 @@ techbook-template/
 │   ├── add-line-numbers.mjs   # 行番号追加・目次マージスクリプト
 │   ├── verify-build.mjs       # ビルド中断検知（フェイルセーフ）
 │   ├── tag-pdf.mjs            # タグ付き PDF 生成（ビルド後処理）
+│   ├── build-print.mjs        # 紙入稿用 PDF のビルド（改丁・面付け）
+│   ├── print-layout.mjs       # 改丁・面付けの計算と MEMO ページ生成
+│   ├── count-pdf-pages.mjs    # PDF のページ数の読み取り
 │   ├── check-errata.mjs       # 正誤表スキーマ・版整合の検査
 │   ├── check-isdn.mjs         # ISDN 番号・バーコード整合の検査
 │   └── *.test.mjs             # 各スクリプトの単体テスト
 ├── dist/                      # 出力先（.gitignore 済）
 ├── package.json
 ├── vivliostyle.config.js
+├── vivliostyle.print.config.js # 紙入稿用ビルド設定
 ├── vivliostyle.design-samples.config.js # カタログ用ビルド設定
 └── README.md
 ```
@@ -836,6 +883,18 @@ npm run build
   [アクセシビリティ（タグ付き PDF）](#アクセシビリティタグ付き-pdf) を参照．
 - `dist/book.pdf` が存在しない．`vivliostyle build` や
   `scripts/verify-build.mjs` が先に失敗していないか確認する．
+
+### `検証失敗: 総ページ数が想定と異なります` と表示され紙入稿用ビルドが失敗する
+
+`npm run build:print` が，実測から求めた想定ページ数と組み上がった PDF の
+ページ数の食い違いを検出した状態．改丁の指定が 2 箇所で食い違うと起きる．
+`config/book.yaml` の `print.section_start` と
+`config/themes/techbook/print.css` の `break-before` を突き合わせ，
+同じ面（`recto` / `verso`）を指しているか確認する．
+
+`測定パスで読み取った原稿の数が…一致しません` と表示される場合は，
+測定パスの目印を読み取れていない．余白 0 のページを追加した場合は，
+`config/themes/techbook/print-measure.css` で当該ページの上余白を戻すこと．
 
 ## 📄 ライセンス
 

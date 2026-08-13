@@ -1,0 +1,72 @@
+@charset "UTF-8";
+
+/* 紙入稿用の追加スタイル
+ *
+ * theme.css の上へ重ねて使う（vivliostyle build の --style で全ドキュメントへ適用する）．
+ * 電子書籍用の PDF（dist/book.pdf）には読み込まれない．
+ * 扱うのは面付けに関する体裁だけであり，本文の体裁は theme.css を単一の出所とする．
+ * 要求・要件は docs/spec/print-layout.md を参照．
+ */
+
+/* ── 改丁（区分の始まりページの面）──────────────────────────
+ * recto は奇数ページ（開いて右），verso は偶数ページ（開いて左）である．
+ * 面の指定は config/book.yaml の print.section_start が正であり，
+ * 本節はその指定どおりに組めたことを担保する安全網である．
+ * 面がずれた場合は白ページが生じ，ページ数の検査（scripts/build-print.mjs）が
+ * 食い違いを検出してビルドを失敗させる．指定を変えるときは両方を揃えること．
+ * 章の扉（.chapter-opening）は theme.css の break-before: right が担う．
+ */
+
+/* まえがき・あとがきは奇数ページ（開いて右）から始める */
+body.preface > section:first-of-type,
+body.afterword > section:first-of-type {
+  break-before: recto;
+}
+
+/* 目次・奥付は偶数ページ（開いて左）から始める */
+body.toc > nav,
+body.colophon > section:first-of-type {
+  break-before: verso;
+}
+
+/* ── MEMO ページ ────────────────────────────────────────
+ * 改丁で空くページと，面付けの調整ページを埋める実体のあるページ．
+ * 落丁と誤読されないよう，見出しと枠で意図した余白だと示す．
+ * 原稿は scripts/print-layout.mjs が生成する（src/chapters/print-memo-*.html）．
+ */
+body.memo-pages {
+  page: memo;
+}
+
+@page memo {
+  /* 版面いっぱいの枠．ページ余白の内側へ引かれる */
+  border: 0.4pt solid var(--memo-frame-color);
+
+  @top-left {
+    content: "MEMO";
+    font-family: var(--font-gothic);
+    font-size: 9pt;
+    letter-spacing: 0.08em;
+    color: var(--memo-label-color);
+  }
+
+  /* 柱は出さない．直前の章の柱が残ると誤読を招く */
+  @top-center {
+    content: none;
+  }
+
+  /* ノンブルは残す．通し番号が途切れないことが落丁でない証拠になる */
+  @bottom-center {
+    content: counter(page);
+    font-size: 10pt;
+  }
+}
+
+.memo-page {
+  /* 1 ブロックが 1 ページに対応する．最後の 1 枚の後ろでは改ページしない */
+  break-after: page;
+}
+
+.memo-page:last-child {
+  break-after: auto;
+}

@@ -32,6 +32,23 @@ chapters:
   - src/chapters/00-preface.md
   - src/chapters/01-introduction.md
 
+# 紙入稿用 PDF（npm run build:print）の面付け設定
+# page_multiple は綴じの単位．総ページ数をこの倍数へ揃える（既定 4）
+# 入稿先の指定に合わせて 2 や 8 へ変更する
+print:
+  page_multiple: 4
+  # 区分をどちらの面から始めるか．recto は奇数ページ（開いて右），
+  # verso は偶数ページ（開いて左）．キーは原稿ファイル名に含まれる文字列で，
+  # 前から順に照合する．ここを変えたら config/themes/techbook/print.css の
+  # 改丁指定も揃えること（食い違うとビルドが失敗する）
+  section_start:
+    "00-preface": recto
+    "toc": verso
+    "98-afterword": recto
+    "99-colophon": verso
+  # 章扉（chapter-opening）を持つ原稿を始める面
+  chapter_start: recto
+
 typesetting:
   page_size: A5
   font_size: 10pt

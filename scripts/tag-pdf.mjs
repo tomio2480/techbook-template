@@ -58,14 +58,16 @@ function defaultRunCommand(cliPath, args) {
   });
 }
 
-export function tagPdf(repoRoot, { runCommand } = {}) {
+// pdfFileName は dist 配下のファイル名を指す。紙入稿用ビルドが
+// dist/book-print.pdf を渡すため、既定値を持つ引数として開けている
+export function tagPdf(repoRoot, { runCommand, pdfFileName = 'book.pdf' } = {}) {
   const distDir = path.join(repoRoot, 'dist');
-  const inputPdfPath = path.join(distDir, 'book.pdf');
+  const inputPdfPath = path.join(distDir, pdfFileName);
 
   if (!fs.existsSync(inputPdfPath)) {
     return {
       ok: false,
-      message: 'dist/book.pdf が見つかりません。タグ付けの前にビルドを完了させてください。',
+      message: `dist/${pdfFileName} が見つかりません。タグ付けの前にビルドを完了させてください。`,
     };
   }
 
