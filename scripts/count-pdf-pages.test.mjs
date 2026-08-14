@@ -64,6 +64,14 @@ test('圧縮されたオブジェクトストリーム内のページも数え�
   assert.strictEqual(countPdfPages(fakePdfWithObjectStream({ pageObjects: 32, rootCount: 32 })), 32);
 });
 
+test('平文と圧縮側の両方にページ定義があっても二重に数えない', () => {
+  // タグ付け（scripts/tag-pdf.mjs）を通した PDF は，平文のページ定義に加えて
+  // 圧縮された写しを残すことがある
+  const plain = fakePdf({ pageObjects: 3, rootCount: 3 });
+  const compressed = fakePdfWithObjectStream({ pageObjects: 3, rootCount: 3 });
+  assert.strictEqual(countPdfPages(Buffer.concat([plain, compressed])), 3);
+});
+
 test('オブジェクトストリーム以外の圧縮ストリームは展開しない', () => {
   // 本文の内容ストリームに現れる文字列でページ数を誤らないことを確かめる
   const content = zlib.deflateSync(Buffer.from('BT (/Type /Page) Tj ET', 'latin1'));

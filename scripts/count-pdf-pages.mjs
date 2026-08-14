@@ -8,8 +8,10 @@
  * Vivliostyle CLI が出力した直後の PDF は、ページオブジェクトを圧縮された
  * オブジェクトストリーム（/ObjStm）へ格納する。一方、タグ付け（tag-pdf.mjs）を
  * 通した後の PDF では平文で現れる。どちらの形式でも数えられるよう、
- * オブジェクトストリームだけを展開して走査対象に加える。本文の内容ストリームは
- * 展開しない（誌面に現れる文字列をページ定義と誤認しないため）。
+ * まず平文を走査し、見つからないときだけオブジェクトストリームを展開する。
+ * 両方を足すと、タグ付け後の PDF に残る圧縮側の写しを二重に数えてしまう。
+ * 本文の内容ストリームは展開しない（誌面に現れる文字列をページ定義と
+ * 誤認しないため）。
  *
  * 数え落としを検知するため、ページツリーのルートが持つ /Count とも突合する。
  * 両者が食い違う場合は誤った面付けを避けるために例外を投げる。
@@ -69,7 +71,11 @@ function decodeObjectStreams(text, buffer) {
 export function countPdfPages(buffer) {
   // PDF はバイト列であり、テキストとして扱うにはバイト値を保つ latin1 が要る
   const raw = buffer.toString('latin1');
-  const text = `${raw}\n${decodeObjectStreams(raw, buffer)}`;
+  // 平文にページ定義があればそれを正とし、無いときだけ圧縮側を展開する
+  const text =
+    (raw.match(PAGE_OBJECT_PATTERN) ?? []).length > 0
+      ? raw
+      : decodeObjectStreams(raw, buffer);
   const pageObjectCount = (text.match(PAGE_OBJECT_PATTERN) ?? []).length;
 
   if (pageObjectCount === 0) {
