@@ -116,11 +116,12 @@ print:
   filler_before: "99-colophon" # 調整ページを寄せる先の原稿
 ```
 
-つめの大きさ・並べる範囲は `config/themes/techbook/print.css` の変数
-（`--tab-width`・`--tab-height`・`--tab-area-top`・`--tab-area-height`・
-`--tab-title-length`）で調整する．配色は `palette.css` の `--tab-bg`・
-`--tab-label-color`・`--tab-title-color` で変える．章ごとの高さを定める
-`print-tabs.generated.css` はビルドが生成するため，直接編集しない．
+つめの大きさと並べる範囲は `config/themes/techbook/print.css` の変数で調整する．
+対象は `--tab-width`・`--tab-height`・`--tab-area-top`・`--tab-area-height`・
+`--tab-title-length` の 5 つである．
+配色は `palette.css` の `--tab-bg`・`--tab-label-color`・`--tab-title-color` で変える．
+章ごとの高さを定める `print-tabs.generated.css` はビルドが生成する．
+このファイルは直接編集しない．
 
 `--tab-page-margin-top` は `theme.css` の `@page` 上余白と揃える．
 版面の余白を変えたときは，この値も同じ量へ直すこと．
@@ -905,9 +906,8 @@ npm run build
 
 `npm run build:print` が，実測から求めた想定ページ数と組み上がった PDF の
 ページ数の食い違いを検出した状態．改丁の指定が 2 箇所で食い違うと起きる．
-`config/book.yaml` の `print.section_start` と
-`config/themes/techbook/print.css` の `break-before` を突き合わせ，
-同じ面（`recto` / `verso`）を指しているか確認する．
+`config/book.yaml` の `print.section_start` と `print.css` の `break-before` を
+突き合わせる．どちらも同じ面（`recto` / `verso`）を指しているか確認する．
 
 `測定パスで読み取った原稿の数が…一致しません` と表示される場合は，
 測定パスの目印を読み取れていない．余白 0 のページを追加した場合は，
