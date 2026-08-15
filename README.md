@@ -848,10 +848,20 @@ PR では `markdownlint` と `textlint` が走り，指摘は差分行へコメ�
 設定はルートの `.textlintrc.json` にある．ローカルの実行環境は持たず，
 CI の結果を正とする．
 
-- 原稿（`src/chapters/**`）はですます調を宣言している．
-  である調で書く本は `overrides` の `preferInBody`・`preferInList` を
-  `である` へ変える．除外ではなく宣言のため，宣言した文体の中へ
-  別の文体が混ざる事故は検出できる．
+- 文体の既定はである調である．読者へ語りかけるですます調で書く原稿は，
+  ファイル先頭（frontmatter の直後）へ次の 2 行を置き，文体の検査だけ止める．
+  文長・助詞重複・表記ゆれの検査は効いたまま残る．
+  サンプル原稿では `00-preface.md`・`01-introduction.md`・
+  `98-afterword.md`・`99-colophon.md` がこの方式を使っている．
+  である調で書く原稿には何も足さない．
+
+  ```markdown
+  <!-- 本章は読者へ語りかける ですます調 で書く．文体の検査だけ止める． -->
+  <!-- textlint-disable ja-technical-writing/no-mix-dearu-desumasu -->
+  ```
+
+  textlint 15.6.0 は `.textlintrc.json` の `overrides` を読まない．
+  そのためパスごとの文体宣言はできない（`tomio2480/github-workflows#85`）．
 - 漢字の連続は 6 字までを既定とする．崩すと別物を指す正式名称だけを
   `max-kanji-continuous-len` の `allow` へ足す．
 - `rules` は中央テンプレート（`tomio2480/github-workflows`）の写しである．

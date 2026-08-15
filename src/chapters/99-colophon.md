@@ -2,6 +2,9 @@
 class: colophon
 ---
 
+<!-- 本章は読者へ語りかける ですます調 で書く．文体の検査だけ止める（詳細は README の「日本語文章の検査」）． -->
+<!-- textlint-disable ja-technical-writing/no-mix-dearu-desumasu -->
+
 {{authors}}
 
 # 書籍タイトル
