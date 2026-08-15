@@ -1,7 +1,7 @@
 # 版管理と正誤表運用
 
-書籍の版（初版・第 2 版……）を semver と GitHub Releases で管理し，
-正誤情報を `errata/errata.yml` に一元記録する運用ルールを定める．
+書籍の版（初版・第 2 版ほか）は semver と GitHub Releases で管理する．
+正誤情報は `errata/errata.yml` へ一元記録する．その運用ルールを定める．
 正誤情報は公開正誤表サイト（`tomio2480/errata`）から定期収集される．
 
 ## 目次
@@ -44,7 +44,7 @@
    `release` には手順 4 で作られるタグ名（`v` ＋ そのときの version）を書く．
 3. この版で本文へ反映した正誤があれば，該当項目に `fixed_in` を記入する．
 4. main へ push（マージ）すると release ジョブが version のタグで
-   Release を作成し，PDF が版のアーカイブとして保管される．
+   Release を作成する．PDF は版のアーカイブとして保管される．
 
 `editions` は公開正誤表サイトの収集用データである．
 奥付の発行履歴（`99-colophon.md` への手書き）を，ここから自動生成
@@ -72,6 +72,9 @@
 - マーカーの欠落は `npm run check:preface`（`scripts/check-preface-errata.mjs`）
   が警告する．`npm run build` の先頭でも自動実行される．
   欠落は警告であり，ビルド失敗はしない．
+- コードブロックや HTML コメントの中に書いたマーカーは欠落として扱う．
+  段落にならず案内へ置き換わらないためである．
+  存在すると見なせば，案内が落ちたまま検査を通してしまう（Issue #81・PR #85）．
 
 ## 検証
 
