@@ -6,6 +6,7 @@ dist/
 publication.json
 src/chapters/*.html
 !src/chapters/toc.html
+config/themes/techbook/print-tabs.generated.css
 src/design-samples/*.html
 index.html
 

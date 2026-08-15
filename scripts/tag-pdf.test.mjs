@@ -47,6 +47,35 @@ test('tagPdf: dist/book.pdf が存在しなければ失敗する', () => {
   assert.match(result.message, /book\.pdf/);
 });
 
+test('tagPdf: pdfFileName で対象の PDF を切り替えられる', () => {
+  // 紙入稿用ビルド（scripts/build-print.mjs）が dist/book-print.pdf を渡す
+  const dir = makeTempRepo();
+  const pdfPath = path.join(dir, 'dist', 'book-print.pdf');
+  fs.writeFileSync(pdfPath, 'original', 'utf-8');
+
+  const result = tagPdf(dir, {
+    pdfFileName: 'book-print.pdf',
+    runCommand: args => {
+      const outputDir = args[args.indexOf('--output-dir') + 1];
+      fs.writeFileSync(path.join(outputDir, 'book-print_tagged.pdf'), 'tagged', 'utf-8');
+      return { status: 0 };
+    },
+  });
+
+  assert.equal(result.ok, true);
+  assert.equal(fs.readFileSync(pdfPath, 'utf-8'), 'tagged');
+});
+
+test('tagPdf: pdfFileName で指定した PDF が存在しなければその名前で失敗を知らせる', () => {
+  const dir = makeTempRepo();
+  const result = tagPdf(dir, {
+    pdfFileName: 'book-print.pdf',
+    runCommand: () => ({ status: 0 }),
+  });
+  assert.equal(result.ok, false);
+  assert.match(result.message, /book-print\.pdf/);
+});
+
 test('tagPdf: runCommand未指定かつ @opendataloader/pdf 未インストールなら失敗する', () => {
   const dir = makeTempRepo();
   fs.writeFileSync(path.join(dir, 'dist', 'book.pdf'), 'original', 'utf-8');

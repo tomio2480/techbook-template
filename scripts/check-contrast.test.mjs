@@ -7,6 +7,7 @@ import {
   resolveVar,
   contrastRatio,
   checkCodeContrast,
+  checkTextOnFillContrast,
   WCAG_AA_CONTRAST,
 } from './check-contrast.mjs';
 
@@ -151,6 +152,34 @@ test('palette.css: 全 --palette-code-* が --code-bg に対し 4.5:1 以上を�
     [],
     `コントラスト比 ${WCAG_AA_CONTRAST}:1 未満: ${violations
       .map(r => `${r.token}=${r.color} (${r.ratio.toFixed(2)}:1)`)
+      .join(', ')}`
+  );
+});
+
+// --- checkTextOnFillContrast ---
+
+test('checkTextOnFillContrast: 地色の上の文字が 4.5:1 以上なら ok になる', () => {
+  const css = ':root {\n  --tab-bg: #4a76ab;\n  --tab-label-color: #ffffff;\n}';
+  const [result] = checkTextOnFillContrast(css);
+  assert.equal(result.ok, true);
+  assert.equal(result.background, '#4a76ab');
+});
+
+test('checkTextOnFillContrast: 地色を薄くしすぎた組み合わせを違反として検出する', () => {
+  const css = ':root {\n  --tab-bg: #b0c4de;\n  --tab-label-color: #ffffff;\n}';
+  const [result] = checkTextOnFillContrast(css);
+  assert.equal(result.ok, false);
+  assert.ok(result.ratio < WCAG_AA_CONTRAST);
+});
+
+test('palette.css: 小口のつめの章番号が帯の上で 4.5:1 以上を満たす', () => {
+  const css = fs.readFileSync(PALETTE_CSS_PATH, 'utf-8');
+  const violations = checkTextOnFillContrast(css).filter(r => !r.ok);
+  assert.deepEqual(
+    violations,
+    [],
+    `コントラスト比 ${WCAG_AA_CONTRAST}:1 未満: ${violations
+      .map(r => `${r.token}=${r.color} on ${r.background} (${r.ratio.toFixed(2)}:1)`)
       .join(', ')}`
   );
 });

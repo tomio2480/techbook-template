@@ -1,0 +1,165 @@
+@charset "UTF-8";
+
+/* 章ごとのつめの位置（npm run build:print が生成する） */
+@import url('./print-tabs.generated.css');
+
+/* 紙入稿用の追加スタイル
+ *
+ * theme.css の上へ重ねて使う（vivliostyle build の --style で全ドキュメントへ適用する）．
+ * 電子書籍用の PDF（dist/book.pdf）には読み込まれない．
+ * 扱うのは面付けに関する体裁だけであり，本文の体裁は theme.css を単一の出所とする．
+ * 要求・要件は docs/spec/print-layout.md を参照．
+ */
+
+/* ── 改丁（区分の始まりページの面）──────────────────────────
+ * recto は奇数ページ（開いて右），verso は偶数ページ（開いて左）である．
+ * どの区分をどちらの面から始めるかは config/book.yaml の print.section_start・
+ * print.chapter_start を単一の出所とする．
+ * scripts/build-print.mjs が指定を読み，対象の生成 HTML の html 要素へ
+ * print-side-recto / print-side-verso のクラスを付ける．
+ * ここでは付いたクラスを面へ翻訳するだけで，区分の一覧は持たない．
+ *
+ * 章の扉には theme.css の break-before: right（電子書籍用の固定指定）があるが，
+ * 下の指定はより詳しいセレクタであり，かつ後から読み込まれるため上書きできる．
+ * 面がずれた場合は白ページが生じ，ページ数の検査が食い違いを検出して
+ * ビルドを失敗させる．
+ */
+html.print-side-recto > body > section:first-of-type,
+html.print-side-recto > body > nav {
+  break-before: recto;
+}
+
+html.print-side-verso > body > section:first-of-type,
+html.print-side-verso > body > nav {
+  break-before: verso;
+}
+
+/* ── MEMO ページ ────────────────────────────────────────
+ * 改丁で空くページと，面付けの調整ページを埋める実体のあるページ．
+ * 落丁と誤読されないよう，見出しと枠で意図した余白だと示す．
+ * 原稿は scripts/print-layout.mjs が生成する（src/chapters/print-memo-*.html）．
+ */
+body.memo-pages {
+  page: memo;
+}
+
+@page memo {
+  /* 版面いっぱいの枠．ページ余白の内側へ引かれる */
+  border: 0.4pt solid var(--memo-frame-color);
+
+  @top-left {
+    content: "MEMO";
+    font-family: var(--font-gothic);
+    font-size: 9pt;
+    letter-spacing: 0.08em;
+    color: var(--memo-label-color);
+  }
+
+  /* 柱は出さない．直前の章の柱が残ると誤読を招く */
+  @top-center {
+    content: none;
+  }
+
+  /* ノンブルは残す．通し番号が途切れないことが落丁でない証拠になる */
+  @bottom-center {
+    content: counter(page);
+    font-size: 10pt;
+  }
+}
+
+.memo-page {
+  /* 1 ブロックが 1 ページに対応する．最後の 1 枚の後ろでは改ページしない */
+  break-after: page;
+}
+
+.memo-page:last-child {
+  break-after: auto;
+}
+
+/* ── 小口のつめ ────────────────────────────────────────
+ * 本を閉じたときに小口（外側の端）へ章の位置が並んで見えるよう，
+ * 各章の本文ページの外側へ章番号の帯と章タイトルを刷る．
+ * 帯は開いて右のページ（奇数ページ）だけに出す．左ページの小口は
+ * 反対側の端であり，同じ高さへ刷ると裏から透けて重なって見えるためである．
+ * 章の扉ページには出ない（扉は @page chapter-opening で組まれる）．
+ *
+ * つめの中身（章番号・章タイトル）は scripts/build-print.mjs が
+ * 各章の生成 HTML へ入れ，position: running() で小口の余白へ回す．
+ * 流し込みから外れるため，組版結果（ページ数）は変わらない．
+ * 章ごとの高さは print-tabs.generated.css が --tab-offset で与える．
+ */
+:root {
+  --tab-width: 8mm;
+  --tab-height: 16mm;
+  /* つめを並べる範囲．紙の上端からの距離と，範囲の高さで指定する */
+  --tab-area-top: 30mm;
+  --tab-area-height: 190mm;
+  /* 生成 CSS が無いときの退避先．先頭の章と同じ高さへ置く */
+  --tab-offset: var(--tab-area-top);
+  /* 章タイトルを流す長さの上限．はみ出す分は切り詰める */
+  --tab-title-length: 60mm;
+  /* theme.css の @page margin の上端と揃える．ページ余白ボックスの
+     基準は紙の上端ではなく余白の内側であるため，差し引いて位置を合わせる */
+  --tab-page-margin-top: 22mm;
+}
+
+html[class*="print-tab-"] body {
+  page: tab;
+}
+
+@page tab:right {
+  @right-top {
+    content: element(chapter-tab);
+    margin-top: calc(var(--tab-offset) - var(--tab-page-margin-top));
+  }
+}
+
+.print-tab-mark {
+  position: running(chapter-tab);
+  width: 100%;
+}
+
+/* 章番号．色ベタの中へ縦組みで置き，数字も縦に立てる */
+.print-tab-mark-number {
+  display: block;
+  width: var(--tab-width);
+  height: var(--tab-height);
+  /* 小口（右端）へ寄せる */
+  margin-left: auto;
+  background: var(--tab-bg);
+  color: var(--tab-label-color);
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  text-align: center;
+  font-family: var(--font-gothic);
+  font-size: 9pt;
+  /* 縦組みでは行の高さが横幅にあたる．帯の幅と揃えて中央へ置く */
+  line-height: var(--tab-width);
+}
+
+/* 数字の章だけ「第 N 章」と読ませる．付録の A などには添えない */
+.print-tab-mark-number.is-numbered::before {
+  content: "第";
+}
+
+.print-tab-mark-number.is-numbered::after {
+  content: "章";
+}
+
+/* 章タイトル．帯の下へ続けて縦組みで流す */
+.print-tab-mark-title {
+  display: block;
+  width: var(--tab-width);
+  max-height: var(--tab-title-length);
+  margin-left: auto;
+  padding-top: 2mm;
+  overflow: hidden;
+  writing-mode: vertical-rl;
+  text-align: start;
+  font-family: var(--font-gothic);
+  font-size: 7pt;
+  color: var(--tab-title-color);
+  /* 章番号と同じ行の高さ（縦組みでは横幅）にして，帯とタイトルの
+     中心を縦一列へ揃える */
+  line-height: var(--tab-width);
+}
