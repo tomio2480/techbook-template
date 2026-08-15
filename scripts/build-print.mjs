@@ -26,12 +26,12 @@ import { parse } from 'yaml';
 
 import { countPdfPagesFile } from './count-pdf-pages.mjs';
 import {
-  MEMO_FILE_PREFIX,
+  MEMO_FILE_PATTERN,
   PAGE_SEPARATOR,
   TAB_STYLESHEET_FILE,
   extractChapterLabel,
   hasChapterOpening,
-  injectTabClass,
+  injectHtmlClass,
   injectTabMark,
   parseDocumentStartPages,
   planPrintLayout,
@@ -41,6 +41,9 @@ import {
   resolveFillerBefore,
   resolvePageMultiple,
   resolveSectionSides,
+  sideClassName,
+  sideForEntry,
+  tabClassName,
   toDocumentPageCounts,
 } from './print-layout.mjs';
 import { verifyNoIndexHtml, verifyConfigUsesMarkdown } from './verify-build.mjs';
@@ -181,10 +184,12 @@ function measurePageCounts(pdfPath, entries) {
   return toDocumentPageCounts(startPages, totalPages);
 }
 
-/* 小口のつめを仕込む。章の順序を生成 HTML のクラスで示し、位置を決める CSS を
-   書き出し、章番号と章タイトルを各章の HTML へ入れる。
-   つめは流し込みから外れるため、面付けの計画（ページ数）へは影響しない */
-function applyChapterTabs(entries, sources) {
+/* 生成 HTML へ紙面用の目印を入れる。
+   (a) 区分の開始面。config/book.yaml の指定をクラスとして伝え，print.css が面へ翻訳する。
+   (b) 小口のつめ。章の順序をクラスで示し，位置を決める CSS を書き出し，
+       章番号と章タイトルを各章の HTML へ入れる。
+   どちらも流し込みから外れるか体裁のみであり、面付けの計画（ページ数）へは影響しない */
+function applyPrintMarkup(entries, sources, sides) {
   const chapters = entries.filter((entry, index) => hasChapterOpening(sources[index]));
 
   fs.writeFileSync(
@@ -193,11 +198,21 @@ function applyChapterTabs(entries, sources) {
     'utf-8'
   );
 
-  chapters.forEach((entry, index) => {
+  entries.forEach((entry, index) => {
     const filePath = path.join(repoRoot, entry);
-    const html = fs.readFileSync(filePath, 'utf-8');
-    const marked = injectTabMark(html, renderTabMark(extractChapterLabel(html)));
-    fs.writeFileSync(filePath, injectTabClass(marked, index + 1), 'utf-8');
+    const side = sideForEntry(entry, sources[index], sides);
+    const chapterNumber = chapters.indexOf(entry) + 1;
+    if (!side && chapterNumber === 0) return;
+
+    let html = fs.readFileSync(filePath, 'utf-8');
+    if (side) {
+      html = injectHtmlClass(html, sideClassName(side));
+    }
+    if (chapterNumber > 0) {
+      html = injectTabMark(html, renderTabMark(extractChapterLabel(html)));
+      html = injectHtmlClass(html, tabClassName(chapterNumber));
+    }
+    fs.writeFileSync(filePath, html, 'utf-8');
   });
 
   return chapters.length;
@@ -213,9 +228,11 @@ function writeMemoDocuments(memoDocuments) {
   }
 }
 
+/* 後始末はこのビルドが作る連番の HTML（print-memo-1.html など）だけを消す。
+   前置きが同じだけの利用者のファイルを巻き込まないためである */
 function removeMemoDocuments() {
   for (const file of fs.readdirSync(path.join(repoRoot, CHAPTERS_DIR))) {
-    if (file.startsWith(MEMO_FILE_PREFIX)) {
+    if (MEMO_FILE_PATTERN.test(file)) {
       fs.rmSync(path.join(repoRoot, CHAPTERS_DIR, file), { force: true });
     }
   }
@@ -275,7 +292,7 @@ async function main() {
 
     /* 本番パス: MEMO ページと小口のつめを入れて組み直す */
     writeMemoDocuments(plan.memoDocuments);
-    console.log(`小口のつめを ${applyChapterTabs(entries, sources)} 章分入れます。`);
+    console.log(`小口のつめを ${applyPrintMarkup(entries, sources, sides)} 章分入れます。`);
     fs.writeFileSync(planPath, JSON.stringify(plan, null, 2), 'utf-8');
     buildPdf({ style: PRINT_STYLE, planPath });
   } finally {

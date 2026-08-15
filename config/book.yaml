@@ -39,8 +39,8 @@ print:
   page_multiple: 4
   # 区分をどちらの面から始めるか．recto は奇数ページ（開いて右），
   # verso は偶数ページ（開いて左）．キーは原稿ファイル名に含まれる文字列で，
-  # 前から順に照合する．ここを変えたら config/themes/techbook/print.css の
-  # 改丁指定も揃えること（食い違うとビルドが失敗する）
+  # 前から順に照合する．面の指定はここが単一の出所であり，
+  # テーマ CSS 側の書き換えは要らない
   section_start:
     "00-preface": recto
     "toc": verso

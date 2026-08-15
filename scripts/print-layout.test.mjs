@@ -2,10 +2,11 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import {
   DOC_START_MARKER,
+  MEMO_FILE_PATTERN,
   calcFillerPages,
   extractChapterLabel,
   hasChapterOpening,
-  injectTabClass,
+  injectHtmlClass,
   injectTabMark,
   parseDocumentStartPages,
   planPrintLayout,
@@ -15,7 +16,9 @@ import {
   resolveFillerBefore,
   resolvePageMultiple,
   resolveSectionSides,
+  sideClassName,
   sideForEntry,
+  tabClassName,
   toDocumentPageCounts,
 } from './print-layout.mjs';
 
@@ -296,25 +299,49 @@ test('MEMO ページを 1 枚以上求めない呼び出しは例外を投げる
 
 // --- injectTabClass・renderTabStylesheet ---
 
-test('章のクラスを html 要素の既存クラスへ足す', () => {
+test('クラスを html 要素の既存クラスへ足す', () => {
   const html = '<!doctype html><html lang="ja" class="chapter"><head></head><body></body></html>';
-  assert.match(injectTabClass(html, 3), /<html lang="ja" class="chapter print-tab-3">/);
+  assert.match(
+    injectHtmlClass(html, tabClassName(3)),
+    /<html lang="ja" class="chapter print-tab-3">/
+  );
 });
 
 test('クラス属性が無い html 要素にも足せる', () => {
   const html = '<!doctype html><html lang="ja"><head></head><body></body></html>';
-  assert.match(injectTabClass(html, 1), /<html class="print-tab-1" lang="ja">/);
+  assert.match(injectHtmlClass(html, tabClassName(1)), /<html class="print-tab-1" lang="ja">/);
+});
+
+test('開始面のクラスとつめのクラスを重ねて足せる', () => {
+  const html = '<!doctype html><html lang="ja" class="preface"><head></head><body></body></html>';
+  const result = injectHtmlClass(injectHtmlClass(html, sideClassName('verso')), tabClassName(2));
+  assert.match(result, /class="preface print-side-verso print-tab-2"/);
 });
 
 test('本文中の html という語をクラス挿入の対象にしない', () => {
   const html = '<!doctype html><html lang="ja"><body><p>html の話</p></body></html>';
-  const result = injectTabClass(html, 2);
+  const result = injectHtmlClass(html, tabClassName(2));
   assert.strictEqual((result.match(/print-tab-2/g) ?? []).length, 1);
   assert.match(result, /<p>html の話<\/p>/);
 });
 
 test('html 要素が無ければ例外を投げる', () => {
-  assert.throws(() => injectTabClass('<div></div>', 1), /html 要素が見つかりません/);
+  assert.throws(() => injectHtmlClass('<div></div>', 'print-tab-1'), /html 要素が見つかりません/);
+});
+
+test('開始面のクラス名は recto・verso のみ受け付ける', () => {
+  assert.strictEqual(sideClassName('recto'), 'print-side-recto');
+  assert.strictEqual(sideClassName('verso'), 'print-side-verso');
+  assert.throws(() => sideClassName('left'), /recto または verso/);
+});
+
+test('MEMO ページの後始末は連番の HTML だけを対象にする', () => {
+  // 前置きが同じだけの利用者のファイルを巻き込まないこと
+  assert.strictEqual(MEMO_FILE_PATTERN.test('print-memo-1.html'), true);
+  assert.strictEqual(MEMO_FILE_PATTERN.test('print-memo-12.html'), true);
+  assert.strictEqual(MEMO_FILE_PATTERN.test('print-memo-notes.md'), false);
+  assert.strictEqual(MEMO_FILE_PATTERN.test('print-memo-notes.html'), false);
+  assert.strictEqual(MEMO_FILE_PATTERN.test('my-print-memo-1.html'), false);
 });
 
 test('つめの位置は章の順に等間隔で下がる', () => {

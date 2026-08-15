@@ -89,10 +89,15 @@ test('ページオブジェクトが 1 つも無ければ例外を投げる', ()
   assert.throws(() => countPdfPages(pdf), /ページ数を読み取れませんでした/);
 });
 
-test('ルートの /Count とページオブジェクト数が食い違えば例外を投げる', () => {
-  // 数え落としを検知するための突合。片方だけを信じて誤った面付けをしない
-  assert.throws(
-    () => countPdfPages(fakePdf({ pageObjects: 3, rootCount: 5 })),
-    /食い違います/
-  );
+test('ページ定義が平文と圧縮側へ分かれていてもルートの宣言を返す', () => {
+  // Vivliostyle の出力では 1 つの PDF に両形式が混在することがある
+  const plain = fakePdf({ pageObjects: 29, rootCount: null });
+  const compressed = fakePdfWithObjectStream({ pageObjects: 7, rootCount: 36 });
+  assert.strictEqual(countPdfPages(Buffer.concat([plain, compressed])), 36);
+});
+
+test('総ページ数の宣言が複数あれば例外を投げる', () => {
+  const a = fakePdf({ pageObjects: 3, rootCount: 3 });
+  const b = fakePdf({ pageObjects: 5, rootCount: 5 });
+  assert.throws(() => countPdfPages(Buffer.concat([a, b])), /複数の総ページ数/);
 });

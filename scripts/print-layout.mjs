@@ -24,9 +24,15 @@ export const DOC_START_MARKER = 'DOCSTARTMARK';
 export const PAGE_SEPARATOR = '@@@PAGE %page-number%';
 const PAGE_SEPARATOR_PATTERN = /^@@@PAGE (\d+)$/;
 
-/* MEMO ページの原稿。src/chapters/ へ書き出し、ビルド後に削除する */
+/* MEMO ページの原稿。src/chapters/ へ書き出し、ビルド後に削除する。
+   後始末は連番の HTML だけを対象とし、利用者が置いたファイルを巻き込まない */
 export const MEMO_FILE_PREFIX = 'print-memo-';
+export const MEMO_FILE_PATTERN = /^print-memo-\d+\.html$/;
 const MEMO_ENTRY_DIR = 'src/chapters/';
+
+/* 区分の開始面を生成 HTML へ伝えるクラス。面の指定は config/book.yaml を
+   単一の出所とし、テーマ CSS 側へ区分の一覧を持たせない */
+export const SIDE_CLASS_PREFIX = 'print-side-';
 
 /* 小口のつめ。章ごとの位置は生成した CSS が持ち、原稿側はクラスで章を示す */
 export const TAB_CLASS_PREFIX = 'print-tab-';
@@ -239,11 +245,16 @@ export function tabClassName(chapterNumber) {
   return `${TAB_CLASS_PREFIX}${chapterNumber}`;
 }
 
-/* 生成 HTML の html 要素へ，章を示すクラスを足す。
+export function sideClassName(side) {
+  assertSide(side, '区分の開始面');
+  return `${SIDE_CLASS_PREFIX}${side}`;
+}
+
+/* 生成 HTML の html 要素へクラスを足す。
    つめの位置を決める変数（--tab-offset）は html 要素で解決され、
-   ページ余白の外側（@page）から参照できる */
-export function injectTabClass(html, chapterNumber) {
-  const className = tabClassName(chapterNumber);
+   ページ余白の外側（@page）から参照できる。
+   区分の開始面（print-side-*）も同じ場所へ置く */
+export function injectHtmlClass(html, className) {
   const openingTag = html.match(/<html\b[^>]*>/i);
   if (!openingTag) {
     throw new Error('生成 HTML に html 要素が見つかりません。');

@@ -5,16 +5,13 @@
  * 紙入稿用ビルド（scripts/build-print.mjs）が面付けの不足ページ数を求めるために使う。
  * 外部依存を増やさず、PDF のページオブジェクトを走査して数える。
  *
- * Vivliostyle CLI が出力した直後の PDF は、ページオブジェクトを圧縮された
- * オブジェクトストリーム（/ObjStm）へ格納する。一方、タグ付け（tag-pdf.mjs）を
- * 通した後の PDF では平文で現れる。どちらの形式でも数えられるよう、
- * まず平文を走査し、見つからないときだけオブジェクトストリームを展開する。
- * 両方を足すと、タグ付け後の PDF に残る圧縮側の写しを二重に数えてしまう。
- * 本文の内容ストリームは展開しない（誌面に現れる文字列をページ定義と
- * 誤認しないため）。
+ * ページオブジェクトは、平文で現れることも圧縮されたオブジェクトストリーム
+ * （/ObjStm）へ入ることもあり、1 つの PDF の中で混在もする。数え上げでは
+ * 取りこぼしや二重計上が起きるため、ページツリーのルートが宣言する /Count を
+ * 第一の根拠とする。ルートを読めない場合に限り、ページオブジェクトを数える。
  *
- * 数え落としを検知するため、ページツリーのルートが持つ /Count とも突合する。
- * 両者が食い違う場合は誤った面付けを避けるために例外を投げる。
+ * オブジェクトストリームは展開して走査するが、本文の内容ストリームは展開しない
+ * （誌面に現れる文字列をページ定義と誤認しないため）。
  */
 
 import fs from 'fs';
@@ -24,9 +21,8 @@ import zlib from 'zlib';
 const PAGE_OBJECT_PATTERN = /\/Type\s*\/Page(?![a-zA-Z])/g;
 const PAGE_TREE_PATTERN = /\/Type\s*\/Pages(?![a-zA-Z])/g;
 
-// ページツリーのルート（/Parent を持たないノード）が宣言する総ページ数を返す。
-// ルートを一意に特定できない場合は突合を諦めて null を返す
-function findRootPageCount(text) {
+// ページツリーのルート（/Parent を持たないノード）が宣言する総ページ数を集める
+function findRootPageCounts(text) {
   const counts = [];
   for (const match of text.matchAll(PAGE_TREE_PATTERN)) {
     const dictStart = text.lastIndexOf('<<', match.index);
@@ -39,7 +35,7 @@ function findRootPageCount(text) {
     const countMatch = dict.match(/\/Count\s+(\d+)/);
     if (countMatch) counts.push(Number(countMatch[1]));
   }
-  return counts.length === 1 ? counts[0] : null;
+  return counts;
 }
 
 // オブジェクトストリーム（/ObjStm）を展開し、走査できる平文として返す。
@@ -71,24 +67,28 @@ function decodeObjectStreams(text, buffer) {
 export function countPdfPages(buffer) {
   // PDF はバイト列であり、テキストとして扱うにはバイト値を保つ latin1 が要る
   const raw = buffer.toString('latin1');
-  // 平文にページ定義があればそれを正とし、無いときだけ圧縮側を展開する
-  const text =
-    (raw.match(PAGE_OBJECT_PATTERN) ?? []).length > 0
-      ? raw
-      : decodeObjectStreams(raw, buffer);
-  const pageObjectCount = (text.match(PAGE_OBJECT_PATTERN) ?? []).length;
+  const decoded = decodeObjectStreams(raw, buffer);
 
-  if (pageObjectCount === 0) {
+  // ページツリーのルートが宣言する総ページ数を第一の根拠とする。
+  // ページオブジェクトは平文と圧縮側に混在しうるため、数え上げより確かである
+  const rootCounts = new Set([...findRootPageCounts(raw), ...findRootPageCounts(decoded)]);
+  if (rootCounts.size === 1) {
+    return [...rootCounts][0];
+  }
+  if (rootCounts.size > 1) {
     throw new Error(
-      'PDF のページ数を読み取れませんでした。ページオブジェクトが平文で現れない形式の可能性があります。'
+      `PDF のページツリーが複数の総ページ数を宣言しています（${[...rootCounts].join('・')}）。`
     );
   }
 
-  const rootCount = findRootPageCount(text);
-  if (rootCount !== null && rootCount !== pageObjectCount) {
-    throw new Error(
-      `PDF のページ数が食い違います（ページオブジェクト: ${pageObjectCount}、ページツリー: ${rootCount}）。`
-    );
+  // ルートを読めない PDF ではページオブジェクトを数える。
+  // 平文と圧縮側を足すと写しを二重に数えるため、見つかった方だけを見る
+  const pageObjectCount =
+    (raw.match(PAGE_OBJECT_PATTERN) ?? []).length ||
+    (decoded.match(PAGE_OBJECT_PATTERN) ?? []).length;
+
+  if (pageObjectCount === 0) {
+    throw new Error('PDF のページ数を読み取れませんでした。想定していない形式の可能性があります。');
   }
 
   return pageObjectCount;

@@ -13,22 +13,24 @@
 
 /* ── 改丁（区分の始まりページの面）──────────────────────────
  * recto は奇数ページ（開いて右），verso は偶数ページ（開いて左）である．
- * 面の指定は config/book.yaml の print.section_start が正であり，
- * 本節はその指定どおりに組めたことを担保する安全網である．
- * 面がずれた場合は白ページが生じ，ページ数の検査（scripts/build-print.mjs）が
- * 食い違いを検出してビルドを失敗させる．指定を変えるときは両方を揃えること．
- * 章の扉（.chapter-opening）は theme.css の break-before: right が担う．
+ * どの区分をどちらの面から始めるかは config/book.yaml の print.section_start・
+ * print.chapter_start を単一の出所とする．
+ * scripts/build-print.mjs が指定を読み，対象の生成 HTML の html 要素へ
+ * print-side-recto / print-side-verso のクラスを付ける．
+ * ここでは付いたクラスを面へ翻訳するだけで，区分の一覧は持たない．
+ *
+ * 章の扉には theme.css の break-before: right（電子書籍用の固定指定）があるが，
+ * 下の指定はより詳しいセレクタであり，かつ後から読み込まれるため上書きできる．
+ * 面がずれた場合は白ページが生じ，ページ数の検査が食い違いを検出して
+ * ビルドを失敗させる．
  */
-
-/* まえがき・あとがきは奇数ページ（開いて右）から始める */
-body.preface > section:first-of-type,
-body.afterword > section:first-of-type {
+html.print-side-recto > body > section:first-of-type,
+html.print-side-recto > body > nav {
   break-before: recto;
 }
 
-/* 目次・奥付は偶数ページ（開いて左）から始める */
-body.toc > nav,
-body.colophon > section:first-of-type {
+html.print-side-verso > body > section:first-of-type,
+html.print-side-verso > body > nav {
   break-before: verso;
 }
 
