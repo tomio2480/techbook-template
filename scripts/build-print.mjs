@@ -147,14 +147,14 @@ export function verifyPdfNewerThanMarker(repoRoot_, pdfFileName) {
 }
 
 /* 実測から求めた総ページ数と、組み上がった PDF のページ数を突き合わせる。
-   食い違いは改丁の指定（print.css と book.yaml）のずれを示す */
+   食い違いは、測定パスと本番パスで組版結果が変わったことを示す */
 export function verifyPlannedPageCount(actualPages, plannedPages) {
   if (actualPages !== plannedPages) {
     return {
       ok: false,
       message:
         `総ページ数が想定と異なります（実際 ${actualPages}・想定 ${plannedPages}）。` +
-        'config/book.yaml の print.section_start と print.css の改丁指定が食い違っている可能性があります。',
+        'テーマ CSS の改ページ指定を print-measure.css が打ち消せていない可能性があります。',
     };
   }
   return { ok: true };

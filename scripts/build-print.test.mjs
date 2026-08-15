@@ -47,7 +47,7 @@ test('verifyPlannedPageCount: 食い違えば両方のページ数と原因の�
   assert.equal(result.ok, false);
   assert.match(result.message, /33/);
   assert.match(result.message, /32/);
-  assert.match(result.message, /section_start/);
+  assert.match(result.message, /print-measure\.css/);
 });
 
 // --- verifyPdfNewerThanMarker ---
