@@ -14,6 +14,10 @@
  * 要求・要件は docs/spec/print-layout.md を参照。
  */
 
+/* タグの除去は単発の置換では不十分である（残った断片が結合して新たなタグを
+   再構成しうる）。同じ問題へ対処済みの実装を再利用する */
+import { stripHtmlTags } from './add-line-numbers.mjs';
+
 /* 測定ビルドで各原稿の 1 ページ目へ出す目印。誌面の文章と衝突しない綴りにする */
 export const DOC_START_MARKER = 'DOCSTARTMARK';
 /* 測定ビルドのページ区切り。opendataloader-pdf の --text-page-separator へ渡す */
@@ -262,16 +266,14 @@ function textOfClass(html, className) {
     'i'
   );
   const matched = html.match(pattern);
-  return matched ? matched[2].replace(/<[^>]*>/g, '').trim() : '';
+  return matched ? stripHtmlTags(matched[2]).trim() : '';
 }
 
 export function extractChapterLabel(html) {
   const heading = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i);
   return {
     number: textOfClass(html, 'chapter-number'),
-    title:
-      textOfClass(html, 'chapter-title') ||
-      (heading ? heading[1].replace(/<[^>]*>/g, '').trim() : ''),
+    title: textOfClass(html, 'chapter-title') || (heading ? stripHtmlTags(heading[1]).trim() : ''),
   };
 }
 

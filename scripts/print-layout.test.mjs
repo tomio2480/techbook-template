@@ -348,6 +348,17 @@ test('章番号と章タイトルを扉の記述から取り出す', () => {
   assert.deepStrictEqual(extractChapterLabel(CHAPTER_HTML), { number: '2', title: '応用編' });
 });
 
+test('入れ子のタグを含む章タイトルからタグを取り除く', () => {
+  const html = '<html><body><p class="chapter-title">応<b>用</b>編</p></body></html>';
+  assert.strictEqual(extractChapterLabel(html).title, '応用編');
+});
+
+test('タグが再構成される並びでもタグを残さない', () => {
+  // 単発の置換では断片が結合して新たなタグになりうる（CodeQL の指摘）
+  const html = '<html><body><p class="chapter-title">応<scr<b>ipt>用編</p></body></html>';
+  assert.doesNotMatch(extractChapterLabel(html).title, /<[a-z]/i);
+});
+
 test('扉にタイトルが無ければ h1 から補う', () => {
   const html = '<html><body><h1 id="x">解答</h1></body></html>';
   assert.deepStrictEqual(extractChapterLabel(html), { number: '', title: '解答' });
