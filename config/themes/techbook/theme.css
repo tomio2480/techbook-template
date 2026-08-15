@@ -432,13 +432,16 @@ table {
   margin: 12pt 0;
   font-size: 9pt;
   break-inside: avoid;
+  /* 小活字（9pt）には本文の 1.8 が空きすぎるため，奥付と同じ 1.5 へ詰める．
+     行の高さは この値とセルの上下パディングで決まる */
+  line-height: 1.5;
 }
 
 /* 縦罫線なし、横罫線のみ（細め） */
 th, td {
   border: none;
   border-bottom: 0.5pt solid var(--table-rule);
-  padding: 6pt 8pt;
+  padding: 5pt 8pt;
   vertical-align: middle;
   text-align: center;
 }
