@@ -117,9 +117,10 @@ print:
 ```
 
 つめの大きさと並べる範囲は `config/themes/techbook/print.css` の変数で調整する．
-対象は `--tab-width`・`--tab-height`・`--tab-area-top`・`--tab-area-height`・
-`--tab-title-length` の 5 つである．
-配色は `palette.css` の `--tab-bg`・`--tab-label-color`・`--tab-title-color` で変える．
+対象は `--tab-width`・`--tab-height`・`--tab-area-top` の 3 つである．
+並べる範囲の高さは `--tab-area-height`，タイトルの長さは `--tab-title-length` で決まる．
+配色は `palette.css` で変える．
+帯は `--tab-bg`，章番号は `--tab-label-color`，タイトルは `--tab-title-color` である．
 章ごとの高さを定める `print-tabs.generated.css` はビルドが生成する．
 このファイルは直接編集しない．
 
@@ -906,8 +907,8 @@ npm run build
 
 `npm run build:print` が，実測から求めた想定ページ数と組み上がった PDF の
 ページ数の食い違いを検出した状態．測定パスと本番パスで組版結果が変わると起きる．
-`config/themes/techbook/print-measure.css` が測定パスで改丁を無効にできているか，
-テーマ CSS へ独自の改ページ指定を足していないかを確認する．
+`config/themes/techbook/print-measure.css` が測定パスで改丁を無効にできているか確認する．
+テーマ CSS へ独自の改ページ指定を足していないかも見る．
 
 `測定パスで読み取った原稿の数が…一致しません` と表示される場合は，
 測定パスの目印を読み取れていない．余白 0 のページを追加した場合は，
