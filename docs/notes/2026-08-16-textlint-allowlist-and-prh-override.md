@@ -91,6 +91,9 @@ node node_modules/@opendataloader/pdf/dist/cli.js --format text --to-stdout --qu
 本リポジトリ独自の検査スクリプトを `check:errata` と同じ位置に置く第 3 案を，
 Issue へ提案してから着手する．
 
+追記（2026-08-16）: 第 3 案は採らなかった．中央へ加算方式を提案して実装され，
+`.prh-extra.yml` で解決した．経緯は同日の別ノート（prh 加算辞書による読点の検出）を参照．
+
 ## 中央雛形の相対参照は caller で切れる
 
 `.textlintrc.json` の `_comment` は中央雛形の写しで，
