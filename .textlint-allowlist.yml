@@ -1,0 +1,24 @@
+# textlint の指摘から除外するパターン（Issue #104）．
+# 中央テンプレ tomio2480/github-workflows の composite action が本ファイルを読み，
+# runtime config の filters.allowlist へ注入する．スキーマは
+# textlint-filter-rule-allowlist に従う（allow は文字列または /regex/flags）．
+#
+# 原稿側では直せない誤検出だけを列挙する．文体や表記ゆれの指摘を止める目的で使わない．
+# .textlintignore でファイルごと外す案は採らない．奥付・数式の章にも地の文があり，
+# そこは検査を残したいためである．
+
+allow:
+  # 奥付の発行履歴（例: 2026年08月06日 初版第一刷発行）．
+  # docs/spec/colophon.md が定める「YYYY年MM月DD日 第N版第N刷発行」の形式は
+  # 奥付の慣例に合わせた表記であり，半角スペースの挿入や句点の追加は spec と衝突する．
+  # ja-space-between-half-and-full-width・ja-no-space-between-full-width・
+  # max-kanji-continuous-len・ja-no-mixed-period の 4 ルールが同じ 1 行へ並ぶため，
+  # 行ごと除外する．
+  - "/^\\d{4}年\\d{2}月\\d{2}日 .+発行$/m"
+
+  # 表示数式（$$ … $$）．textlint の Markdown パーサは数式を認識せず地の文として
+  # 文長を数えるため，80 字を超える数式が sentence-length に掛かる．
+  # インライン数式（$…$）を巻き込まないよう $$ で囲んだ範囲だけを除外する．
+  - "/\\$\\$[\\s\\S]*?\\$\\$/m"
+
+allowRules: []
