@@ -42,7 +42,7 @@ function findByClass(node, className) {
 const AUTHOR = {
   name: '著者名',
   sns: '@example',
-  bio: '組込みと電子工作が好きな著者。',
+  bio: '組込みと電子工作が好きな著者．',
   link: { title: 'Web サイト', url: 'https://example.com/' },
 };
 
@@ -141,6 +141,13 @@ describe('buildErrataSection', () => {
     assert.ok(textOf(section).includes('正誤表'));
   });
 
+  it('案内文の句読点は原稿と同じ「．」「，」で，「。」「、」を含まない', () => {
+    const section = buildErrataSection(ERRATA, () => {});
+    const [label] = findByClass(section, 'colophon-errata-label');
+    assert.match(textOf(label), /．$/);
+    assert.doesNotMatch(textOf(label), /[。、]/);
+  });
+
   it('url が無い・http(s) でない場合は警告して null を返す', () => {
     const warnings = [];
     assert.equal(buildErrataSection(undefined, (m) => warnings.push(m)), null);
@@ -174,14 +181,21 @@ describe('buildCopyrightSection', () => {
     assert.ok(textOf(notice).includes('禁じます'));
   });
 
+  it('既定の禁止文言の句読点は「．」「，」で，「。」「、」を含まない', () => {
+    const section = buildCopyrightSection(COPYRIGHT, undefined, () => {});
+    const [notice] = findByClass(section, 'colophon-copyright-notice');
+    assert.match(textOf(notice), /．$/);
+    assert.doesNotMatch(textOf(notice), /[。、]/);
+  });
+
   it('notice を指定すると差し替わる', () => {
     const section = buildCopyrightSection(
-      { ...COPYRIGHT, notice: '独自の文言。' },
+      { ...COPYRIGHT, notice: '独自の文言．' },
       undefined,
       () => {},
     );
     const [notice] = findByClass(section, 'colophon-copyright-notice');
-    assert.equal(textOf(notice), '独自の文言。');
+    assert.equal(textOf(notice), '独自の文言．');
   });
 
   it('holder 省略時は fallbackHolder（book.yaml の author）を使う', () => {
