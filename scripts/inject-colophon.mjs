@@ -16,7 +16,7 @@ const ERRATA_MARKER = '{{errata}}';
 const COPYRIGHT_MARKER = '{{copyright}}';
 const COPYRIGHT_YEAR_PATTERN = /^\d{4}(-\d{4})?$/;
 const DEFAULT_COPYRIGHT_NOTICE =
-  '本書の一部または全部を、著作権者の許諾なく複製・転載・改変・公衆送信することを禁じます。';
+  '本書の一部または全部を，著作権者の許諾なく複製・転載・改変・公衆送信することを禁じます．';
 
 function isNonEmptyString(value) {
   return typeof value === 'string' && value.trim() !== '';
@@ -103,7 +103,7 @@ export function buildErrataSection(errata, warn = console.warn) {
   }
   return el('section', { className: ['colophon-errata'] }, [
     paragraph('colophon-errata-label', [
-      text('本書の正誤表は次のページで公開しています。'),
+      text('本書の正誤表は次のページで公開しています．'),
     ]),
     paragraph('colophon-errata-url', [el('a', { href: url }, [text(url)])]),
   ]);

@@ -10,7 +10,7 @@ date: "2025-01-01"
 authors:
   - name: "著者名"
     sns: "@example"
-    bio: "著者の紹介文をここに書く。経歴や活動内容などを 140 文字程度でまとめる。"
+    bio: "著者の紹介文をここに書く．経歴や活動内容などを 140 文字程度でまとめる．"
     link:
       title: "Web サイト"
       url: "https://example.com/"
@@ -26,7 +26,7 @@ errata:
 copyright:
   year: 2026
   # holder: "著者名"
-  # notice: "本書の一部または全部を、著作権者の許諾なく複製・転載・改変・公衆送信することを禁じます。"
+  # notice: "本書の一部または全部を，著作権者の許諾なく複製・転載・改変・公衆送信することを禁じます．"
 
 chapters:
   - src/chapters/00-preface.md
