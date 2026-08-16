@@ -4,6 +4,7 @@ name: Markdown Lint
 # 参照は @<SHA> # <version> 形式の SHA pin で，Dependabot が更新 PR を起票する．
 # 設定の上書きが必要な場合はリポジトリルートに以下のいずれかを置けば優先される：
 #   .markdownlint-cli2.yaml / .textlintrc.json / prh.yml / .textlintignore
+# .textlint-allowlist.yml と .prh-extra.yml は置き換えではなく加算で，置いたときだけ効く．
 # 詳細は https://github.com/tomio2480/github-workflows の README を参照．
 
 # lint 設定そのものを変えた PR でも走らせる．設定だけを変更した PR で
@@ -15,6 +16,7 @@ on:
       - ".textlintrc.json"
       - ".textlintignore"
       - ".textlint-allowlist.yml"
+      - ".prh-extra.yml"
       - ".markdownlint-cli2.yaml"
       - "prh.yml"
       - ".github/workflows/md-lint.yml"
@@ -38,6 +40,6 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Markdown Lint via composite action
-        uses: tomio2480/github-workflows/.github/actions/markdown-lint@20c50e7af567e34e3642be1a58a9e632d0e74177 # v2.6.11
+        uses: tomio2480/github-workflows/.github/actions/markdown-lint@36357977d9086611229c949aaf425718ca8c0f63 # v2.7.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,5 +1,5 @@
 {
-  "_comment": "tomio2480/github-workflows の templates/.textlintrc.json の写し．rules 部分は中央テンプレートと同じ内容であり，中央を更新したときは追随させること．max-kanji-continuous-len の allow は中央テンプレートからの唯一の逸脱である．崩すと別物を指してしまう正式名称だけを並べる（国際標準同人誌番号は isdn.jp が示す ISDN の正式名称）．文体は既定の である調 で検査する．ですます調 で書く原稿は，ファイル先頭へ <!-- textlint-disable ja-technical-writing/no-mix-dearu-desumasu --> を置いて当該ルールだけ止める（docs/rule-rationale.md の「文体使い分けと no-mix-dearu-desumasu」節）．textlint 15.6.0 は overrides を読まないため per-path の宣言はできない（tomio2480/github-workflows#85）．",
+  "_comment": "tomio2480/github-workflows の templates/.textlintrc.json の写し．rules 部分は中央テンプレートと同じ内容であり，中央を更新したときは追随させること．max-kanji-continuous-len の allow は中央テンプレートからの唯一の逸脱である．崩すと別物を指してしまう正式名称だけを並べる（国際標準同人誌番号は isdn.jp が示す ISDN の正式名称）．文体は既定の である調 で検査する．ですます調 で書く原稿は，ファイル先頭へ <!-- textlint-disable ja-technical-writing/no-mix-dearu-desumasu --> を置いて当該ルールだけ止める（https://github.com/tomio2480/github-workflows/blob/main/docs/rule-rationale.md の「文体使い分けと no-mix-dearu-desumasu」節）．textlint 15.6.0 は overrides を読まないため per-path の宣言はできない（tomio2480/github-workflows#85）．rules.prh.rulePaths は composite action が実行時に書き換える．本リポジトリは中央辞書を置き換えず，読点の規則を .prh-extra.yml で加算する（#99）．",
   "rules": {
     "preset-ja-technical-writing": {
       "sentence-length": {
