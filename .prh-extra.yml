@@ -1,0 +1,25 @@
+# 中央テンプレ tomio2480/github-workflows の prh 辞書へ「加算」する caller 固有の規則（Issue #99）．
+# composite action が runtime config の rules.prh.rulePaths を
+# [中央 prh.yml, 本ファイル] の 2 本にする（中央 Issue #91，v2.7.0 以降）．
+# 中央辞書を置き換えないため，以後の中央更新へ追随できる．
+#
+# 衝突時は先に並ぶ中央辞書が勝つ．中央規則を弱めたいときは本ファイルではなく
+# .textlint-allowlist.yml の allow を使う．
+#
+# 検出できない字種をここへ足す．句点「。」は .textlintrc.json の
+# ja-no-mixed-period（periodMark: "．"）が既に検出するため対象外とする．
+
+version: 1
+
+rules:
+  # 読点は全角コンマ「，」で統一する（Issue #90・#101・#102 で統一した表記規約）．
+  # prh は textlint の Str ノードだけを見るため，コードブロック・インラインコードは
+  # 対象外となる．字種そのものを話題にする「、」の言及は
+  # .textlint-allowlist.yml で除外する．
+  - expected: ，
+    patterns:
+      - 、
+    prh: 読点は全角コンマ「，」で統一する（本リポジトリの規約）
+    specs:
+      - from: 前段であり、後段である
+        to: 前段であり，後段である

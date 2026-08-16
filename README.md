@@ -675,6 +675,7 @@ techbook-template/
 ├── dist/                      # 出力先（.gitignore 済）
 ├── .textlintrc.json           # 日本語文章検査の設定（原稿の文体宣言を含む）
 ├── .textlint-allowlist.yml    # 原稿側で直せない誤検出の除外パターン
+├── .prh-extra.yml             # 中央辞書へ加算する表記ゆれ規則（読点の字種）
 ├── package.json
 ├── vivliostyle.config.js
 ├── vivliostyle.print.config.js # 紙入稿用ビルド設定
@@ -867,7 +868,11 @@ CI の結果を正とする．
   `max-kanji-continuous-len` の `allow` へ足す．
 - 原稿側で直せない誤検出は `.textlint-allowlist.yml` の `allow` で除外する．
   奥付の発行履歴（`YYYY年MM月DD日 第N版第N刷発行`）と表示数式（`$$` ブロック）を
-  正規表現で除外している．文体や表記ゆれの指摘を止める目的で使わない．
+  正規表現で除外している．字種そのものを話題にする鍵括弧も同様である．
+  文体や表記ゆれの指摘を止める目的で使わない．
+- 句読点は「．」「，」で統一する．句点は `ja-no-mixed-period` が検出し，
+  読点は `.prh-extra.yml` の規則が検出する．同ファイルは中央の表記ゆれ辞書を
+  置き換えず加算するため，中央の更新へ追随できる（`tomio2480/github-workflows#91`）．
 - `rules` は中央テンプレート（`tomio2480/github-workflows`）の写しである．
   中央を更新したときは追随させる．
 
