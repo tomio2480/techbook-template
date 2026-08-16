@@ -674,6 +674,7 @@ techbook-template/
 │   └── *.test.mjs             # 各スクリプトの単体テスト
 ├── dist/                      # 出力先（.gitignore 済）
 ├── .textlintrc.json           # 日本語文章検査の設定（原稿の文体宣言を含む）
+├── .textlint-allowlist.yml    # 原稿側で直せない誤検出の除外パターン
 ├── package.json
 ├── vivliostyle.config.js
 ├── vivliostyle.print.config.js # 紙入稿用ビルド設定
@@ -864,6 +865,9 @@ CI の結果を正とする．
   そのためパスごとの文体宣言はできない（`tomio2480/github-workflows#85`）．
 - 漢字の連続は 6 字までを既定とする．崩すと別物を指す正式名称だけを
   `max-kanji-continuous-len` の `allow` へ足す．
+- 原稿側で直せない誤検出は `.textlint-allowlist.yml` の `allow` で除外する．
+  奥付の発行履歴（`YYYY年MM月DD日 第N版第N刷発行`）と表示数式（`$$` ブロック）を
+  正規表現で除外している．文体や表記ゆれの指摘を止める目的で使わない．
 - `rules` は中央テンプレート（`tomio2480/github-workflows`）の写しである．
   中央を更新したときは追随させる．
 
