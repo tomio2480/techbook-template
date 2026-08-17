@@ -47,7 +47,7 @@ $$
 \int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
 $$
 
-マクスウェル方程式:
+マクスウェル方程式を次に示す．
 
 $$
 \nabla \cdot \mathbf{E} = \frac{\rho}{\varepsilon_0}
@@ -98,13 +98,17 @@ $$
 
 ## 図表の番号付け
 
-技術書では図表に番号を付けて参照する．図や表の番号は CSS で自動的に付与されるため，Markdown では凡例テキストのみを記述すればよい．
+技術書では図表に番号を付けて参照する．図や表の番号は CSS で自動的に付与されるため，Markdown では凡例テキストのみを記述すればよい．表のキャプションは体言止めで書くため，`textlint-disable` と `textlint-enable` のコメントで挟んで句点の検査から外す．
 
 ## 表中の数式
 
 表のセル内でもインライン数式が使用できる．Markdown テーブルは VFM により通常の Markdown として処理されるため，`$...$` 記法がそのまま有効となる．
 
+<!-- textlint-disable ja-technical-writing/ja-no-mixed-period -->
+
 物理定数の例
+
+<!-- textlint-enable ja-technical-writing/ja-no-mixed-period -->
 
 | 名称 | 記号 | 値 |
 |------|------|-----|
