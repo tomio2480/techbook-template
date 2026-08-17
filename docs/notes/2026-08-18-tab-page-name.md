@@ -18,22 +18,22 @@
 `docs/spec/print-layout.md` はつめを章扉へ出さないと定めている．
 実際には扉にも出ていた．素のテンプレートでも扉 4 枚すべてで再現した．
 
-Issue の見立ては「`@page chapter-opening` が `@right-top` に触れていないため」
-であり，そこへ `content: none` を足す案が示されていた．
+Issue の見立ては「`@page chapter-opening` が `@right-top` に触れていないため」だった．
+そこへ `content: none` を足す案が示されていた．
 当ててビルドし直したが，つめは消えなかった．
 
 実測で分かったのは，Issue に書かれていない食い違いである．
 紙入稿用の扉にはノンブルが出ていた．電子書籍用（`dist/book.pdf`）の扉には出ない．
-`@page chapter-opening` は柱とノンブルの両方を打ち消しているため，
-ノンブルが出ること自体が「扉のページが `chapter-opening` として組まれていない」
-証拠になる．つまり `@right-top` を足しても当たる先が無い．
+`@page chapter-opening` は柱とノンブルの両方を打ち消す．
+扉にノンブルが出るなら，扉のページは `chapter-opening` として組まれていない．
+つまり `@right-top` を足しても当たる先が無い．
 
 ## 判断
 
 原因は，つめの流し込み要素 `<aside class="print-tab-mark">` を
 `body` の先頭へ入れていたことである．
-扉より前にこの要素があると，扉のページが `body` から始まった扱いになり，
-扉が名乗る `page: chapter-opening` が効かなくなる．
+扉より前にこの要素があると，扉のページは `body` から始まった扱いになる．
+扉が名乗る `page: chapter-opening` は効かなくなる．
 結果として `@page tab:right` の `@right-top` が扉へ当たり，つめが出ていた．
 
 置き場所を扉の中の末尾（閉じタグの直前）へ変えた．
@@ -54,9 +54,9 @@ Issue の見立ては「`@page chapter-opening` が `@right-top` に触れてい
 | 扉の中の末尾 | 出ない | 出ない | 採用 |
 
 扉の直後は，一度は実装してコミットまで進めた．
-レビューで，`theme.css` の
-`.chapter-opening.no-repeat-heading + section.level1 > h1` が
-扉と本文の隣接を前提にしていると指摘を受けて取り下げた．
+レビューで指摘を受けて取り下げた．`theme.css` の
+`.chapter-opening.no-repeat-heading + section.level1 > h1` は，
+扉と本文の隣接を前提にしている．
 間に要素を挟むと隣接セレクタが外れ，`no-repeat-heading` を有効にした章で，
 隠しているはずの章タイトル帯が紙入稿用だけ戻る．
 
@@ -80,8 +80,9 @@ CSS 側のセレクタを `~` へ緩める案も採らなかった．
   つめの有無は，幅 8 mm・高さ 16 mm の塗り矩形で見る．
 
 スタイルの渡し方で挙動が変わる点にも注意が要る．
-`vivliostyle build -s style.css`（利用者スタイル）と
-`<link rel="stylesheet">`（著者スタイル）では `@page` の効き方が違った．
+`-s` で渡したスタイルは利用者スタイルになる．
+`<link>` から読んだものは著者スタイルになる．
+両者で `@page` の効き方が違った．
 本番と同じ経路（テーマ CSS ＋ `--style`）で確かめるまで結論を出さない．
 
 ## レビューで塞いだ穴
