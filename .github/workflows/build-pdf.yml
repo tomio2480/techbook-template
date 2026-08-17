@@ -42,6 +42,14 @@ jobs:
       - name: Run tests
         run: npm test
 
+      # 従来は npm run build の冒頭でこれらが走っていた．
+      # PDF 生成を opt-in にしたため，検査だけを切り出して常に実行する．
+      - name: Check repository data
+        run: |
+          npm run check:errata
+          npm run check:isdn
+          npm run check:preface
+
   # PDF の生成は明示的に指示したときだけ行う．
   # 手動実行するか，PR へ build-pdf ラベルを付ける．
   build-pdf:

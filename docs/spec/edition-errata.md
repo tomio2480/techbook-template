@@ -38,19 +38,28 @@
 
 出版（入稿・頒布）のたびに次の手順を踏む．
 
-1. 第 2 版以降の場合，`npm version major` で版番号を繰り上げる．
-   初版の場合は 1.x.x のまま進める．
+1. 第 2 版以降の場合，`npm version major --no-git-tag-version` で
+   版番号を繰り上げる．初版の場合は 1.x.x のまま進める．
+
+   `--no-git-tag-version` を付けないと，npm がこの時点でコミットと
+   `v<version>` タグを作る．手順 4 でタグを作れなくなるうえ，
+   既存タグを push すると正誤情報の追記前のコミットが公開される．
 2. `errata/errata.yml` の `editions` へ新しい版を追記する．
    `release` には手順 4 で作られるタグ名（`v` ＋ そのときの version）を書く．
 3. この版で本文へ反映した正誤があれば，該当項目に `fixed_in` を記入する．
-4. main へマージしたあと，version と同じ名前のタグを作成して push する．
+4. main へマージしたあと，マージ後の main でタグを作成して push する．
    タグの push で release ジョブが走り，Release を作成する．
    PDF は版のアーカイブとして保管される．
 
    ```sh
+   git switch main && git pull
    git tag "v$(node -p "require('./package.json').version")"
    git push origin "v$(node -p "require('./package.json').version")"
    ```
+
+   タグはマージ後のコミットに付ける．
+   手順 2・3 の追記より前のコミットに付けると，
+   正誤情報を含まない内容が版として公開される．
 
    タグ名が `package.json` の version と食い違う場合，
    release ジョブは Release を作らずに失敗する．
