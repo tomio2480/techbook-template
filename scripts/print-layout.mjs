@@ -253,7 +253,9 @@ export function sideClassName(side) {
 /* 生成 HTML の html 要素へクラスを足す。
    つめの位置を決める変数（--tab-offset）は html 要素で解決され、
    ページ余白の外側（@page）から参照できる。
-   区分の開始面（print-side-*）も同じ場所へ置く */
+   区分の開始面（print-side-*）も同じ場所へ置く。
+   同じクラスが既にあれば足さない。目次のように書き換えの残る原稿へ
+   繰り返し当てても、クラスが増え続けないようにするためである */
 export function injectHtmlClass(html, className) {
   const openingTag = html.match(/<html\b[^>]*>/i);
   if (!openingTag) {
@@ -261,6 +263,11 @@ export function injectHtmlClass(html, className) {
   }
 
   const tag = openingTag[0];
+  const current = tag.match(/\sclass\s*=\s*"([^"]*)"/i);
+  if (current && current[1].split(/\s+/).includes(className)) {
+    return html;
+  }
+
   const replaced = /\sclass\s*=\s*"[^"]*"/i.test(tag)
     ? tag.replace(/(\sclass\s*=\s*")([^"]*)(")/i, `$1$2 ${className}$3`)
     : tag.replace(/<html\b/i, `<html class="${className}"`);

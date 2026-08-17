@@ -124,6 +124,27 @@ function extractTextWithPageMarks(pdfPath) {
   );
 }
 
+/* 紙面用の目印を入れる前の中身を控える対象を選ぶ。
+   entry の HTML は多くが Markdown から作り直されるが、目次（toc.html）のように
+   Markdown を持たない原稿は手で書く追跡ファイルであり、書き換えたまま終わると
+   作業ツリーが汚れる。ファイル名ではなく Markdown の有無で判定し、
+   利用者が別の HTML を直接置いた場合も同じ扱いにする */
+export function snapshotAuthoredDocuments(repoRoot_, entries) {
+  return entries
+    .filter(entry => !fs.existsSync(path.join(repoRoot_, entry.replace(/\.html$/i, '.md'))))
+    .map(entry => ({
+      entry,
+      content: fs.readFileSync(path.join(repoRoot_, entry), 'utf-8'),
+    }));
+}
+
+/* 控えた中身へ書き戻す。ビルドが途中で失敗した場合も後始末で必ず呼ぶ */
+export function restoreAuthoredDocuments(repoRoot_, snapshots) {
+  for (const { entry, content } of snapshots) {
+    fs.writeFileSync(path.join(repoRoot_, entry), content, 'utf-8');
+  }
+}
+
 /* ビルドが途中で止まった PDF を成果物と誤認しないための検査。
    マーカーは行番号付与（add-line-numbers.mjs）が組版パスの後に書き込む */
 export function verifyPdfNewerThanMarker(repoRoot_, pdfFileName) {
@@ -261,6 +282,7 @@ async function main() {
   }
 
   let plan;
+  let authoredDocuments = [];
   try {
     /* つめの位置を決める CSS は print.css から読み込まれる。
        組版パスの前に，章がまだ確定していない状態の中身で用意しておく */
@@ -292,12 +314,16 @@ async function main() {
 
     /* 本番パス: MEMO ページと小口のつめを入れて組み直す */
     writeMemoDocuments(plan.memoDocuments);
+    /* 目印を入れる直前の中身を控える。組版に要るのはこのビルドの間だけであり、
+       追跡ファイルへ残すと作業ツリーが汚れる */
+    authoredDocuments = snapshotAuthoredDocuments(repoRoot, entries);
     console.log(`小口のつめを ${applyPrintMarkup(entries, sources, sides)} 章分入れます。`);
     fs.writeFileSync(planPath, JSON.stringify(plan, null, 2), 'utf-8');
     buildPdf({ style: PRINT_STYLE, planPath });
   } finally {
     /* 設定と一時ファイルは、途中で失敗した場合も必ず元へ戻す */
     runScript('add-line-numbers.mjs', ['--restore']);
+    restoreAuthoredDocuments(repoRoot, authoredDocuments);
     removeMemoDocuments();
     fs.rmSync(planPath, { force: true });
   }

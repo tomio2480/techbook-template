@@ -4,6 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import {
+  restoreAuthoredDocuments,
+  snapshotAuthoredDocuments,
   verifyPageMultiple,
   verifyPdfNewerThanMarker,
   verifyPlannedPageCount,
@@ -90,4 +92,44 @@ test('verifyPdfNewerThanMarker: PDF がマーカーより古ければ失敗す�
   const result = verifyPdfNewerThanMarker(dir, 'book-print.pdf');
   assert.equal(result.ok, false);
   assert.match(result.message, /中断/);
+});
+
+// --- snapshotAuthoredDocuments / restoreAuthoredDocuments ---
+
+function makeChapters(dir, files) {
+  fs.mkdirSync(path.join(dir, 'src', 'chapters'), { recursive: true });
+  for (const [name, content] of Object.entries(files)) {
+    fs.writeFileSync(path.join(dir, 'src', 'chapters', name), content, 'utf-8');
+  }
+}
+
+test('snapshotAuthoredDocuments: Markdown から作られる HTML は控えない', () => {
+  const dir = makeTempRepo();
+  makeChapters(dir, { '01-introduction.md': '# 章', '01-introduction.html': '<html></html>' });
+
+  assert.deepStrictEqual(
+    snapshotAuthoredDocuments(dir, ['src/chapters/01-introduction.html']),
+    []
+  );
+});
+
+test('snapshotAuthoredDocuments: Markdown を持たない HTML の中身を控える', () => {
+  const dir = makeTempRepo();
+  makeChapters(dir, { 'toc.html': '<html lang="ja"></html>' });
+
+  assert.deepStrictEqual(snapshotAuthoredDocuments(dir, ['src/chapters/toc.html']), [
+    { entry: 'src/chapters/toc.html', content: '<html lang="ja"></html>' },
+  ]);
+});
+
+test('restoreAuthoredDocuments: 控えた内容へ書き戻す', () => {
+  const dir = makeTempRepo();
+  makeChapters(dir, { 'toc.html': '<html lang="ja"></html>' });
+  const snapshots = snapshotAuthoredDocuments(dir, ['src/chapters/toc.html']);
+
+  const tocPath = path.join(dir, 'src', 'chapters', 'toc.html');
+  fs.writeFileSync(tocPath, '<html class="print-side-verso" lang="ja"></html>', 'utf-8');
+  restoreAuthoredDocuments(dir, snapshots);
+
+  assert.strictEqual(fs.readFileSync(tocPath, 'utf-8'), '<html lang="ja"></html>');
 });
