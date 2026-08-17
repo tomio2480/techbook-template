@@ -462,6 +462,31 @@ test('class の引用符が変わっても扉を見つける', () => {
   }
 });
 
+test('属性値の中の > をタグの終わりと見なさない', () => {
+  // VFM は属性値の > をそのまま出力する（エスケープしない）
+  const html = `<html><body>
+<section data-label="A > B" class="chapter-opening"><p>扉</p></section>
+<section class="level1"><h1>応用編</h1></section>
+</body></html>`;
+  const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');
+  assert.match(result, /<aside class="print-tab-mark"><\/aside>\n<\/section>/);
+  assert.doesNotMatch(result, /<body>\n<aside/);
+});
+
+test('入れ子の属性値に > があっても閉じタグを取り違えない', () => {
+  const html = `<html><body>
+<section class="chapter-opening">
+<section data-note="a > b"><p>この章で学ぶこと</p></section>
+</section>
+<section class="level1"><h1>応用編</h1></section>
+</body></html>`;
+  const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');
+  assert.match(
+    result,
+    /<\/section>\n<aside class="print-tab-mark"><\/aside>\n<\/section>\n<section class="level1">/
+  );
+});
+
 test('前方一致するだけの別クラスを扉と見なさない', () => {
   const html = '<html><body>\n<section class="chapter-opening-note"><p>注</p></section>\n</body></html>';
   const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');

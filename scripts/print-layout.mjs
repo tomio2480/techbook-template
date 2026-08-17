@@ -313,37 +313,68 @@ export function renderTabMark({ number, title }) {
   return `<aside class="print-tab-mark" aria-hidden="true">${numberSpan}${titleSpan}</aside>`;
 }
 
-/* 章の扉（.chapter-opening）の開始タグを返す。無ければ null を返す。
-   class の値は引用符あり（" と '）と引用符なしのいずれも受け取る。
-   HTML はどれも妥当な書き方であり、取りこぼすと扉を見失うためである。
-   値は空白で区切ってから突き合わせ、chapter-opening-note のように
-   前方一致するだけの別クラスを扉と見なさない */
-function chapterOpeningTag(html) {
-  const tagPattern =
-    /<([a-z][a-z0-9]*)\b[^>]*?\sclass\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))[^>]*>/gi;
-  let tag;
-  while ((tag = tagPattern.exec(html)) !== null) {
-    const classes = (tag[2] ?? tag[3] ?? tag[4] ?? '').trim().split(/\s+/);
-    if (classes.includes(CHAPTER_OPENING_CLASS)) return tag;
+/* 開始タグと終了タグを前から順に取り出す。
+   タグの終わりは引用符の外側の > で決める。HTML は属性値の中へ > を書け、
+   VFM もそれをそのまま出力するため、> だけを頼りにすると別の位置で切れる */
+function* htmlTags(html) {
+  const namePattern = /<(\/?)([a-z][a-z0-9]*)\b/gi;
+  let name;
+  while ((name = namePattern.exec(html)) !== null) {
+    let index = namePattern.lastIndex;
+    let quote = '';
+    while (index < html.length) {
+      const char = html[index];
+      if (quote) {
+        if (char === quote) quote = '';
+      } else if (char === '"' || char === "'") {
+        quote = char;
+      } else if (char === '>') {
+        break;
+      }
+      index += 1;
+    }
+    yield {
+      closing: name[1] === '/',
+      name: name[2].toLowerCase(),
+      start: name.index,
+      text: html.slice(name.index, index + 1),
+    };
+    namePattern.lastIndex = index + 1;
   }
-  return null;
 }
 
-/* 章の扉の閉じタグが始まる位置を返す。扉が無ければ -1 を返す。
-   同じ名前のタグを数え、入れ子があっても対応する閉じタグを取り違えない */
-function chapterOpeningCloseStart(html) {
-  const opening = chapterOpeningTag(html);
-  if (!opening) return -1;
+/* タグに付いたクラスを返す。値は引用符あり（" と '）と引用符なしを受け取る。
+   HTML はどれも妥当な書き方であり、取りこぼすと扉を見失うためである */
+function classNames(tag) {
+  const attribute = tag.text.match(/\sclass\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))/i);
+  if (!attribute) return [];
+  return (attribute[1] ?? attribute[2] ?? attribute[3] ?? '').trim().split(/\s+/);
+}
 
-  const tagPattern = new RegExp(`<(/?)${opening[1]}\\b[^>]*>`, 'gi');
-  tagPattern.lastIndex = opening.index + opening[0].length;
-  let depth = 1;
-  let tag;
-  while ((tag = tagPattern.exec(html)) !== null) {
-    depth += tag[1] ? -1 : 1;
-    if (depth === 0) return tag.index;
+/* 章の扉（.chapter-opening）の閉じタグが始まる位置を返す。扉が無ければ -1 を返す。
+   クラスは空白で区切ってから突き合わせ、chapter-opening-note のように
+   前方一致するだけの別クラスを扉と見なさない。
+   閉じタグは同じ名前のタグを数えて求め、入れ子があっても取り違えない */
+function chapterOpeningCloseStart(html) {
+  let openingName = '';
+  let depth = 0;
+  for (const tag of htmlTags(html)) {
+    if (!openingName) {
+      if (!tag.closing && classNames(tag).includes(CHAPTER_OPENING_CLASS)) {
+        openingName = tag.name;
+        depth = 1;
+      }
+      continue;
+    }
+    if (tag.name !== openingName) continue;
+    depth += tag.closing ? -1 : 1;
+    if (depth === 0) return tag.start;
   }
-  throw new Error('章の扉（.chapter-opening）の閉じタグが見つかりません。');
+
+  if (openingName) {
+    throw new Error('章の扉（.chapter-opening）の閉じタグが見つかりません。');
+  }
+  return -1;
 }
 
 /* つめの中身を入れる。print.css の position: running() で流し込みから外れるため、
