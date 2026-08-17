@@ -4,15 +4,52 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'v*'
   pull_request:
     branches:
       - main
+    types: [opened, synchronize, reopened, labeled]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+# 同一ブランチの連続 push では古い実行を打ち切る．
+# タグ実行（Release）は打ち切らない．
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  build:
+  # スクリプトのユニットテスト．PDF を組まないため軽量である．
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  # PDF の生成は明示的に指示したときだけ行う．
+  # 手動実行するか，PR へ build-pdf ラベルを付ける．
+  build-pdf:
+    needs: test
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       contains(github.event.pull_request.labels.*.name, 'build-pdf'))
     runs-on: ubuntu-latest
 
     steps:
@@ -40,9 +77,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
-        run: npm test
-
       - name: Build PDF
         run: npm run build
 
@@ -51,12 +85,14 @@ jobs:
         with:
           name: book-pdf
           path: dist/*.pdf
-          retention-days: 30
+          retention-days: 7
 
+  # Release は v* タグを push したときだけ作成する．
+  # Release アセットは Actions のストレージ枠を消費しない．
   release:
-    needs: build
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     permissions:
       contents: write
@@ -89,15 +125,11 @@ jobs:
       - name: Build PDF
         run: npm run build
 
-      - name: Get version from package.json
-        id: version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-
       - name: Create Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: Release v${{ steps.version.outputs.version }}
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           files: dist/*.pdf
           generate_release_notes: true
         env:
