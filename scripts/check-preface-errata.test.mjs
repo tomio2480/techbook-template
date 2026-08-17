@@ -138,6 +138,13 @@ describe('hasErrataMarker: 異常系', () => {
     assert.equal(hasErrataMarker(content), false);
   });
 
+  it('見出しは段落を切らないため，前の行のコードスパンが続く', () => {
+    /* VFM は空行を挟まない ATX 見出しを段落の一部として扱う．
+       この原稿はマーカーを含む 1 つの段落になり，案内へ置き換わらない */
+    const content = ['# まえがき', '', '`foo', '# first', '{{errata}}', '# second', ''].join('\n');
+    assert.equal(hasErrataMarker(content), false);
+  });
+
   it('フェンスは段落を切り，閉じ手の無いコードスパンを終わらせる', () => {
     const content = ['# まえがき', '', '`foo', '```js', 'code', '```', '{{errata}}', ''].join('\n');
     assert.equal(hasErrataMarker(content), true);
