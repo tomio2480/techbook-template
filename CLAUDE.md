@@ -30,4 +30,7 @@ Claude が作業する際の必須事項を定める．
   この形は `.textlint-allowlist.yml` が指摘から除外する．
 - 図表キャプションは体言止めとし，句点を付けない（Issue #116）．
   `docs/` で使う `表 1. …` の形は `.textlint-allowlist.yml` が除外する．
-  原稿側は番号を自動で付けるため接頭辞が無く，除外できない（Issue #118）．
+  原稿側は番号を自動で付けるため接頭辞が無く，allowlist では外せない．
+  キャプション段落だけを `textlint-disable` と `textlint-enable` の
+  コメントで挟む（Issue #118）．接頭辞を原稿へ書くと CSS の採番と
+  二重になるため，原稿側では接頭辞を使わない．
