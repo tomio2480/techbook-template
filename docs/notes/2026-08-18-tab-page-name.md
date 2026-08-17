@@ -54,9 +54,13 @@ Issue の見立ては「`@page chapter-opening` が `@right-top` に触れてい
 | 扉の中の末尾 | 出ない | 出ない | 採用 |
 
 扉の直後は，一度は実装してコミットまで進めた．
-レビューで指摘を受けて取り下げた．`theme.css` の
-`.chapter-opening.no-repeat-heading + section.level1 > h1` は，
-扉と本文の隣接を前提にしている．
+レビューで指摘を受けて取り下げた．`theme.css` の次の指定が効かなくなるためである．
+
+```css
+.chapter-opening.no-repeat-heading + section.level1 > h1
+```
+
+この指定は扉と本文の隣接を前提にしている．
 間に要素を挟むと隣接セレクタが外れ，`no-repeat-heading` を有効にした章で，
 隠しているはずの章タイトル帯が紙入稿用だけ戻る．
 
