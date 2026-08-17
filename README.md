@@ -1,6 +1,6 @@
 # 技術書の自動組版テンプレート
 
-Vivliostyle を使用した技術書執筆のためのテンプレートリポジトリ．Markdown で執筆し，GitHub Actions で PDF を自動生成する．
+Vivliostyle を使用した技術書執筆のためのテンプレートリポジトリ．Markdown で執筆し，GitHub Actions で PDF を生成する（生成は明示的に指示したときのみ）．
 
 ## 📋 目次
 
@@ -885,7 +885,8 @@ CI の結果を正とする．
 
 - 版番号は `package.json` の semver の major と一致させる（`v1.x.x` が初版）．
 - 出版のたびに `errata/errata.yml` の `editions` へ版を追記する．
-  main へのマージで作られる Release が版ごとの PDF アーカイブとなる．
+  version と同じ名前のタグを push すると Release が作られ，
+  それが版ごとの PDF アーカイブとなる．
 - 正誤が見つかったら `errata/errata.yml` の `errata` へ追記する．
   公開正誤表サイトが定期収集して掲載する．
 - `npm run check:errata` でスキーマと版整合を検査できる（ビルド時にも自動実行）．

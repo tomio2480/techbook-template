@@ -15,11 +15,11 @@ on:
 permissions:
   contents: read
 
-# 同一ブランチの連続 push では古い実行を打ち切る．
-# タグ実行（Release）は打ち切らない．
+# 連続 push では古い実行を打ち切る．
+# ただしタグ実行（Release）は打ち切らない．
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
   # スクリプトのユニットテスト．PDF を組まないため軽量である．
@@ -89,9 +89,11 @@ jobs:
 
   # Release は v* タグを push したときだけ作成する．
   # Release アセットは Actions のストレージ枠を消費しない．
+  # Release はタグを push したときだけ作成する．
+  # workflow_dispatch をタグの ref で実行しても走らないよう push に限定する．
   release:
     needs: test
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
     permissions:
@@ -121,6 +123,17 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      # タグ名と package.json の version が食い違うと，
+      # 誤った版番号で古い内容を公開してしまう．
+      - name: Verify tag matches package version
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          package_version="$(node -p "require('./package.json').version")"
+          if [ "$tag_version" != "$package_version" ]; then
+            echo "Tag v${tag_version} does not match package version ${package_version}." >&2
+            exit 1
+          fi
 
       - name: Build PDF
         run: npm run build

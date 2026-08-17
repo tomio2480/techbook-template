@@ -43,8 +43,17 @@
 2. `errata/errata.yml` の `editions` へ新しい版を追記する．
    `release` には手順 4 で作られるタグ名（`v` ＋ そのときの version）を書く．
 3. この版で本文へ反映した正誤があれば，該当項目に `fixed_in` を記入する．
-4. main へ push（マージ）すると release ジョブが version のタグで
-   Release を作成する．PDF は版のアーカイブとして保管される．
+4. main へマージしたあと，version と同じ名前のタグを作成して push する．
+   タグの push で release ジョブが走り，Release を作成する．
+   PDF は版のアーカイブとして保管される．
+
+   ```sh
+   git tag "v$(node -p "require('./package.json').version")"
+   git push origin "v$(node -p "require('./package.json').version")"
+   ```
+
+   タグ名が `package.json` の version と食い違う場合，
+   release ジョブは Release を作らずに失敗する．
 
 `editions` は公開正誤表サイトの収集用データである．
 奥付の発行履歴（`99-colophon.md` への手書き）を，ここから自動生成
