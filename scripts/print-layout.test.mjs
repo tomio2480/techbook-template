@@ -419,9 +419,39 @@ test('番号もタイトルも無ければつめを作らない', () => {
   assert.strictEqual(renderTabMark({ number: '', title: '' }), '');
 });
 
-test('つめは body の直後へ入れる', () => {
+test('章の扉があるときは扉の直後へ入れる', () => {
   const result = injectTabMark(CHAPTER_HTML, renderTabMark({ number: '2', title: '応用編' }));
+  assert.match(result, /<\/section>\n<aside class="print-tab-mark"/);
+  // 扉より前へ置くと，扉のページが body から始まった扱いになり，
+  // page: chapter-opening が効かなくなる（扉にもつめが出る）
+  assert.doesNotMatch(result, /<body>\n<aside class="print-tab-mark"/);
+  assert.ok(result.indexOf('print-tab-mark') > result.indexOf('chapter-title'));
+});
+
+test('入れ子の要素を持つ扉でも閉じタグを取り違えない', () => {
+  const html = `<html><body>
+<section class="chapter-opening">
+<p class="chapter-number">2</p>
+<section class="chapter-topics"><p>この章で学ぶこと</p></section>
+</section>
+<section class="level1"><h1>応用編</h1></section>
+</body></html>`;
+  const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');
+  assert.match(result, /<\/section>\n<aside class="print-tab-mark"><\/aside>\n<section class="level1">/);
+});
+
+test('扉を持たない原稿では body の直後へ入れる', () => {
+  const html = '<html><body>\n<section class="level1"><h1>付録</h1></section>\n</body></html>';
+  const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');
   assert.match(result, /<body>\n<aside class="print-tab-mark"/);
+});
+
+test('扉の閉じタグが無ければ例外を投げる', () => {
+  const html = '<html><body><section class="chapter-opening"><p>扉</p></body></html>';
+  assert.throws(
+    () => injectTabMark(html, '<aside></aside>'),
+    /章の扉.*閉じタグが見つかりません/
+  );
 });
 
 test('つめが空なら HTML を変えない', () => {

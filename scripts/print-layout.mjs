@@ -310,10 +310,38 @@ export function renderTabMark({ number, title }) {
   return `<aside class="print-tab-mark" aria-hidden="true">${numberSpan}${titleSpan}</aside>`;
 }
 
-/* つめの中身を body の先頭へ入れる。print.css の position: running() で
-   流し込みから外れるため、組版結果（ページ数）は変わらない */
+/* 章の扉（.chapter-opening）の閉じタグの直後の位置を返す。扉が無ければ -1 を返す。
+   同じ名前のタグを数え、入れ子があっても対応する閉じタグを取り違えない */
+function chapterOpeningEnd(html) {
+  const opening = html.match(
+    /<([a-z][a-z0-9]*)\b[^>]*class="[^"]*\bchapter-opening\b[^"]*"[^>]*>/i
+  );
+  if (!opening) return -1;
+
+  const tagPattern = new RegExp(`<(/?)${opening[1]}\\b[^>]*>`, 'gi');
+  tagPattern.lastIndex = opening.index + opening[0].length;
+  let depth = 1;
+  let tag;
+  while ((tag = tagPattern.exec(html)) !== null) {
+    depth += tag[1] ? -1 : 1;
+    if (depth === 0) return tag.index + tag[0].length;
+  }
+  throw new Error('章の扉（.chapter-opening）の閉じタグが見つかりません。');
+}
+
+/* つめの中身を入れる。print.css の position: running() で流し込みから外れるため、
+   組版結果（ページ数）は変わらない。
+   置き場所は章の扉の直後とする。扉より前に置くと、扉のページが body から
+   始まった扱いになり、扉が名乗る page: chapter-opening が効かなくなる。
+   扉にもつめが刷られ、扉で消しているはずの柱・ノンブルまで出る。
+   扉を持たない原稿（付録など）では body の先頭へ入れ、1 ページ目から出す */
 export function injectTabMark(html, markup) {
   if (!markup) return html;
+
+  const openingEnd = chapterOpeningEnd(html);
+  if (openingEnd >= 0) {
+    return `${html.slice(0, openingEnd)}\n${markup}${html.slice(openingEnd)}`;
+  }
 
   const bodyTag = html.match(/<body\b[^>]*>/i);
   if (!bodyTag) {
