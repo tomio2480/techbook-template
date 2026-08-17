@@ -90,7 +90,11 @@ echo "Sum: $sum"
 
 ## 部品表の詳細例
 
+<!-- textlint-disable ja-technical-writing/ja-no-mixed-period -->
+
 Arduino Uno を使った温度計の部品表
+
+<!-- textlint-enable ja-technical-writing/ja-no-mixed-period -->
 
 | 部品名 | 型番 | 数量 | 単価 | 小計 | 購入先 |
 |--------|------|------|------|------|--------|

@@ -78,7 +78,11 @@ body:
 
 見出し行の下罫線は基調色，本体の横罫線は中明度，偶数行の背景は淡色で示す．縦罫線は使わない．
 
+<!-- textlint-disable ja-technical-writing/ja-no-mixed-period -->
+
 パレットへ追従する意味トークンの例
+
+<!-- textlint-enable ja-technical-writing/ja-no-mixed-period -->
 
 | トークン | 割り当て | 用途 |
 |---|---|---|

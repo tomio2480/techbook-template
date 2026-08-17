@@ -48,7 +48,7 @@ function greet(name) {
 greet('World');
 ```
 
-Python の例:
+Python の例を次に示します．
 
 ```python
 def factorial(n):
@@ -61,7 +61,11 @@ print(factorial(5))  # 120
 
 ## テーブルの例
 
+<!-- textlint-disable ja-technical-writing/ja-no-mixed-period -->
+
 部品表
+
+<!-- textlint-enable ja-technical-writing/ja-no-mixed-period -->
 
 | 部品名 | 型番 | 数量 | 備考 |
 |--------|------|------|------|

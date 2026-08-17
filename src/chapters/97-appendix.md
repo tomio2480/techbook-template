@@ -23,7 +23,11 @@ body:
 
 ## 数学記号一覧
 
+<!-- textlint-disable ja-technical-writing/ja-no-mixed-period -->
+
 よく使われる数学記号の例
+
+<!-- textlint-enable ja-technical-writing/ja-no-mixed-period -->
 
 | 記号 | 名称 | 用途 |
 |------|------|------|

@@ -460,7 +460,11 @@ HTML ブロック内で数式を表示するには， `data-math-typeset="true"`
 表の直前にキャプション（タイトル）を 1 行で記述する．番号は自動で付与される．
 
 ```markdown
+<!-- textlint-disable ja-technical-writing/ja-no-mixed-period -->
+
 Arduino Uno を使った温度計の部品表
+
+<!-- textlint-enable ja-technical-writing/ja-no-mixed-period -->
 
 | 部品名 | 型番 | 数量 | 単価 |
 |--------|------|------|------|
@@ -478,6 +482,10 @@ Arduino Uno を使った温度計の部品表
 
 - 表の直前の段落がキャプションとして扱われる
 - キャプションは体言止めとし，句点「．」を付けない
+- キャプション段落は `textlint-disable` と `textlint-enable` のコメントで挟む．
+  体言止めのため `ja-no-mixed-period` が句点の欠落として検出する．
+  コメントは要素にならないため，キャプションと表の隣接判定は保たれ，採番も変わらない．
+  経緯は [Issue #118](https://github.com/tomio2480/techbook-template/issues/118) を参照する．
 - 表の前に説明文を入れたい場合は，キャプションの前に配置する
 - テーブル内では `$...$` による数式が使用できる（HTML ブロックとは異なる）
 
@@ -872,6 +880,11 @@ CI の結果を正とする．
   正規表現で除外している．字種そのものを話題にする鍵括弧も同様である．
   `docs/` の図表キャプション（`表 1. …` の形）も体言止めのまま通す．
   文体や表記ゆれの指摘を止める目的で使わない．
+- 原稿側のキャプションは接頭辞を持たないため，allowlist では外せない．
+  地の文と機械的に区別できないためである．キャプション段落だけを
+  `textlint-disable` と `textlint-enable` のコメントで挟んで外す．
+  `textlint-disable-next-line` は `textlint-filter-rule-comments` 1.3.0 では
+  効かないため使わない．
 - 句読点は「．」「，」で統一する．句点は `ja-no-mixed-period` が検出し，
   読点は `.prh-extra.yml` の規則が検出する．同ファイルは中央の表記ゆれ辞書を
   置き換えず加算するため，中央の更新へ追随できる（`tomio2480/github-workflows#91`）．
