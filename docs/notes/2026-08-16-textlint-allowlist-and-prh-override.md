@@ -1,7 +1,7 @@
 # textlint allowlist の導入と prh.yml 置き換え規約の確認
 
 句読点統一の残件（#103・#104・#100）を片付けた際の判断と，
-#99 の調査で分かった中央テンプレの `prh.yml` 解決規約を記録する．
+Issue #99 の調査で分かった中央テンプレの `prh.yml` 解決規約を記録する．
 対象は Issue #99・#100・#103・#104，PR #107・#108・#109，上流 #90 である．
 
 ## 目次
@@ -58,6 +58,10 @@ CI は `filter-mode: added` のため，効き目は手元で数えて確かめ�
 全章の指摘が 16 件から 6 件へ減ることを見た．差分は狙った 10 件と一致した．
 残る 6 件は表キャプションの `ja-no-mixed-period` で，上流 #57 の判断待ちである．
 
+追記（2026-08-17）: この判断待ちは Issue #116 で決着した．
+`docs/` のキャプションは allowlist の 4 本目で外し，原稿側は Issue #118 へ移した．
+経緯は [図表キャプションの句点と上流 #57 の決着](2026-08-17-caption-period-and-upstream-57.md) を参照．
+
 否定側の確認では，fixture の文が 80 字未満で `sentence-length` が発火せず，
 一度書き直した．誤検出を再現する fixture は，規則の閾値を実際に超えているか先に数える．
 
@@ -77,7 +81,7 @@ node node_modules/@opendataloader/pdf/dist/cli.js --format text --to-stdout --qu
 
 ## caller の prh.yml は中央を置き換える
 
-#99 の案 1 は「ルートへ `prh.yml` を置いて読点規則を足す」だった．
+Issue #99 の案 1 は「ルートへ `prh.yml` を置いて読点規則を足す」だった．
 中央 action の `resolve-config-path.sh` は，caller に同名ファイルがあればそれを返す．
 無ければ中央のファイルを返す．併用ではなく置き換えになる．
 
