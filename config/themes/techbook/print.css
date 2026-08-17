@@ -11,6 +11,35 @@
  * 要求・要件は docs/spec/print-layout.md を参照．
  */
 
+/* ── 塗り足し（タチキリ）──────────────────────────────────
+ * 紙で入稿するとき，印刷所は仕上がりより天地左右へ大きい原稿を求めることが多い．
+ * bleed を与えると MediaBox が塗り足しを含む寸法になり，
+ * TrimBox に仕上がり寸法が記録される．
+ * ページ box（版面の基準）は仕上がりのままであり，本文の組版は変わらない．
+ * 電子書籍用の PDF には入れない．読者に余分な余白を見せないためである．
+ * 量は入稿先の要件に合わせて --bleed で変える．
+ * 要求・要件は docs/spec/print-layout.md を参照．
+ */
+:root {
+  --bleed: 3mm;
+}
+
+@page {
+  bleed: var(--bleed);
+}
+
+/* 表紙の絵柄を塗り足しの端まで広げる．
+ * 絵柄は cover.md の img であり，theme.css が仕上がり寸法で敷いている．
+ * 紙入稿用では塗り足しの分だけ大きくし，左上へずらして紙面全体を覆う．
+ * CSS 背景ではなく img を使う理由は theme.css の .cover-art に書いてある．
+ */
+.cover-art {
+  top: calc(-1 * var(--bleed));
+  left: calc(-1 * var(--bleed));
+  width: calc(182mm + var(--bleed) * 2);
+  height: calc(257mm + var(--bleed) * 2);
+}
+
 /* ── 改丁（区分の始まりページの面）──────────────────────────
  * recto は奇数ページ（開いて右），verso は偶数ページ（開いて左）である．
  * どの区分をどちらの面から始めるかは config/book.yaml の print.section_start・
@@ -122,7 +151,12 @@ html[class*="print-tab-"] body {
 /* 章番号．色ベタの中へ縦組みで置き，数字も縦に立てる */
 .print-tab-mark-number {
   display: block;
-  width: var(--tab-width);
+  /* 色ベタは小口の外（塗り足し）まで伸ばす．仕上がり線ちょうどで止めると，
+     裁ちが外側へずれたときに白い筋が出る．文字は padding で仕上がり内へ残す */
+  box-sizing: border-box;
+  width: calc(var(--tab-width) + var(--bleed));
+  padding-right: var(--bleed);
+  margin-right: calc(-1 * var(--bleed));
   height: var(--tab-height);
   /* 小口（右端）へ寄せる */
   margin-left: auto;

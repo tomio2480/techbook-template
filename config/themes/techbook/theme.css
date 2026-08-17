@@ -96,10 +96,6 @@ h1::before {
    背景画像の上へ cover.md の実テキストを重ねる（文字は画像化しない） */
 @page cover {
   margin: 0;
-  /* 背景はページ全面に敷く．:root の --cover-background-image で差し替える */
-  background-image: var(--cover-background-image);
-  background-size: cover;
-  background-position: center;
 
   @top-center {
     content: none;
@@ -108,6 +104,19 @@ h1::before {
   @bottom-center {
     content: none;
   }
+}
+
+.cover-art {
+  /* 差し替えは :root の --cover-background-image で行う．
+     cover.md の src は既定値であり，変数の指定が優先される */
+  content: var(--cover-background-image);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 182mm;
+  height: 257mm;
+  object-fit: cover;
+  z-index: -1;
 }
 
 /* 表紙・裏表紙の調整点．背景画像は @page から参照するため :root に置く．
