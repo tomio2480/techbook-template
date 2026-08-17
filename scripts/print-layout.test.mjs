@@ -487,6 +487,36 @@ test('入れ子の属性値に > があっても閉じタグを取り違えな�
   );
 });
 
+test('コメントの中のタグを実在の要素と見なさない', () => {
+  // VFM は原稿の HTML コメントをそのまま body の先頭へ残す
+  const html = `<html><body><!-- 例: <section class="chapter-opening"></section> -->
+<section class="chapter-opening"><p>扉</p></section>
+<section class="level1"><h1>応用編</h1></section>
+</body></html>`;
+  const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');
+  assert.match(result, /<p>扉<\/p><aside class="print-tab-mark"><\/aside>\n<\/section>/);
+  // コメントの中へ入れるとつめが黙って消える
+  assert.doesNotMatch(result, /<!--[^]*print-tab-mark[^]*-->/);
+});
+
+test('コメントの中の閉じていないタグで例外にしない', () => {
+  const html = `<html><body>
+<section class="chapter-opening"><!-- <section> --><p>扉</p></section>
+<section class="level1"><h1>応用編</h1></section>
+</body></html>`;
+  const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');
+  assert.match(result, /<p>扉<\/p><aside class="print-tab-mark"><\/aside>\n<\/section>/);
+});
+
+test('script の中のタグを実在の要素と見なさない', () => {
+  const html = `<html><body>
+<script>if (a<b) { const mark = "</section>"; }</script>
+<section class="chapter-opening"><p>扉</p></section>
+</body></html>`;
+  const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');
+  assert.match(result, /<p>扉<\/p><aside class="print-tab-mark"><\/aside>\n<\/section>/);
+});
+
 test('前方一致するだけの別クラスを扉と見なさない', () => {
   const html = '<html><body>\n<section class="chapter-opening-note"><p>注</p></section>\n</body></html>';
   const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');

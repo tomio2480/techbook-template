@@ -313,33 +313,64 @@ export function renderTabMark({ number, title }) {
   return `<aside class="print-tab-mark" aria-hidden="true">${numberSpan}${titleSpan}</aside>`;
 }
 
+/* 中身をタグとして読まない要素。閉じタグまで読み飛ばす */
+const RAW_TEXT_ELEMENTS = new Set(['script', 'style', 'textarea', 'title']);
+
+/* タグの終わり（> の位置）を返す。引用符の中の > は終わりと見なさない。
+   HTML は属性値の中へ > を書け、VFM もそれをそのまま出力するためである */
+function tagEnd(html, from) {
+  let index = from;
+  let quote = '';
+  while (index < html.length) {
+    const char = html[index];
+    if (quote) {
+      if (char === quote) quote = '';
+    } else if (char === '"' || char === "'") {
+      quote = char;
+    } else if (char === '>') {
+      break;
+    }
+    index += 1;
+  }
+  return index;
+}
+
+/* 名前の付いた閉じタグが始まる位置を返す。無ければ末尾を返す */
+function closeTagStart(html, name, from) {
+  const pattern = new RegExp(`</${name}\\b`, 'gi');
+  pattern.lastIndex = from;
+  const found = pattern.exec(html);
+  return found ? found.index : html.length;
+}
+
 /* 開始タグと終了タグを前から順に取り出す。
-   タグの終わりは引用符の外側の > で決める。HTML は属性値の中へ > を書け、
-   VFM もそれをそのまま出力するため、> だけを頼りにすると別の位置で切れる */
+   コメントと raw text（script・style など）の中は読み飛ばす。
+   原稿の HTML コメントは生成 HTML へそのまま残るため、中のタグらしき文字列を
+   実在の要素と見なすと、扉を取り違えてつめが黙って消える */
 function* htmlTags(html) {
-  const namePattern = /<(\/?)([a-z][a-z0-9]*)\b/gi;
+  const namePattern = /<!--|<(\/?)([a-z][a-z0-9]*)\b/gi;
   let name;
   while ((name = namePattern.exec(html)) !== null) {
-    let index = namePattern.lastIndex;
-    let quote = '';
-    while (index < html.length) {
-      const char = html[index];
-      if (quote) {
-        if (char === quote) quote = '';
-      } else if (char === '"' || char === "'") {
-        quote = char;
-      } else if (char === '>') {
-        break;
-      }
-      index += 1;
+    if (name[0] === '<!--') {
+      const commentEnd = html.indexOf('-->', namePattern.lastIndex);
+      namePattern.lastIndex = commentEnd === -1 ? html.length : commentEnd + 3;
+      continue;
     }
+
+    const closing = name[1] === '/';
+    const tagName = name[2].toLowerCase();
+    const end = tagEnd(html, namePattern.lastIndex);
     yield {
-      closing: name[1] === '/',
-      name: name[2].toLowerCase(),
+      closing,
+      name: tagName,
       start: name.index,
-      text: html.slice(name.index, index + 1),
+      text: html.slice(name.index, end + 1),
     };
-    namePattern.lastIndex = index + 1;
+
+    namePattern.lastIndex =
+      !closing && RAW_TEXT_ELEMENTS.has(tagName)
+        ? closeTagStart(html, tagName, end + 1)
+        : end + 1;
   }
 }
 
