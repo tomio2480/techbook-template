@@ -23,13 +23,47 @@ const COMMENT_CLOSE = '-->';
 const INLINE_CODE_PATTERN = /(`+)(?:(?!\1)[\s\S])*\1/g;
 const ESCAPED_PATTERN = /\\[\s\S]/g;
 
+/* 行をまたぐコードスパンを閉じるバッククォート組．長さが一致するものだけが
+   閉じ手であり，前後に余分なバッククォートが続くものは閉じ手にならない */
+function closingTicksPattern(length) {
+  return new RegExp('(?<!`)`{' + length + '}(?!`)');
+}
+
+/* 対で取り除いた後に残るバッククォート組．ここから行末までがコードスパンで，
+   閉じ手は後続の行に現れる */
+const UNCLOSED_TICKS_PATTERN = /(?<!`)(`+)(?!`)/;
+
 /**
  * 行から，HTML コメントの区切りとして働かない部分を取り除く．
+ * CommonMark のコードスパンは行をまたげるため，閉じていないバッククォート組の
+ * 長さを行間で持ち回る．開いたままの区間に現れる `<!--` は文字として表示される
+ * だけであり，コメントを開かない．
  * @param {string} line
- * @returns {string}
+ * @param {number|null} openTicks 行頭時点で開いているコードスパンの長さ
+ * @returns {{ text: string, openTicks: number|null }}
  */
-function stripNonMarkup(line) {
-  return line.replace(INLINE_CODE_PATTERN, ' ').replace(ESCAPED_PATTERN, ' ');
+function stripNonMarkup(line, openTicks) {
+  let text = line;
+  let ticks = openTicks;
+
+  if (ticks !== null) {
+    const closing = text.match(closingTicksPattern(ticks));
+    if (closing === null) {
+      return { text: '', openTicks: ticks };
+    }
+    text = text.slice(closing.index + closing[0].length);
+    ticks = null;
+  }
+
+  text = text.replace(INLINE_CODE_PATTERN, ' ');
+
+  const unclosed = text.match(UNCLOSED_TICKS_PATTERN);
+  if (unclosed) {
+    ticks = unclosed[1].length;
+    text = text.slice(0, unclosed.index);
+  }
+
+  return { text: text.replace(ESCAPED_PATTERN, ' '), openTicks: ticks };
 }
 
 /**
@@ -38,17 +72,18 @@ function stripNonMarkup(line) {
  * 区切りを出現順にたどって状態を反転させる．
  * @param {string} line
  * @param {boolean} inComment 行頭時点でコメントの内側か
- * @returns {boolean}
+ * @param {number|null} openTicks 行頭時点で開いているコードスパンの長さ
+ * @returns {{ inComment: boolean, openTicks: number|null }}
  */
-function scanCommentState(line, inComment) {
-  const text = stripNonMarkup(line);
+function scanCommentState(line, inComment, openTicks) {
+  const { text, openTicks: nextTicks } = stripNonMarkup(line, openTicks);
   let state = inComment;
   let index = 0;
   for (;;) {
     const token = state ? COMMENT_CLOSE : COMMENT_OPEN;
     const found = text.indexOf(token, index);
     if (found === -1) {
-      return state;
+      return { inComment: state, openTicks: nextTicks };
     }
     state = !state;
     index = found + token.length;
@@ -67,6 +102,9 @@ function scanCommentState(line, inComment) {
  * コメントの開閉はインラインコードとエスケープを除いた本文で判定する．
  * 区切りが文字として表示されるだけの場合にコメント扱いすると，
  * 本物のマーカーを見落として偽の警告を出すためである．
+ * インラインコードは行をまたぐものも扱う．開いたままのバッククォート組の
+ * 長さを行間で持ち回り，閉じ手が現れるまでを非マークアップとして読む．
+ * 閉じ手が無いまま空行に達したときは，段落が切れるため文字へ戻す．
  * @param {unknown} content 00-preface.md の生テキスト
  * @returns {boolean}
  */
@@ -76,10 +114,13 @@ export function hasErrataMarker(content) {
   }
   let fenceChar = null;
   let inComment = false;
+  let openTicks = null;
   for (const line of content.split('\n')) {
     if (inComment) {
       /* 終了行も HTML ブロックの一部であり，`-->` の後ろは段落にならない */
-      inComment = scanCommentState(line, true);
+      ({ inComment } = scanCommentState(line, true, null));
+      /* コメントの内側にバッククォートがあってもコードスパンにはならない */
+      openTicks = null;
       continue;
     }
     const fenceMatch = line.match(FENCE_PATTERN);
@@ -91,10 +132,16 @@ export function hasErrataMarker(content) {
     if (fenceChar !== null || INDENTED_CODE_PATTERN.test(line)) {
       continue;
     }
-    if (line.trim() === ERRATA_MARKER) {
+    /* 空行は段落を切る．閉じ手の無いバッククォートはそこで文字へ戻る */
+    if (line.trim() === '') {
+      openTicks = null;
+      continue;
+    }
+    /* 行をまたぐコードスパンの内側にある行は，段落にならず注入もされない */
+    if (openTicks === null && line.trim() === ERRATA_MARKER) {
       return true;
     }
-    inComment = scanCommentState(line, false);
+    ({ inComment, openTicks } = scanCommentState(line, false, openTicks));
   }
   return false;
 }

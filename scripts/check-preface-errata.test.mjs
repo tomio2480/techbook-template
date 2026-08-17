@@ -123,6 +123,28 @@ describe('hasErrataMarker: 異常系', () => {
     assert.equal(hasErrataMarker(content), true);
   });
 
+  it('行をまたぐインラインコード内の <!-- はコメント開始とみなさない', () => {
+    const content = ['# まえがき', '', '`foo', '<!-- bar`', '', '{{errata}}', ''].join('\n');
+    assert.equal(hasErrataMarker(content), true);
+  });
+
+  it('行をまたぐインラインコード内のマーカーは対象外', () => {
+    const content = ['# まえがき', '', '`foo', '{{errata}}', 'bar`', ''].join('\n');
+    assert.equal(hasErrataMarker(content), false);
+  });
+
+  it('閉じないコードスパンは空行で切れ，後続のマーカーを検出する', () => {
+    const content = ['# まえがき', '', '`foo', '', '{{errata}}', ''].join('\n');
+    assert.equal(hasErrataMarker(content), true);
+  });
+
+  it('行をまたぐコードスパンの後ろの HTML コメントは従来どおり除外する', () => {
+    const content = ['# まえがき', '', '`foo', 'bar`', '', '<!--', '{{errata}}', '-->', ''].join(
+      '\n'
+    );
+    assert.equal(hasErrataMarker(content), false);
+  });
+
   it('コードブロックの外にある本物のマーカーは検出する（ブロック混在時）', () => {
     const content = [
       '# まえがき',
