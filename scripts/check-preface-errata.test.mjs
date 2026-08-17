@@ -123,6 +123,50 @@ describe('hasErrataMarker: 異常系', () => {
     assert.equal(hasErrataMarker(content), true);
   });
 
+  it('行をまたぐインラインコード内の <!-- はコメント開始とみなさない', () => {
+    const content = ['# まえがき', '', '`foo', 'bar <!-- baz`', '', '{{errata}}', ''].join('\n');
+    assert.equal(hasErrataMarker(content), true);
+  });
+
+  it('行頭の <!-- は段落を切り，コードスパンより先に HTML ブロックを開く', () => {
+    const content = ['# まえがき', '', '`foo', '<!-- bar`', '', '{{errata}}', ''].join('\n');
+    assert.equal(hasErrataMarker(content), false);
+  });
+
+  it('行頭の <!-- で開いたコメントは，空行をまたいでもマーカーを隠す', () => {
+    const content = ['# まえがき', '', '`foo', '<!--', '', '{{errata}}', '-->', ''].join('\n');
+    assert.equal(hasErrataMarker(content), false);
+  });
+
+  it('見出しは段落を切らないため，前の行のコードスパンが続く', () => {
+    /* VFM は空行を挟まない ATX 見出しを段落の一部として扱う．
+       この原稿はマーカーを含む 1 つの段落になり，案内へ置き換わらない */
+    const content = ['# まえがき', '', '`foo', '# first', '{{errata}}', '# second', ''].join('\n');
+    assert.equal(hasErrataMarker(content), false);
+  });
+
+  it('フェンスは段落を切り，閉じ手の無いコードスパンを終わらせる', () => {
+    const content = ['# まえがき', '', '`foo', '```js', 'code', '```', '{{errata}}', ''].join('\n');
+    assert.equal(hasErrataMarker(content), true);
+  });
+
+  it('行をまたぐインラインコード内のマーカーは対象外', () => {
+    const content = ['# まえがき', '', '`foo', '{{errata}}', 'bar`', ''].join('\n');
+    assert.equal(hasErrataMarker(content), false);
+  });
+
+  it('閉じないコードスパンは空行で切れ，後続のマーカーを検出する', () => {
+    const content = ['# まえがき', '', '`foo', '', '{{errata}}', ''].join('\n');
+    assert.equal(hasErrataMarker(content), true);
+  });
+
+  it('行をまたぐコードスパンの後ろの HTML コメントは従来どおり除外する', () => {
+    const content = ['# まえがき', '', '`foo', 'bar`', '', '<!--', '{{errata}}', '-->', ''].join(
+      '\n'
+    );
+    assert.equal(hasErrataMarker(content), false);
+  });
+
   it('コードブロックの外にある本物のマーカーは検出する（ブロック混在時）', () => {
     const content = [
       '# まえがき',
