@@ -419,9 +419,122 @@ test('番号もタイトルも無ければつめを作らない', () => {
   assert.strictEqual(renderTabMark({ number: '', title: '' }), '');
 });
 
-test('つめは body の直後へ入れる', () => {
+test('章の扉があるときは扉の中の末尾へ入れる', () => {
   const result = injectTabMark(CHAPTER_HTML, renderTabMark({ number: '2', title: '応用編' }));
+  assert.match(result, /<\/aside>\n<\/section>/);
+  // 扉より前へ置くと，扉のページが body から始まった扱いになり，
+  // page: chapter-opening が効かなくなる（扉にもつめが出る）
+  assert.doesNotMatch(result, /<body>\n<aside class="print-tab-mark"/);
+  assert.ok(result.indexOf('print-tab-mark') > result.indexOf('chapter-title'));
+});
+
+test('扉と本文の隣接（+ セレクタ）を崩さない', () => {
+  // theme.css の .chapter-opening.no-repeat-heading + section.level1 > h1 は
+  // 扉と本文が隣り合うことを前提にしている
+  const result = injectTabMark(CHAPTER_HTML, renderTabMark({ number: '2', title: '応用編' }));
+  assert.match(result, /<\/section>\n<section class="level1">/);
+});
+
+test('入れ子の要素を持つ扉でも閉じタグを取り違えない', () => {
+  const html = `<html><body>
+<section class="chapter-opening">
+<p class="chapter-number">2</p>
+<section class="chapter-topics"><p>この章で学ぶこと</p></section>
+</section>
+<section class="level1"><h1>応用編</h1></section>
+</body></html>`;
+  const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');
+  assert.match(
+    result,
+    /<\/section>\n<aside class="print-tab-mark"><\/aside>\n<\/section>\n<section class="level1">/
+  );
+});
+
+test('class の引用符が変わっても扉を見つける', () => {
+  const single = `<html><body><section class='chapter-opening'><p>扉</p></section>
+<section class="level1"><h1>応用編</h1></section></body></html>`;
+  const bare = `<html><body><section class=chapter-opening><p>扉</p></section>
+<section class="level1"><h1>応用編</h1></section></body></html>`;
+  for (const html of [single, bare]) {
+    const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');
+    assert.match(result, /<aside class="print-tab-mark"><\/aside>\n<\/section>/);
+    assert.doesNotMatch(result, /<body><aside/);
+  }
+});
+
+test('属性値の中の > をタグの終わりと見なさない', () => {
+  // VFM は属性値の > をそのまま出力する（エスケープしない）
+  const html = `<html><body>
+<section data-label="A > B" class="chapter-opening"><p>扉</p></section>
+<section class="level1"><h1>応用編</h1></section>
+</body></html>`;
+  const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');
+  assert.match(result, /<aside class="print-tab-mark"><\/aside>\n<\/section>/);
+  assert.doesNotMatch(result, /<body>\n<aside/);
+});
+
+test('入れ子の属性値に > があっても閉じタグを取り違えない', () => {
+  const html = `<html><body>
+<section class="chapter-opening">
+<section data-note="a > b"><p>この章で学ぶこと</p></section>
+</section>
+<section class="level1"><h1>応用編</h1></section>
+</body></html>`;
+  const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');
+  assert.match(
+    result,
+    /<\/section>\n<aside class="print-tab-mark"><\/aside>\n<\/section>\n<section class="level1">/
+  );
+});
+
+test('コメントの中のタグを実在の要素と見なさない', () => {
+  // VFM は原稿の HTML コメントをそのまま body の先頭へ残す
+  const html = `<html><body><!-- 例: <section class="chapter-opening"></section> -->
+<section class="chapter-opening"><p>扉</p></section>
+<section class="level1"><h1>応用編</h1></section>
+</body></html>`;
+  const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');
+  assert.match(result, /<p>扉<\/p><aside class="print-tab-mark"><\/aside>\n<\/section>/);
+  // コメントの中へ入れるとつめが黙って消える
+  assert.doesNotMatch(result, /<!--[^]*print-tab-mark[^]*-->/);
+});
+
+test('コメントの中の閉じていないタグで例外にしない', () => {
+  const html = `<html><body>
+<section class="chapter-opening"><!-- <section> --><p>扉</p></section>
+<section class="level1"><h1>応用編</h1></section>
+</body></html>`;
+  const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');
+  assert.match(result, /<p>扉<\/p><aside class="print-tab-mark"><\/aside>\n<\/section>/);
+});
+
+test('script の中のタグを実在の要素と見なさない', () => {
+  const html = `<html><body>
+<script>if (a<b) { const mark = "</section>"; }</script>
+<section class="chapter-opening"><p>扉</p></section>
+</body></html>`;
+  const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');
+  assert.match(result, /<p>扉<\/p><aside class="print-tab-mark"><\/aside>\n<\/section>/);
+});
+
+test('前方一致するだけの別クラスを扉と見なさない', () => {
+  const html = '<html><body>\n<section class="chapter-opening-note"><p>注</p></section>\n</body></html>';
+  const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');
   assert.match(result, /<body>\n<aside class="print-tab-mark"/);
+});
+
+test('扉を持たない原稿では body の直後へ入れる', () => {
+  const html = '<html><body>\n<section class="level1"><h1>付録</h1></section>\n</body></html>';
+  const result = injectTabMark(html, '<aside class="print-tab-mark"></aside>');
+  assert.match(result, /<body>\n<aside class="print-tab-mark"/);
+});
+
+test('扉の閉じタグが無ければ例外を投げる', () => {
+  const html = '<html><body><section class="chapter-opening"><p>扉</p></body></html>';
+  assert.throws(
+    () => injectTabMark(html, '<aside></aside>'),
+    /章の扉.*閉じタグが見つかりません/
+  );
 });
 
 test('つめが空なら HTML を変えない', () => {
