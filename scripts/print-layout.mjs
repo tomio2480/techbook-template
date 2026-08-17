@@ -34,6 +34,9 @@ const MEMO_ENTRY_DIR = 'src/chapters/';
    単一の出所とし、テーマ CSS 側へ区分の一覧を持たせない */
 export const SIDE_CLASS_PREFIX = 'print-side-';
 
+/* 章の扉を表すクラス。章の判定と、つめの置き場所の判定に使う */
+export const CHAPTER_OPENING_CLASS = 'chapter-opening';
+
 /* 小口のつめ。章ごとの位置は生成した CSS が持ち、原稿側はクラスで章を示す */
 export const TAB_CLASS_PREFIX = 'print-tab-';
 export const TAB_STYLESHEET_FILE = 'print-tabs.generated.css';
@@ -106,7 +109,7 @@ export function resolveFillerBefore(bookYaml) {
 /* 章かどうかは扉（chapter-opening）の有無で判定する。
    ファイル名に依存させず、原稿を改名しても判定が壊れないようにする */
 export function hasChapterOpening(source) {
-  return source.includes('chapter-opening');
+  return source.includes(CHAPTER_OPENING_CLASS);
 }
 
 /* 1 つのエントリを開始すべき面を返す。指定が無い区分では null を返す */
@@ -310,12 +313,26 @@ export function renderTabMark({ number, title }) {
   return `<aside class="print-tab-mark" aria-hidden="true">${numberSpan}${titleSpan}</aside>`;
 }
 
-/* 章の扉（.chapter-opening）の閉じタグの直後の位置を返す。扉が無ければ -1 を返す。
+/* 章の扉（.chapter-opening）の開始タグを返す。無ければ null を返す。
+   class の値は引用符あり（" と '）と引用符なしのいずれも受け取る。
+   HTML はどれも妥当な書き方であり、取りこぼすと扉を見失うためである。
+   値は空白で区切ってから突き合わせ、chapter-opening-note のように
+   前方一致するだけの別クラスを扉と見なさない */
+function chapterOpeningTag(html) {
+  const tagPattern =
+    /<([a-z][a-z0-9]*)\b[^>]*?\sclass\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+))[^>]*>/gi;
+  let tag;
+  while ((tag = tagPattern.exec(html)) !== null) {
+    const classes = (tag[2] ?? tag[3] ?? tag[4] ?? '').trim().split(/\s+/);
+    if (classes.includes(CHAPTER_OPENING_CLASS)) return tag;
+  }
+  return null;
+}
+
+/* 章の扉の閉じタグが始まる位置を返す。扉が無ければ -1 を返す。
    同じ名前のタグを数え、入れ子があっても対応する閉じタグを取り違えない */
-function chapterOpeningEnd(html) {
-  const opening = html.match(
-    /<([a-z][a-z0-9]*)\b[^>]*class="[^"]*\bchapter-opening\b[^"]*"[^>]*>/i
-  );
+function chapterOpeningCloseStart(html) {
+  const opening = chapterOpeningTag(html);
   if (!opening) return -1;
 
   const tagPattern = new RegExp(`<(/?)${opening[1]}\\b[^>]*>`, 'gi');
@@ -324,23 +341,26 @@ function chapterOpeningEnd(html) {
   let tag;
   while ((tag = tagPattern.exec(html)) !== null) {
     depth += tag[1] ? -1 : 1;
-    if (depth === 0) return tag.index + tag[0].length;
+    if (depth === 0) return tag.index;
   }
   throw new Error('章の扉（.chapter-opening）の閉じタグが見つかりません。');
 }
 
 /* つめの中身を入れる。print.css の position: running() で流し込みから外れるため、
    組版結果（ページ数）は変わらない。
-   置き場所は章の扉の直後とする。扉より前に置くと、扉のページが body から
+   置き場所は章の扉の中の末尾とする。扉より前に置くと、扉のページが body から
    始まった扱いになり、扉が名乗る page: chapter-opening が効かなくなる。
    扉にもつめが刷られ、扉で消しているはずの柱・ノンブルまで出る。
+   扉の外（直後）へ置くと今度は扉と本文が隣り合わなくなり、
+   theme.css の .chapter-opening.no-repeat-heading + section.level1 > h1 が
+   外れて、隠しているはずの章タイトル帯が戻る。中へ入れれば両方を満たす。
    扉を持たない原稿（付録など）では body の先頭へ入れ、1 ページ目から出す */
 export function injectTabMark(html, markup) {
   if (!markup) return html;
 
-  const openingEnd = chapterOpeningEnd(html);
-  if (openingEnd >= 0) {
-    return `${html.slice(0, openingEnd)}\n${markup}${html.slice(openingEnd)}`;
+  const closeStart = chapterOpeningCloseStart(html);
+  if (closeStart >= 0) {
+    return `${html.slice(0, closeStart)}${markup}\n${html.slice(closeStart)}`;
   }
 
   const bodyTag = html.match(/<body\b[^>]*>/i);
