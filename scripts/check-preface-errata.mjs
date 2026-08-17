@@ -14,6 +14,9 @@ const ERRATA_MARKER = '{{errata}}';
 
 const FENCE_PATTERN = /^ {0,3}(`{3,}|~{3,})/;
 const INDENTED_CODE_PATTERN = /^(?: {4,}|\t)\S/;
+/* 行頭の `<!--` は HTML ブロックの開始であり，段落を途中で切る．
+   直前の行に閉じ手の無いバッククォートがあっても，コードスパンは続かない */
+const COMMENT_BLOCK_START_PATTERN = /^ {0,3}<!--/;
 const COMMENT_OPEN = '<!--';
 const COMMENT_CLOSE = '-->';
 
@@ -104,7 +107,9 @@ function scanCommentState(line, inComment, openTicks) {
  * 本物のマーカーを見落として偽の警告を出すためである．
  * インラインコードは行をまたぐものも扱う．開いたままのバッククォート組の
  * 長さを行間で持ち回り，閉じ手が現れるまでを非マークアップとして読む．
- * 閉じ手が無いまま空行に達したときは，段落が切れるため文字へ戻す．
+ * ただしコードスパンは段落の内側にとどまる．空行・フェンス・行頭の `<!--` は
+ * 段落を切るため，閉じ手が無くてもそこで文字へ戻す．
+ * 段落の切れ目の判断は VFM の出力で確かめた（Issue #112・PR #121）．
  * @param {unknown} content 00-preface.md の生テキスト
  * @returns {boolean}
  */
@@ -127,6 +132,8 @@ export function hasErrataMarker(content) {
     if (fenceMatch) {
       const char = fenceMatch[1][0];
       fenceChar = fenceChar === null ? char : (fenceChar === char ? null : fenceChar);
+      /* フェンスも段落を切る．開いたままのコードスパンはここで終わる */
+      openTicks = null;
       continue;
     }
     if (fenceChar !== null || INDENTED_CODE_PATTERN.test(line)) {
@@ -136,6 +143,9 @@ export function hasErrataMarker(content) {
     if (line.trim() === '') {
       openTicks = null;
       continue;
+    }
+    if (COMMENT_BLOCK_START_PATTERN.test(line)) {
+      openTicks = null;
     }
     /* 行をまたぐコードスパンの内側にある行は，段落にならず注入もされない */
     if (openTicks === null && line.trim() === ERRATA_MARKER) {

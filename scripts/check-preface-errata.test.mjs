@@ -124,7 +124,22 @@ describe('hasErrataMarker: 異常系', () => {
   });
 
   it('行をまたぐインラインコード内の <!-- はコメント開始とみなさない', () => {
+    const content = ['# まえがき', '', '`foo', 'bar <!-- baz`', '', '{{errata}}', ''].join('\n');
+    assert.equal(hasErrataMarker(content), true);
+  });
+
+  it('行頭の <!-- は段落を切り，コードスパンより先に HTML ブロックを開く', () => {
     const content = ['# まえがき', '', '`foo', '<!-- bar`', '', '{{errata}}', ''].join('\n');
+    assert.equal(hasErrataMarker(content), false);
+  });
+
+  it('行頭の <!-- で開いたコメントは，空行をまたいでもマーカーを隠す', () => {
+    const content = ['# まえがき', '', '`foo', '<!--', '', '{{errata}}', '-->', ''].join('\n');
+    assert.equal(hasErrataMarker(content), false);
+  });
+
+  it('フェンスは段落を切り，閉じ手の無いコードスパンを終わらせる', () => {
+    const content = ['# まえがき', '', '`foo', '```js', 'code', '```', '{{errata}}', ''].join('\n');
     assert.equal(hasErrataMarker(content), true);
   });
 
