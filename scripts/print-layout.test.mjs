@@ -329,6 +329,17 @@ test('html 要素が無ければ例外を投げる', () => {
   assert.throws(() => injectHtmlClass('<div></div>', 'print-tab-1'), /html 要素が見つかりません/);
 });
 
+test('すでに同じクラスがあれば足さない', () => {
+  const html = '<!doctype html><html class="print-side-verso" lang="ja"><body></body></html>';
+  const result = injectHtmlClass(html, sideClassName('verso'));
+  assert.strictEqual((result.match(/print-side-verso/g) ?? []).length, 1);
+});
+
+test('前方一致するだけの別クラスは同じものと見なさない', () => {
+  const html = '<!doctype html><html class="print-tab-1" lang="ja"><body></body></html>';
+  assert.match(injectHtmlClass(html, tabClassName(12)), /class="print-tab-1 print-tab-12"/);
+});
+
 test('開始面のクラス名は recto・verso のみ受け付ける', () => {
   assert.strictEqual(sideClassName('recto'), 'print-side-recto');
   assert.strictEqual(sideClassName('verso'), 'print-side-verso');
