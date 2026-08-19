@@ -769,6 +769,22 @@ entry: [
 | 本文フォント | `--font-mincho` | Noto Serif CJK JP |
 | 見出しフォント | `--font-gothic` | Noto Sans CJK JP |
 
+ **段落の字下げ**
+
+和文の慣行に合わせ，段落は原則としてすべて 1 字下げる．
+見出し直後と節の最初の段落で字下げを外す欧文の体裁も選べる．
+原稿の frontmatter で `class` へ `indent-western` を足す．
+既に `class` を持つ原稿では，空白で区切って並べる．
+
+```markdown
+---
+class: preface indent-western
+---
+```
+
+書籍の全体へ効かせるには，各原稿へ同じ指定を書く．
+または `theme.css` の当該指定から `body.indent-western` の限定を外す．
+
 ### 配色（カラーパレット）の変更
 
 装飾の配色は `config/themes/techbook/palette.css` の 2 層トークンで

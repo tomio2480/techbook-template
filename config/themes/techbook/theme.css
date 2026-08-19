@@ -330,11 +330,14 @@ p {
   text-indent: 1em;
 }
 
-p:first-of-type,
-h1 + p,
-h2 + p,
-h3 + p,
-h4 + p {
+/* 和文は段落を原則すべて 1 字下げる．見出し直後だけ字下げを外すのは
+   欧文組版の慣行であり，和文では採らない．欧文の体裁を選ぶ書籍は，
+   原稿の frontmatter で body へ indent-western を付ける */
+body.indent-western p:first-of-type,
+body.indent-western h1 + p,
+body.indent-western h2 + p,
+body.indent-western h3 + p,
+body.indent-western h4 + p {
   text-indent: 0;
 }
 
@@ -658,11 +661,6 @@ hr {
   margin: 0 10pt 6pt 10pt;
 }
 
-.note p:last-child,
-.caution p:last-child {
-  margin-bottom: 0;
-}
-
 /* コラム */
 /* ドッグイヤー地＋縁取り COLUMN ラベル */
 .column {
@@ -719,10 +717,6 @@ hr {
   margin: 0 0 6pt 0;
 }
 
-.column p:last-child {
-  margin-bottom: 0;
-}
-
 /* Tips */
 /* 淡色グラデ帯タイトル＋枠線（note / caution と同系のあしらい）．
    種別は背景アイコン（電球）とタイトルの Tips: 表記が担う． */
@@ -754,10 +748,6 @@ hr {
 .tips p:not(.tips-title) {
   text-indent: 0;
   margin: 0 10pt 6pt 10pt;
-}
-
-.tips p:last-child {
-  margin-bottom: 0;
 }
 
 .caution > ul,
@@ -880,6 +870,23 @@ hr {
   vertical-align: 0.12em;
   margin-left: -1.5em;
   margin-right: 0.6em;
+}
+
+/* 枠の最後の要素は下アキを消す．段落だけでなく，図やリストで終わる枠も
+   同じ体裁にそろえる．段落の指定は .tips p:not(.tips-title) 等と詳細度が
+   並ぶ必要があるため，要素を問わない指定と併記する．
+   枠ごとの指定より後ろへ置き，同じ詳細度の指定に競り勝たせる */
+.note > *:last-child,
+.caution > *:last-child,
+.column > *:last-child,
+.tips > *:last-child,
+.chapter-recap > *:last-child,
+.note p:last-child,
+.caution p:last-child,
+.column p:last-child,
+.tips p:last-child,
+.chapter-recap p:last-child {
+  margin-bottom: 0;
 }
 
 /* 数式 - ブロック数式を含む段落 */
