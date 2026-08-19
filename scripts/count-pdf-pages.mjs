@@ -91,19 +91,24 @@ function skipHexString(text, from) {
   return close === -1 ? text.length : close + 1;
 }
 
-// 配列 `[ … ]` の終わりを返す。配列は入れ子にでき、中にコメントや文字列も置ける。
-// 中身のキーを外側のキーと取り違えないよう、丸ごと読み飛ばすために使う
+// 配列 `[ … ]` の終わりを返す。配列は入れ子にでき、中に辞書・コメント・文字列も
+// 置ける。中身のキーを外側のキーと取り違えないよう、丸ごと読み飛ばすために使う
 function skipArray(text, from) {
   let depth = 0;
   let index = from;
 
   while (index < text.length) {
     const character = text[index];
-    if (character === '%') {
+    const pair = text.slice(index, index + 2);
+    if (pair === '<<' || pair === '>>') {
+      /* 辞書の区切りは 2 文字で 1 つ。1 文字ずつ見ると `<<` の 2 文字目を
+         16 進文字列の始まりと取り違える */
+      index += 2;
+    } else if (character === '%') {
       index = skipComment(text, index);
     } else if (character === '(') {
       index = skipLiteralString(text, index);
-    } else if (character === '<' && text[index + 1] !== '<') {
+    } else if (character === '<') {
       index = skipHexString(text, index);
     } else if (character === '[') {
       depth += 1;

@@ -279,6 +279,13 @@ test('配列の中の /Length をストリームの長さと取り違えない',
   assert.strictEqual(countPdfPages(pdf), 5);
 });
 
+test('配列の中の辞書と文字列をまたいで閉じを見つける', () => {
+  // << の 2 文字目を 16 進文字列の開始とみなすと、文字列の中の > で走査が再開し、
+  // その先の ] を配列の閉じと取り違える
+  const pdf = fakePdfWithDictionary('/Note [ << /Text (> ]) >> ] /Type /ObjStm /N 2 /First 34', 3);
+  assert.strictEqual(countPdfPages(pdf), 3);
+});
+
 test('/Length が間接参照でも endstream からストリームの終わりを決める', () => {
   const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 1 /Kids [] >>';
   const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));
