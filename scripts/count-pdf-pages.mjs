@@ -46,33 +46,75 @@ function findRootPageCounts(text) {
   return counts;
 }
 
-function skipWhitespace(text, from) {
+// PDF は % から行末までをコメントとし、空白と同じ扱いで書ける
+function skipWhitespaceAndComments(text, from) {
   let index = from;
-  while (index < text.length && /\s/.test(text[index])) index += 1;
-  return index;
+  for (;;) {
+    while (index < text.length && /\s/.test(text[index])) index += 1;
+    if (text[index] !== '%') return index;
+    while (index < text.length && text[index] !== '\n' && text[index] !== '\r') index += 1;
+  }
+}
+
+// 文字列リテラル `( … )` の終わりを返す。括弧は入れ子にでき、\ で逃がせる
+function skipLiteralString(text, from) {
+  let depth = 0;
+  for (let index = from; index < text.length; index += 1) {
+    const character = text[index];
+    if (character === '\\') {
+      index += 1;
+    } else if (character === '(') {
+      depth += 1;
+    } else if (character === ')') {
+      depth -= 1;
+      if (depth === 0) return index + 1;
+    }
+  }
+  return text.length;
+}
+
+// 16 進文字列 `< … >` の終わりを返す
+function skipHexString(text, from) {
+  const close = text.indexOf('>', from + 1);
+  return close === -1 ? text.length : close + 1;
 }
 
 // from の位置から辞書を読み、外側のキーだけを残した文字列と終端の位置を返す。
 // `/DecodeParms << /Predictor 1 >>` のように値が辞書のキーがあり、その位置も
 // 決まっていない。入れ子を数えないと外側の終わりを取り違え、入れ子を残すと
-// /Length などのキーを内側から拾う
+// /Length などのキーを内側から拾う。
+// 文字列リテラルと 16 進文字列は中身に << や >> を書けるため、区切りとして数えない
 function readDictionary(text, from) {
   if (text.slice(from, from + 2) !== '<<') return null;
 
   let depth = 0;
   let outer = '';
-  for (let index = from; index < text.length - 1; index += 1) {
+  let index = from;
+
+  while (index < text.length) {
     const pair = text.slice(index, index + 2);
     if (pair === '<<') {
       depth += 1;
-      index += 1;
-    } else if (pair === '>>') {
-      depth -= 1;
-      index += 1;
-      if (depth === 0) return { outer, end: index + 1 };
-    } else if (depth === 1) {
-      outer += text[index];
+      index += 2;
+      continue;
     }
+    if (pair === '>>') {
+      depth -= 1;
+      index += 2;
+      if (depth === 0) return { outer, end: index };
+      continue;
+    }
+
+    const character = text[index];
+    if (character === '(' || character === '<') {
+      const end = character === '(' ? skipLiteralString(text, index) : skipHexString(text, index);
+      if (depth === 1) outer += text.slice(index, end);
+      index = end;
+      continue;
+    }
+
+    if (depth === 1) outer += character;
+    index += 1;
   }
   return null;
 }
@@ -104,7 +146,7 @@ function decodeObjectStreams(text, buffer) {
   const decoded = [];
 
   for (const header of text.matchAll(OBJECT_HEADER_PATTERN)) {
-    const dictStart = skipWhitespace(text, header.index + header[0].length);
+    const dictStart = skipWhitespaceAndComments(text, header.index + header[0].length);
     const dictionary = readDictionary(text, dictStart);
     if (dictionary === null || !dictionary.outer.includes('/ObjStm')) continue;
 

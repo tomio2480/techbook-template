@@ -193,6 +193,39 @@ test('辞書の中の文字列をオブジェクトの見出しと取り違え�
   assert.strictEqual(countPdfPages(pdf), 5);
 });
 
+test('文字列の中の >> を辞書の終わりと取り違えない', () => {
+  // PDF の文字列リテラルには >> をそのまま書ける。区切りとして数えると
+  // 外側の辞書が早く閉じ、/ObjStm を見落とす
+  const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 3 /Kids [] >>';
+  const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));
+  const pdf = Buffer.concat([
+    Buffer.from(
+      '%PDF-1.7\n200 0 obj\n<< /Note (harmless >> text) /Type /ObjStm /N 2 /First 34 ' +
+        `/Length ${compressed.length} >>\nstream\n`,
+      'latin1'
+    ),
+    compressed,
+    Buffer.from('\nendstream\nendobj\n%%EOF', 'latin1'),
+  ]);
+  assert.strictEqual(countPdfPages(pdf), 3);
+});
+
+test('見出しと辞書の間にコメントがあっても読める', () => {
+  // PDF は % から行末までをコメントとし、空白と同じ扱いで書ける
+  const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 8 /Kids [] >>';
+  const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));
+  const pdf = Buffer.concat([
+    Buffer.from(
+      '%PDF-1.7\n200 0 obj\n% 生成器が書いた注記\n<< /Type /ObjStm /N 2 /First 34 ' +
+        `/Length ${compressed.length} >>\nstream\n`,
+      'latin1'
+    ),
+    compressed,
+    Buffer.from('\nendstream\nendobj\n%%EOF', 'latin1'),
+  ]);
+  assert.strictEqual(countPdfPages(pdf), 8);
+});
+
 test('/Length が間接参照でも endstream からストリームの終わりを決める', () => {
   const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 1 /Kids [] >>';
   const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));
