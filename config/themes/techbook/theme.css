@@ -341,6 +341,15 @@ body.indent-western h4 + p {
   text-indent: 0;
 }
 
+/* 本文中で小見出しとして働く太字段落は字下げしない．行頭を版面の左へ
+   そろえ，見出しとして拾えるようにする．
+   p:has(> strong:first-child) による自動判定は使えない．Vivliostyle
+   （@vivliostyle/core 2.39.0）が :has() の中で :first-child を見ず，
+   太字を含むだけの段落まで拾うためである．原稿側で .term の枠を明示する */
+.term > p {
+  text-indent: 0;
+}
+
 /* リスト */
 ul, ol {
   margin: 10pt 0;
@@ -544,6 +553,13 @@ figure {
 figure img {
   max-width: 100%;
   height: auto;
+}
+
+/* 白地を前提に描いた記号図は，コラムや Tips の色地の上へ置くと線が沈む．
+   図の側へ白い矩形を敷く手もあるが，内部余白を詰めた分だけ白帯が細く
+   浮き上がり，かえって目立つ．画像の背景として白を敷く */
+figure img.on-white {
+  background-color: #fff;
 }
 
 figcaption {

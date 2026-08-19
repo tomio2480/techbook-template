@@ -106,6 +106,24 @@ Arduino Uno を使った温度計の部品表
 | ジャンパワイヤ | - | 10 | 20 | 200 | Amazon |
 | **合計** | | | | **4,320** | |
 
+## 太字の小見出し
+
+見出しを立てるほどではない語の説明には，太字で始まる段落を小見出しとして使う．本文と同じく行頭が 1 字下がると見出しとして拾いにくいため，`div` タグへ `class="term"` を指定して字下げを外す．
+
+<div class="term">
+
+ **半値角** 正面の光度に対して半分の明るさになる角度である．
+
+</div>
+
+<div class="term">
+
+ **順方向電圧** LED が光り始める電圧であり，色によって値が異なる．
+
+</div>
+
+`p:has(> strong:first-child)` による自動判定は使えない．Vivliostyle が `:has()` の中で `:first-child` を見ず，太字を含むだけの段落まで拾うためである．
+
 ## コラムと Tips
 
 本文の流れから少し外れた補足情報や，読者に役立つ実践的なヒントを提示するためのブロックを用意している．
@@ -142,6 +160,19 @@ Tips は，読者が作業を効率化するための実践的なアドバイス
 <p>電気回路の基本法則であるオームの法則は以下の式で表される．</p>
 <p><span class="math display" data-math-typeset="true">$$V = IR$$</span></p>
 <p>ここで，<span class="math inline" data-math-typeset="true">\(V\)</span> は電圧，<span class="math inline" data-math-typeset="true">\(I\)</span> は電流，<span class="math inline" data-math-typeset="true">\(R\)</span> は抵抗である．</p>
+</div>
+
+### コラム内の記号図
+
+白地を前提に描いた記号図は，コラムの色地の上へ置くと線が沈む．`img` タグへ `class="on-white"` を指定すると，画像の背景へ白を敷いて線を保てる．
+
+<div class="column">
+<p class="column-title">回路記号の読み方</p>
+<p>回路図は部品の配置ではなく接続の関係を示す．記号の向きは信号の流れに合わせて描く．</p>
+<figure>
+<img class="on-white" src="../assets/diagrams/led-circuit.svg" alt="電源から抵抗を介して LED へつなぎ，接地へ戻る LED 点滅回路の回路図">
+<figcaption>LED 点滅回路の接続</figcaption>
+</figure>
 </div>
 
 ## 注意事項とヒント
