@@ -274,6 +274,11 @@ test('見出しの数値の間にコメントがあっても読める', () => {
   assert.strictEqual(countPdfPages(pdf), 2);
 });
 
+test('配列の中の /Length をストリームの長さと取り違えない', () => {
+  const pdf = fakePdfWithDictionary('/Note [ /Length 1 ] /Type /ObjStm /N 2 /First 34', 5);
+  assert.strictEqual(countPdfPages(pdf), 5);
+});
+
 test('/Length が間接参照でも endstream からストリームの終わりを決める', () => {
   const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 1 /Kids [] >>';
   const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));

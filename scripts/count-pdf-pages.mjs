@@ -91,12 +91,40 @@ function skipHexString(text, from) {
   return close === -1 ? text.length : close + 1;
 }
 
+// 配列 `[ … ]` の終わりを返す。配列は入れ子にでき、中にコメントや文字列も置ける。
+// 中身のキーを外側のキーと取り違えないよう、丸ごと読み飛ばすために使う
+function skipArray(text, from) {
+  let depth = 0;
+  let index = from;
+
+  while (index < text.length) {
+    const character = text[index];
+    if (character === '%') {
+      index = skipComment(text, index);
+    } else if (character === '(') {
+      index = skipLiteralString(text, index);
+    } else if (character === '<' && text[index + 1] !== '<') {
+      index = skipHexString(text, index);
+    } else if (character === '[') {
+      depth += 1;
+      index += 1;
+    } else if (character === ']') {
+      depth -= 1;
+      index += 1;
+      if (depth === 0) return index;
+    } else {
+      index += 1;
+    }
+  }
+  return text.length;
+}
+
 // from の位置から辞書を読み、外側のキーだけを残した文字列と終端の位置を返す。
 // `/DecodeParms << /Predictor 1 >>` のように値が辞書のキーがあり、その位置も
 // 決まっていない。入れ子を数えないと外側の終わりを取り違え、入れ子を残すと
 // /Length などのキーを内側から拾う。
-// コメント・文字列リテラル・16 進文字列は中身に << や >>、/Length といった並びを
-// 書けるため、区切りともキーとも数えない。読み飛ばした跡へは空白を 1 つ置き、
+// コメント・文字列リテラル・16 進文字列・配列は中身に << や >>、/Length といった
+// 並びを書けるため、区切りともキーとも数えない。読み飛ばした跡へは空白を 1 つ置き、
 // 前後のキーがつながらないようにする
 function readDictionary(text, from) {
   if (text.slice(from, from + 2) !== '<<') return null;
@@ -120,9 +148,10 @@ function readDictionary(text, from) {
     }
 
     const character = text[index];
-    if (character === '%' || character === '(' || character === '<') {
+    if (character === '%' || character === '(' || character === '<' || character === '[') {
       if (character === '%') index = skipComment(text, index);
       else if (character === '(') index = skipLiteralString(text, index);
+      else if (character === '[') index = skipArray(text, index);
       else index = skipHexString(text, index);
       if (depth === 1) outer += ' ';
       continue;
