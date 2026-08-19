@@ -21,9 +21,13 @@ import zlib from 'zlib';
 const PAGE_OBJECT_PATTERN = /\/Type\s*\/Page(?![a-zA-Z])/g;
 const PAGE_TREE_PATTERN = /\/Type\s*\/Pages(?![a-zA-Z])/g;
 
-// オブジェクトの見出し（`12 0 obj`）。圧縮データの中にも同じ並びが現れうるが、
-// 辞書に /ObjStm を持つものだけを見るため実害は無い
-const OBJECT_HEADER_PATTERN = /\d+\s+\d+\s+obj\b/g;
+// オブジェクトの見出し（`12 0 obj`）は obj キーワードで捉える。
+// 数値まで含めて照合すると、`200 % 注記\n0 obj` のようにトークンの区切りへ
+// コメントを書いた形を取り逃す。番号は走査に要らない。
+// 圧縮データの中にも同じ並びが現れうるが、辞書に /ObjStm を持つものだけを
+// 見るため実害は無い。endobj は語境界で外れる
+const OBJECT_KEYWORD_PATTERN = /\bobj\b/g;
+const OBJECT_KEYWORD_LENGTH = 'obj'.length;
 
 // stream キーワードは辞書の直後（空白とコメントを挟んでよい）に置かれる。
 // 続く改行はキーワードの一部であり、データはその次のバイトから始まる
@@ -149,15 +153,15 @@ function resolveStreamEnd(text, dict, dataStart) {
 
 // オブジェクトストリーム（/ObjStm）を展開し、走査できる平文として返す。
 // latin1 では 1 文字が 1 バイトに対応するため、文字位置をそのままバイト位置に使える。
-// 走査はオブジェクトの見出し（`N G obj`）を起点にする。stream の直前にある `<<` を
-// 探す方法では、圧縮データの中に現れる同じ並びを本物の辞書と取り違える。
-// 見出しに見える並びは辞書の中の文字列や圧縮データにも現れるため、見出しの位置で
-// オブジェクトを区切らず、見出しごとに辞書として読めるかで判定する
+// 走査は obj キーワードを起点にする。stream の直前にある `<<` を探す方法では、
+// 圧縮データの中に現れる同じ並びを本物の辞書と取り違える。
+// キーワードは辞書の中の文字列や圧縮データにも現れるため、その位置で
+// オブジェクトを区切らず、キーワードごとに辞書として読めるかで判定する
 function decodeObjectStreams(text, buffer) {
   const decoded = [];
 
-  for (const header of text.matchAll(OBJECT_HEADER_PATTERN)) {
-    const dictStart = skipWhitespaceAndComments(text, header.index + header[0].length);
+  for (const keyword of text.matchAll(OBJECT_KEYWORD_PATTERN)) {
+    const dictStart = skipWhitespaceAndComments(text, keyword.index + OBJECT_KEYWORD_LENGTH);
     const dictionary = readDictionary(text, dictStart);
     if (dictionary === null || !dictionary.outer.includes('/ObjStm')) continue;
 

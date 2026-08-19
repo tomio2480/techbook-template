@@ -258,6 +258,22 @@ test('辞書と stream の間にコメントがあっても読める', () => {
   assert.strictEqual(countPdfPages(pdf), 7);
 });
 
+test('見出しの数値の間にコメントがあっても読める', () => {
+  // PDF はトークンの区切りにコメントを書ける。見出しも例外ではない
+  const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 2 /Kids [] >>';
+  const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));
+  const pdf = Buffer.concat([
+    Buffer.from(
+      '%PDF-1.7\n200 % 生成器が書いた注記\n0 obj\n<< /Type /ObjStm /N 2 /First 34 ' +
+        `/Length ${compressed.length} >>\nstream\n`,
+      'latin1'
+    ),
+    compressed,
+    Buffer.from('\nendstream\nendobj\n%%EOF', 'latin1'),
+  ]);
+  assert.strictEqual(countPdfPages(pdf), 2);
+});
+
 test('/Length が間接参照でも endstream からストリームの終わりを決める', () => {
   const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 1 /Kids [] >>';
   const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));
