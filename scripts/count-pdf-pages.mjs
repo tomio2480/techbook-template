@@ -17,9 +17,21 @@
 import fs from 'fs';
 import zlib from 'zlib';
 
+// PDF の空白は NUL・水平タブ・改行・改ページ・復帰・空白の 6 種である。
+// JavaScript の \s は NUL を含まず、逆に PDF が空白としない文字を含む。
+// キーの区切りを見る箇所はすべてこの定義から組み立てる
+const PDF_WHITESPACE = '\\x00\\t\\n\\f\\r ';
+const PDF_WHITESPACE_PATTERN = new RegExp(`[${PDF_WHITESPACE}]`);
+
 // /Type /Page に続く文字が英字なら /Pages・/PageLabels などの別のオブジェクトである
-const PAGE_OBJECT_PATTERN = /\/Type\s*\/Page(?![a-zA-Z])/g;
-const PAGE_TREE_PATTERN = /\/Type\s*\/Pages(?![a-zA-Z])/g;
+const PAGE_OBJECT_PATTERN = new RegExp(`/Type[${PDF_WHITESPACE}]*/Page(?![a-zA-Z])`, 'g');
+const PAGE_TREE_PATTERN = new RegExp(`/Type[${PDF_WHITESPACE}]*/Pages(?![a-zA-Z])`, 'g');
+
+// 総ページ数の宣言。ストリームの長さは、直接の数値と間接参照（`9 0 R`）を見分ける
+const PAGE_COUNT_PATTERN = new RegExp(`/Count[${PDF_WHITESPACE}]+(\\d+)`);
+const STREAM_LENGTH_PATTERN = new RegExp(
+  `/Length[${PDF_WHITESPACE}]+(\\d+)([${PDF_WHITESPACE}]+\\d+[${PDF_WHITESPACE}]+R)?`
+);
 
 // オブジェクトの見出し（`12 0 obj`）は obj キーワードで捉える。
 // 数値まで含めて照合すると、`200 % 注記\n0 obj` のようにトークンの区切りへ
@@ -28,10 +40,6 @@ const PAGE_TREE_PATTERN = /\/Type\s*\/Pages(?![a-zA-Z])/g;
 // 見るため実害は無い。endobj は語境界で外れる
 const OBJECT_KEYWORD_PATTERN = /\bobj\b/g;
 const OBJECT_KEYWORD_LENGTH = 'obj'.length;
-
-// PDF の空白は NUL・水平タブ・改行・改ページ・復帰・空白の 6 種である。
-// JavaScript の \s は NUL を含まず、逆に PDF が空白としない文字を含む
-const PDF_WHITESPACE_PATTERN = /[\x00\t\n\f\r ]/;
 
 // stream キーワードは辞書の直後（空白とコメントを挟んでよい）に置かれる。
 // 続く改行はキーワードの一部であり、データはその次のバイトから始まる
@@ -49,7 +57,7 @@ function findRootPageCounts(text) {
     const dict = text.slice(dictStart, dictEnd);
     if (dict.includes('/Parent')) continue;
 
-    const countMatch = dict.match(/\/Count\s+(\d+)/);
+    const countMatch = dict.match(PAGE_COUNT_PATTERN);
     if (countMatch) counts.push(Number(countMatch[1]));
   }
   return counts;
@@ -177,7 +185,7 @@ function readDictionary(text, from) {
 // データを 1 バイト余分に削って展開に失敗する（Issue #145）。
 // /Length が間接参照（`12 0 R`）の場合はその場で値を引けないため endstream に頼る
 function resolveStreamEnds(text, dict, dataStart) {
-  const lengthMatch = dict.match(/\/Length\s+(\d+)(\s+\d+\s+R)?/);
+  const lengthMatch = dict.match(STREAM_LENGTH_PATTERN);
   if (lengthMatch && !lengthMatch[2]) {
     return [dataStart + Number(lengthMatch[1])];
   }

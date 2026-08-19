@@ -336,6 +336,22 @@ test('コメントの中の obj で同じストリームを二重に数えない
   assert.strictEqual(countPdfPages(pdf), 2);
 });
 
+test('NUL で区切った間接参照の /Length を直接の長さと取り違えない', () => {
+  // /Length 9\x000 R は間接参照である。区切りの NUL を空白と見ないと
+  // 9 バイトだけを展開しようとし、オブジェクトストリームごと落とす
+  const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 5 /Kids [] >>';
+  const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));
+  const pdf = Buffer.concat([
+    Buffer.from(
+      '%PDF-1.7\n200 0 obj\n<< /Type /ObjStm /N 2 /First 34 /Length 9\x000 R >>\nstream\n',
+      'latin1'
+    ),
+    compressed,
+    Buffer.from('\nendstream\nendobj\n%%EOF', 'latin1'),
+  ]);
+  assert.strictEqual(countPdfPages(pdf), 5);
+});
+
 test('/Length が間接参照でも endstream からストリームの終わりを決める', () => {
   const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 1 /Kids [] >>';
   const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));
