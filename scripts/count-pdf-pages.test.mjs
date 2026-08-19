@@ -286,6 +286,39 @@ test('配列の中の辞書と文字列をまたいで閉じを見つける', ()
   assert.strictEqual(countPdfPages(pdf), 3);
 });
 
+test('NUL を空白として扱う', () => {
+  // PDF の空白には NUL（0x00）が含まれる。JavaScript の \s は NUL を含まない
+  const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 4 /Kids [] >>';
+  const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));
+  const pdf = Buffer.concat([
+    Buffer.from(
+      '%PDF-1.7\n200 0 obj\x00<< /Type /ObjStm /N 2 /First 34 ' +
+        `/Length ${compressed.length} >>\x00stream\n`,
+      'latin1'
+    ),
+    compressed,
+    Buffer.from('\nendstream\nendobj\n%%EOF', 'latin1'),
+  ]);
+  assert.strictEqual(countPdfPages(pdf), 4);
+});
+
+test('/Length が間接参照で圧縮データの末尾が CR でも展開できる', () => {
+  // 間接参照ではデータの終わりを断定できない。CR で終わるデータと CRLF の
+  // 区切りを見分けられないため、確からしい順に試す
+  const compressed = deflateEndingWithCarriageReturn(
+    '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 6 /Kids [] >>'
+  );
+  const pdf = Buffer.concat([
+    Buffer.from(
+      '%PDF-1.7\n200 0 obj\n<< /Type /ObjStm /N 2 /First 34 /Length 9 0 R >>\nstream\n',
+      'latin1'
+    ),
+    compressed,
+    Buffer.from('\nendstream\nendobj\n%%EOF', 'latin1'),
+  ]);
+  assert.strictEqual(countPdfPages(pdf), 6);
+});
+
 test('/Length が間接参照でも endstream からストリームの終わりを決める', () => {
   const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 1 /Kids [] >>';
   const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));

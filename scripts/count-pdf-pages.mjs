@@ -29,6 +29,10 @@ const PAGE_TREE_PATTERN = /\/Type\s*\/Pages(?![a-zA-Z])/g;
 const OBJECT_KEYWORD_PATTERN = /\bobj\b/g;
 const OBJECT_KEYWORD_LENGTH = 'obj'.length;
 
+// PDF の空白は NUL・水平タブ・改行・改ページ・復帰・空白の 6 種である。
+// JavaScript の \s は NUL を含まず、逆に PDF が空白としない文字を含む
+const PDF_WHITESPACE_PATTERN = /[\x00\t\n\f\r ]/;
+
 // stream キーワードは辞書の直後（空白とコメントを挟んでよい）に置かれる。
 // 続く改行はキーワードの一部であり、データはその次のバイトから始まる
 const STREAM_KEYWORD_PATTERN = /^stream\r?\n/;
@@ -55,7 +59,7 @@ function findRootPageCounts(text) {
 function skipWhitespaceAndComments(text, from) {
   let index = from;
   for (;;) {
-    while (index < text.length && /\s/.test(text[index])) index += 1;
+    while (index < text.length && PDF_WHITESPACE_PATTERN.test(text[index])) index += 1;
     if (text[index] !== '%') return index;
     index = skipComment(text, index);
   }
@@ -172,17 +176,22 @@ function readDictionary(text, from) {
 // 落とす方法は、圧縮データの最後のバイトが CR（0x0d）のとき CRLF と読み違え、
 // データを 1 バイト余分に削って展開に失敗する（Issue #145）。
 // /Length が間接参照（`12 0 R`）の場合はその場で値を引けないため endstream に頼る
-function resolveStreamEnd(text, dict, dataStart) {
+function resolveStreamEnds(text, dict, dataStart) {
   const lengthMatch = dict.match(/\/Length\s+(\d+)(\s+\d+\s+R)?/);
   if (lengthMatch && !lengthMatch[2]) {
-    return dataStart + Number(lengthMatch[1]);
+    return [dataStart + Number(lengthMatch[1])];
   }
 
+  /* 間接参照ではデータの終わりを断定できない。endstream の直前が区切りの改行か
+     データの一部かを見分けられないため、確からしい順に候補を返す */
   const keywordAt = text.indexOf('endstream', dataStart);
-  if (keywordAt === -1) return null;
-  if (text.slice(keywordAt - 2, keywordAt) === '\r\n') return keywordAt - 2;
-  if (text[keywordAt - 1] === '\n' || text[keywordAt - 1] === '\r') return keywordAt - 1;
-  return keywordAt;
+  if (keywordAt === -1) return [];
+
+  const candidates = [];
+  if (text.slice(keywordAt - 2, keywordAt) === '\r\n') candidates.push(keywordAt - 2);
+  if (text[keywordAt - 1] === '\n' || text[keywordAt - 1] === '\r') candidates.push(keywordAt - 1);
+  candidates.push(keywordAt);
+  return candidates;
 }
 
 // オブジェクトストリーム（/ObjStm）を展開し、走査できる平文として返す。
@@ -206,13 +215,14 @@ function decodeObjectStreams(text, buffer) {
     if (streamMatch === null) continue;
 
     const dataStart = keywordAt + streamMatch[0].length;
-    const dataEnd = resolveStreamEnd(text, dictionary.outer, dataStart);
-    if (dataEnd === null || dataEnd <= dataStart) continue;
-
-    try {
-      decoded.push(zlib.inflateSync(buffer.subarray(dataStart, dataEnd)).toString('latin1'));
-    } catch {
-      /* 対応していない符号化のストリームは走査対象から外す */
+    for (const dataEnd of resolveStreamEnds(text, dictionary.outer, dataStart)) {
+      if (dataEnd <= dataStart) continue;
+      try {
+        decoded.push(zlib.inflateSync(buffer.subarray(dataStart, dataEnd)).toString('latin1'));
+        break;
+      } catch {
+        /* 終わりの候補が外れたか、対応していない符号化である。次の候補を試す */
+      }
     }
   }
 
