@@ -142,6 +142,23 @@ test('圧縮データの末尾が CR でもオブジェクトストリームを�
   assert.strictEqual(countPdfPages(pdf), 6);
 });
 
+test('辞書が入れ子を含むオブジェクトストリームも展開する', () => {
+  // /DecodeParms のように値が辞書のキーがあり、その位置は決まっていない。
+  // 最初の >> を辞書の終わりとみなすと /ObjStm を見落とす
+  const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 7 /Kids [] >>';
+  const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));
+  const pdf = Buffer.concat([
+    Buffer.from(
+      '%PDF-1.7\n200 0 obj\n<< /Filter /FlateDecode /DecodeParms << /Predictor 1 >> ' +
+        `/Type /ObjStm /N 2 /First 34 /Length ${compressed.length} >>\nstream\n`,
+      'latin1'
+    ),
+    compressed,
+    Buffer.from('\nendstream\nendobj\n%%EOF', 'latin1'),
+  ]);
+  assert.strictEqual(countPdfPages(pdf), 7);
+});
+
 test('/Length が間接参照でも endstream からストリームの終わりを決める', () => {
   const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 1 /Kids [] >>';
   const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));

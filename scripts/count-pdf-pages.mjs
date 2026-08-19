@@ -42,6 +42,28 @@ function findRootPageCounts(text) {
   return counts;
 }
 
+// 辞書の終わりは入れ子を数えて探す。`/DecodeParms << /Predictor 1 >>` のように
+// 値が辞書のキーがあり、その位置は決まっていない。最初の >> を終わりとみなすと
+// 外側の辞書を読み損ね、/ObjStm を見落とす
+function findDictionaryEnd(body) {
+  const start = body.indexOf('<<');
+  if (start === -1) return -1;
+
+  let depth = 0;
+  for (let index = start; index < body.length - 1; index += 1) {
+    const pair = body.slice(index, index + 2);
+    if (pair === '<<') {
+      depth += 1;
+      index += 1;
+    } else if (pair === '>>') {
+      depth -= 1;
+      index += 1;
+      if (depth === 0) return index + 1;
+    }
+  }
+  return -1;
+}
+
 // ストリームの終わりは辞書の /Length で決める。endstream を探して直前の改行を
 // 落とす方法は、圧縮データの最後のバイトが CR（0x0d）のとき CRLF と読み違え、
 // データを 1 バイト余分に削って展開に失敗する（Issue #145）。
@@ -72,7 +94,7 @@ function decodeObjectStreams(text, buffer) {
     const bodyEnd = headers[index + 1]?.index ?? text.length;
     const body = text.slice(bodyStart, bodyEnd);
 
-    const dictEnd = body.indexOf('>>');
+    const dictEnd = findDictionaryEnd(body);
     if (dictEnd === -1) continue;
     const dict = body.slice(0, dictEnd);
     if (!dict.includes('/ObjStm')) continue;
