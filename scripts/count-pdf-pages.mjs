@@ -21,6 +21,10 @@ import zlib from 'zlib';
 const PAGE_OBJECT_PATTERN = /\/Type\s*\/Page(?![a-zA-Z])/g;
 const PAGE_TREE_PATTERN = /\/Type\s*\/Pages(?![a-zA-Z])/g;
 
+// オブジェクトの見出し（`12 0 obj`）。圧縮データの中にも同じ並びが現れうるが、
+// 辞書に /ObjStm を持つものだけを見るため実害は無い
+const OBJECT_HEADER_PATTERN = /\d+\s+\d+\s+obj\b/g;
+
 // ページツリーのルート（/Parent を持たないノード）が宣言する総ページ数を集める
 function findRootPageCounts(text) {
   const counts = [];
@@ -38,24 +42,50 @@ function findRootPageCounts(text) {
   return counts;
 }
 
+// ストリームの終わりは辞書の /Length で決める。endstream を探して直前の改行を
+// 落とす方法は、圧縮データの最後のバイトが CR（0x0d）のとき CRLF と読み違え、
+// データを 1 バイト余分に削って展開に失敗する（Issue #145）。
+// /Length が間接参照（`12 0 R`）の場合はその場で値を引けないため endstream に頼る
+function resolveStreamEnd(text, dict, dataStart) {
+  const lengthMatch = dict.match(/\/Length\s+(\d+)(\s+\d+\s+R)?/);
+  if (lengthMatch && !lengthMatch[2]) {
+    return dataStart + Number(lengthMatch[1]);
+  }
+
+  const keywordAt = text.indexOf('endstream', dataStart);
+  if (keywordAt === -1) return null;
+  if (text.slice(keywordAt - 2, keywordAt) === '\r\n') return keywordAt - 2;
+  if (text[keywordAt - 1] === '\n' || text[keywordAt - 1] === '\r') return keywordAt - 1;
+  return keywordAt;
+}
+
 // オブジェクトストリーム（/ObjStm）を展開し、走査できる平文として返す。
-// latin1 では 1 文字が 1 バイトに対応するため、文字位置をそのままバイト位置に使える
+// latin1 では 1 文字が 1 バイトに対応するため、文字位置をそのままバイト位置に使える。
+// 走査はオブジェクトの見出し（`N G obj`）を起点にする。stream の直前にある `<<` を
+// 探す方法では、圧縮データの中に現れる同じ並びを本物の辞書と取り違える
 function decodeObjectStreams(text, buffer) {
   const decoded = [];
-  const streamPattern = /stream\r?\n/g;
+  const headers = [...text.matchAll(OBJECT_HEADER_PATTERN)];
 
-  for (let match; (match = streamPattern.exec(text)) !== null; ) {
-    const dictStart = text.lastIndexOf('<<', match.index);
-    if (dictStart === -1 || !text.slice(dictStart, match.index).includes('/ObjStm')) continue;
+  for (const [index, header] of headers.entries()) {
+    const bodyStart = header.index + header[0].length;
+    const bodyEnd = headers[index + 1]?.index ?? text.length;
+    const body = text.slice(bodyStart, bodyEnd);
 
-    const dataStart = match.index + match[0].length;
-    const dataEnd = text.indexOf('endstream', dataStart);
-    if (dataEnd === -1) continue;
+    const dictEnd = body.indexOf('>>');
+    if (dictEnd === -1) continue;
+    const dict = body.slice(0, dictEnd);
+    if (!dict.includes('/ObjStm')) continue;
+
+    const streamMatch = /stream\r?\n/.exec(body.slice(dictEnd));
+    if (!streamMatch) continue;
+
+    const dataStart = bodyStart + dictEnd + streamMatch.index + streamMatch[0].length;
+    const dataEnd = resolveStreamEnd(text, dict, dataStart);
+    if (dataEnd === null || dataEnd <= dataStart) continue;
 
     try {
-      // endstream の直前にある改行はストリームの一部ではない
-      const data = buffer.subarray(dataStart, dataEnd).toString('latin1').replace(/\r?\n$/, '');
-      decoded.push(zlib.inflateSync(Buffer.from(data, 'latin1')).toString('latin1'));
+      decoded.push(zlib.inflateSync(buffer.subarray(dataStart, dataEnd)).toString('latin1'));
     } catch {
       /* 対応していない符号化のストリームは走査対象から外す */
     }
