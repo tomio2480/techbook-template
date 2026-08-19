@@ -226,6 +226,38 @@ test('見出しと辞書の間にコメントがあっても読める', () => {
   assert.strictEqual(countPdfPages(pdf), 8);
 });
 
+// 辞書のまわりに書ける構文（コメント・文字列）を変えながら同じ中身を組み立てる
+function fakePdfWithDictionary(dictionaryBody, rootCount, { beforeStream = '' } = {}) {
+  const content = `<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count ${rootCount} /Kids [] >>`;
+  const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));
+  return Buffer.concat([
+    Buffer.from(
+      `%PDF-1.7\n200 0 obj\n<< ${dictionaryBody} /Length ${compressed.length} >>` +
+        `${beforeStream}\nstream\n`,
+      'latin1'
+    ),
+    compressed,
+    Buffer.from('\nendstream\nendobj\n%%EOF', 'latin1'),
+  ]);
+}
+
+test('辞書の中のコメントに >> があっても終わりと取り違えない', () => {
+  const pdf = fakePdfWithDictionary('% harmless >>\n /Type /ObjStm /N 2 /First 34', 4);
+  assert.strictEqual(countPdfPages(pdf), 4);
+});
+
+test('文字列の中の /Length をストリームの長さと取り違えない', () => {
+  const pdf = fakePdfWithDictionary('/Note (/Length 1) /Type /ObjStm /N 2 /First 34', 6);
+  assert.strictEqual(countPdfPages(pdf), 6);
+});
+
+test('辞書と stream の間にコメントがあっても読める', () => {
+  const pdf = fakePdfWithDictionary('/Type /ObjStm /N 2 /First 34', 7, {
+    beforeStream: ' % 生成器が書いた注記',
+  });
+  assert.strictEqual(countPdfPages(pdf), 7);
+});
+
 test('/Length が間接参照でも endstream からストリームの終わりを決める', () => {
   const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 1 /Kids [] >>';
   const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));

@@ -25,9 +25,10 @@ const PAGE_TREE_PATTERN = /\/Type\s*\/Pages(?![a-zA-Z])/g;
 // 辞書に /ObjStm を持つものだけを見るため実害は無い
 const OBJECT_HEADER_PATTERN = /\d+\s+\d+\s+obj\b/g;
 
-// stream キーワードは辞書の直後に置かれる。間に空白以外があるものは対象にしない
-const STREAM_KEYWORD_PATTERN = /^\s*stream\r?\n/;
-const STREAM_KEYWORD_WINDOW = 32;
+// stream キーワードは辞書の直後（空白とコメントを挟んでよい）に置かれる。
+// 続く改行はキーワードの一部であり、データはその次のバイトから始まる
+const STREAM_KEYWORD_PATTERN = /^stream\r?\n/;
+const STREAM_KEYWORD_LENGTH = 'stream\r\n'.length;
 
 // ページツリーのルート（/Parent を持たないノード）が宣言する総ページ数を集める
 function findRootPageCounts(text) {
@@ -52,8 +53,15 @@ function skipWhitespaceAndComments(text, from) {
   for (;;) {
     while (index < text.length && /\s/.test(text[index])) index += 1;
     if (text[index] !== '%') return index;
-    while (index < text.length && text[index] !== '\n' && text[index] !== '\r') index += 1;
+    index = skipComment(text, index);
   }
+}
+
+// コメント（% から行末まで）の終わりを返す
+function skipComment(text, from) {
+  let index = from;
+  while (index < text.length && text[index] !== '\n' && text[index] !== '\r') index += 1;
+  return index;
 }
 
 // 文字列リテラル `( … )` の終わりを返す。括弧は入れ子にでき、\ で逃がせる
@@ -83,7 +91,9 @@ function skipHexString(text, from) {
 // `/DecodeParms << /Predictor 1 >>` のように値が辞書のキーがあり、その位置も
 // 決まっていない。入れ子を数えないと外側の終わりを取り違え、入れ子を残すと
 // /Length などのキーを内側から拾う。
-// 文字列リテラルと 16 進文字列は中身に << や >> を書けるため、区切りとして数えない
+// コメント・文字列リテラル・16 進文字列は中身に << や >>、/Length といった並びを
+// 書けるため、区切りともキーとも数えない。読み飛ばした跡へは空白を 1 つ置き、
+// 前後のキーがつながらないようにする
 function readDictionary(text, from) {
   if (text.slice(from, from + 2) !== '<<') return null;
 
@@ -106,10 +116,11 @@ function readDictionary(text, from) {
     }
 
     const character = text[index];
-    if (character === '(' || character === '<') {
-      const end = character === '(' ? skipLiteralString(text, index) : skipHexString(text, index);
-      if (depth === 1) outer += text.slice(index, end);
-      index = end;
+    if (character === '%' || character === '(' || character === '<') {
+      if (character === '%') index = skipComment(text, index);
+      else if (character === '(') index = skipLiteralString(text, index);
+      else index = skipHexString(text, index);
+      if (depth === 1) outer += ' ';
       continue;
     }
 
@@ -150,12 +161,13 @@ function decodeObjectStreams(text, buffer) {
     const dictionary = readDictionary(text, dictStart);
     if (dictionary === null || !dictionary.outer.includes('/ObjStm')) continue;
 
+    const keywordAt = skipWhitespaceAndComments(text, dictionary.end);
     const streamMatch = STREAM_KEYWORD_PATTERN.exec(
-      text.slice(dictionary.end, dictionary.end + STREAM_KEYWORD_WINDOW)
+      text.slice(keywordAt, keywordAt + STREAM_KEYWORD_LENGTH)
     );
     if (streamMatch === null) continue;
 
-    const dataStart = dictionary.end + streamMatch[0].length;
+    const dataStart = keywordAt + streamMatch[0].length;
     const dataEnd = resolveStreamEnd(text, dictionary.outer, dataStart);
     if (dataEnd === null || dataEnd <= dataStart) continue;
 
