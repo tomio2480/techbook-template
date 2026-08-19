@@ -159,6 +159,40 @@ test('辞書が入れ子を含むオブジェクトストリームも展開す�
   assert.strictEqual(countPdfPages(pdf), 7);
 });
 
+test('入れ子の辞書にある /Length をストリームの長さと取り違えない', () => {
+  // 外側の /Length より前に入れ子の /Length があると、そちらを拾って
+  // 1 バイトだけを展開しようとし、オブジェクトストリームごと落とす
+  const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 9 /Kids [] >>';
+  const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));
+  const pdf = Buffer.concat([
+    Buffer.from(
+      '%PDF-1.7\n200 0 obj\n<< /Filter /FlateDecode /DecodeParms << /Length 1 >> ' +
+        `/Type /ObjStm /N 2 /First 34 /Length ${compressed.length} >>\nstream\n`,
+      'latin1'
+    ),
+    compressed,
+    Buffer.from('\nendstream\nendobj\n%%EOF', 'latin1'),
+  ]);
+  assert.strictEqual(countPdfPages(pdf), 9);
+});
+
+test('辞書の中の文字列をオブジェクトの見出しと取り違えない', () => {
+  // (12 0 obj) のような文字列があると、そこを次のオブジェクトの始まりとみなし、
+  // 本物のオブジェクトの辞書が途中で切れる
+  const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 5 /Kids [] >>';
+  const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));
+  const pdf = Buffer.concat([
+    Buffer.from(
+      '%PDF-1.7\n200 0 obj\n<< /Note (12 0 obj) /Type /ObjStm /N 2 /First 34 ' +
+        `/Length ${compressed.length} >>\nstream\n`,
+      'latin1'
+    ),
+    compressed,
+    Buffer.from('\nendstream\nendobj\n%%EOF', 'latin1'),
+  ]);
+  assert.strictEqual(countPdfPages(pdf), 5);
+});
+
 test('/Length が間接参照でも endstream からストリームの終わりを決める', () => {
   const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 1 /Kids [] >>';
   const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));

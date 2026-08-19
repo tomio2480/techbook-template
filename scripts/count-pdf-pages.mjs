@@ -25,6 +25,10 @@ const PAGE_TREE_PATTERN = /\/Type\s*\/Pages(?![a-zA-Z])/g;
 // 辞書に /ObjStm を持つものだけを見るため実害は無い
 const OBJECT_HEADER_PATTERN = /\d+\s+\d+\s+obj\b/g;
 
+// stream キーワードは辞書の直後に置かれる。間に空白以外があるものは対象にしない
+const STREAM_KEYWORD_PATTERN = /^\s*stream\r?\n/;
+const STREAM_KEYWORD_WINDOW = 32;
+
 // ページツリーのルート（/Parent を持たないノード）が宣言する総ページ数を集める
 function findRootPageCounts(text) {
   const counts = [];
@@ -42,26 +46,35 @@ function findRootPageCounts(text) {
   return counts;
 }
 
-// 辞書の終わりは入れ子を数えて探す。`/DecodeParms << /Predictor 1 >>` のように
-// 値が辞書のキーがあり、その位置は決まっていない。最初の >> を終わりとみなすと
-// 外側の辞書を読み損ね、/ObjStm を見落とす
-function findDictionaryEnd(body) {
-  const start = body.indexOf('<<');
-  if (start === -1) return -1;
+function skipWhitespace(text, from) {
+  let index = from;
+  while (index < text.length && /\s/.test(text[index])) index += 1;
+  return index;
+}
+
+// from の位置から辞書を読み、外側のキーだけを残した文字列と終端の位置を返す。
+// `/DecodeParms << /Predictor 1 >>` のように値が辞書のキーがあり、その位置も
+// 決まっていない。入れ子を数えないと外側の終わりを取り違え、入れ子を残すと
+// /Length などのキーを内側から拾う
+function readDictionary(text, from) {
+  if (text.slice(from, from + 2) !== '<<') return null;
 
   let depth = 0;
-  for (let index = start; index < body.length - 1; index += 1) {
-    const pair = body.slice(index, index + 2);
+  let outer = '';
+  for (let index = from; index < text.length - 1; index += 1) {
+    const pair = text.slice(index, index + 2);
     if (pair === '<<') {
       depth += 1;
       index += 1;
     } else if (pair === '>>') {
       depth -= 1;
       index += 1;
-      if (depth === 0) return index + 1;
+      if (depth === 0) return { outer, end: index + 1 };
+    } else if (depth === 1) {
+      outer += text[index];
     }
   }
-  return -1;
+  return null;
 }
 
 // ストリームの終わりは辞書の /Length で決める。endstream を探して直前の改行を
@@ -84,26 +97,24 @@ function resolveStreamEnd(text, dict, dataStart) {
 // オブジェクトストリーム（/ObjStm）を展開し、走査できる平文として返す。
 // latin1 では 1 文字が 1 バイトに対応するため、文字位置をそのままバイト位置に使える。
 // 走査はオブジェクトの見出し（`N G obj`）を起点にする。stream の直前にある `<<` を
-// 探す方法では、圧縮データの中に現れる同じ並びを本物の辞書と取り違える
+// 探す方法では、圧縮データの中に現れる同じ並びを本物の辞書と取り違える。
+// 見出しに見える並びは辞書の中の文字列や圧縮データにも現れるため、見出しの位置で
+// オブジェクトを区切らず、見出しごとに辞書として読めるかで判定する
 function decodeObjectStreams(text, buffer) {
   const decoded = [];
-  const headers = [...text.matchAll(OBJECT_HEADER_PATTERN)];
 
-  for (const [index, header] of headers.entries()) {
-    const bodyStart = header.index + header[0].length;
-    const bodyEnd = headers[index + 1]?.index ?? text.length;
-    const body = text.slice(bodyStart, bodyEnd);
+  for (const header of text.matchAll(OBJECT_HEADER_PATTERN)) {
+    const dictStart = skipWhitespace(text, header.index + header[0].length);
+    const dictionary = readDictionary(text, dictStart);
+    if (dictionary === null || !dictionary.outer.includes('/ObjStm')) continue;
 
-    const dictEnd = findDictionaryEnd(body);
-    if (dictEnd === -1) continue;
-    const dict = body.slice(0, dictEnd);
-    if (!dict.includes('/ObjStm')) continue;
+    const streamMatch = STREAM_KEYWORD_PATTERN.exec(
+      text.slice(dictionary.end, dictionary.end + STREAM_KEYWORD_WINDOW)
+    );
+    if (streamMatch === null) continue;
 
-    const streamMatch = /stream\r?\n/.exec(body.slice(dictEnd));
-    if (!streamMatch) continue;
-
-    const dataStart = bodyStart + dictEnd + streamMatch.index + streamMatch[0].length;
-    const dataEnd = resolveStreamEnd(text, dict, dataStart);
+    const dataStart = dictionary.end + streamMatch[0].length;
+    const dataEnd = resolveStreamEnd(text, dictionary.outer, dataStart);
     if (dataEnd === null || dataEnd <= dataStart) continue;
 
     try {
