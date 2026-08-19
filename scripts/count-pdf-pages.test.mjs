@@ -319,6 +319,23 @@ test('/Length が間接参照で圧縮データの末尾が CR でも展開で�
   assert.strictEqual(countPdfPages(pdf), 6);
 });
 
+test('コメントの中の obj で同じストリームを二重に数えない', () => {
+  // 見出しの後ろのコメントが obj で終わると、走査がその位置も起点として拾い、
+  // 同じ辞書へたどり着く。ルートの宣言が無い PDF では数え上げが倍になる
+  const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Page /Parent 100 0 R >>';
+  const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));
+  const pdf = Buffer.concat([
+    Buffer.from(
+      '%PDF-1.7\n200 0 obj % obj\n<< /Type /ObjStm /N 2 /First 34 ' +
+        `/Length ${compressed.length} >>\nstream\n`,
+      'latin1'
+    ),
+    compressed,
+    Buffer.from('\nendstream\nendobj\n%%EOF', 'latin1'),
+  ]);
+  assert.strictEqual(countPdfPages(pdf), 2);
+});
+
 test('/Length が間接参照でも endstream からストリームの終わりを決める', () => {
   const content = '<< /Type /Page /Parent 100 0 R >>\n<< /Type /Pages /Count 1 /Kids [] >>';
   const compressed = zlib.deflateSync(Buffer.from(content, 'latin1'));

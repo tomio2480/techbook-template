@@ -202,6 +202,9 @@ function resolveStreamEnds(text, dict, dataStart) {
 // オブジェクトを区切らず、キーワードごとに辞書として読めるかで判定する
 function decodeObjectStreams(text, buffer) {
   const decoded = [];
+  /* 同じストリームへ複数の起点からたどり着くことがある。見出しの後ろの
+     コメントが obj で終わる形が例であり、二重に数えないようデータの位置で覚える */
+  const seen = new Set();
 
   for (const keyword of text.matchAll(OBJECT_KEYWORD_PATTERN)) {
     const dictStart = skipWhitespaceAndComments(text, keyword.index + OBJECT_KEYWORD_LENGTH);
@@ -215,6 +218,9 @@ function decodeObjectStreams(text, buffer) {
     if (streamMatch === null) continue;
 
     const dataStart = keywordAt + streamMatch[0].length;
+    if (seen.has(dataStart)) continue;
+    seen.add(dataStart);
+
     for (const dataEnd of resolveStreamEnds(text, dictionary.outer, dataStart)) {
       if (dataEnd <= dataStart) continue;
       try {
