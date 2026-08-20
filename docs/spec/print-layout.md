@@ -178,6 +178,7 @@
   小口のつめも塗り足しの端まで広げる．Issue #138 を参照．
 - 2026-08-20: 要件追加．章扉を持たない区分にもつめを付けられるようにした．
   派生リポジトリでは付録が扉を持たず，つめが出なかったためである．
-  指定は `print.section_tabs` で行う．派生リポジトリ
-  （`techbook-introduction-to-electronics-basic-led` PR #235）の
-  先行実装を上流へ引き取った形である．Issue #113 を参照．
+  指定は `print.section_tabs` で行う．
+  派生リポジトリの先行実装を，そのまま上流へ引き取った形である．
+  Issue #113 と `techbook-introduction-to-electronics-basic-led` の
+  PR #235 を参照．
