@@ -410,14 +410,41 @@ test('章番号と章タイトルを扉の記述から取り出す', () => {
 });
 
 test('入れ子のタグを含む章タイトルからタグを取り除く', () => {
-  const html = '<html><body><p class="chapter-title">応<b>用</b>編</p></body></html>';
+  const html =
+    '<html><body><section class="chapter-opening">' +
+    '<p class="chapter-title">応<b>用</b>編</p></section></body></html>';
   assert.strictEqual(extractChapterLabel(html).title, '応用編');
 });
 
 test('タグが再構成される並びでもタグを残さない', () => {
   // 単発の置換では断片が結合して新たなタグになりうる（CodeQL の指摘）
-  const html = '<html><body><p class="chapter-title">応<scr<b>ipt>用編</p></body></html>';
+  const html =
+    '<html><body><section class="chapter-opening">' +
+    '<p class="chapter-title">応<scr<b>ipt>用編</p></section></body></html>';
   assert.doesNotMatch(extractChapterLabel(html).title, /<[a-z]/i);
+});
+
+test('扉が無ければ，扉のクラスを持つ要素があっても出所にしない', () => {
+  /* 出所は扉の記述に限る（docs/spec/print-layout.md）．
+     扉を持たない区分で本文の要素を拾うと，section_tabs の指定値を上書きする */
+  const html = `<html><body>
+<section class="level1"><h1 id="x">付録: 参考資料</h1>
+<p class="chapter-number">2</p>
+<p class="chapter-title">応用編</p>
+</section>
+</body></html>`;
+  assert.deepStrictEqual(extractChapterLabel(html), { number: '', title: '付録: 参考資料' });
+});
+
+test('扉の外にある同じクラスの要素は，扉の記述より先にあっても使わない', () => {
+  const html = `<html><body>
+<p class="chapter-number">9</p>
+<section class="chapter-opening">
+<p class="chapter-number">2</p>
+<p class="chapter-title">応用編</p>
+</section>
+</body></html>`;
+  assert.deepStrictEqual(extractChapterLabel(html), { number: '2', title: '応用編' });
 });
 
 test('扉にタイトルが無ければ h1 から補う', () => {

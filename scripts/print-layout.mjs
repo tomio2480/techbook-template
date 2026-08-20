@@ -351,10 +351,18 @@ function textOfClass(html, className) {
   return firstElementText(html, tag => pattern.test(tag.text));
 }
 
+/* 番号とタイトルの出所は扉の記述に限る。扉の外にある同じクラスの要素は使わない。
+   扉を持たない区分（section_tabs で加えた付録など）で本文の要素を拾うと、
+   config/book.yaml が指定した番号を黙って上書きする */
 export function extractChapterLabel(html) {
+  const range = chapterOpeningRange(html);
+  const heading = firstElementText(html, tag => tag.name === 'h1');
+  if (!range) return { number: '', title: heading };
+
+  const opening = html.slice(range.from, range.closeStart);
   return {
-    number: textOfClass(html, 'chapter-number'),
-    title: textOfClass(html, 'chapter-title') || firstElementText(html, tag => tag.name === 'h1'),
+    number: textOfClass(opening, 'chapter-number'),
+    title: textOfClass(opening, 'chapter-title') || heading,
   };
 }
 
@@ -442,30 +450,38 @@ function classNames(tag) {
   return (attribute[1] ?? attribute[2] ?? attribute[3] ?? '').trim().split(/\s+/);
 }
 
-/* 章の扉（.chapter-opening）の閉じタグが始まる位置を返す。扉が無ければ -1 を返す。
+/* 章の扉（.chapter-opening）の中身の範囲を返す。扉が無ければ null を返す。
    クラスは空白で区切ってから突き合わせ、chapter-opening-note のように
    前方一致するだけの別クラスを扉と見なさない。
    閉じタグは同じ名前のタグを数えて求め、入れ子があっても取り違えない */
-function chapterOpeningCloseStart(html) {
-  let openingName = '';
+function chapterOpeningRange(html) {
+  let opening = null;
   let depth = 0;
   for (const tag of htmlTags(html)) {
-    if (!openingName) {
+    if (!opening) {
       if (!tag.closing && classNames(tag).includes(CHAPTER_OPENING_CLASS)) {
-        openingName = tag.name;
+        opening = tag;
         depth = 1;
       }
       continue;
     }
-    if (tag.name !== openingName) continue;
+    if (tag.name !== opening.name) continue;
     depth += tag.closing ? -1 : 1;
-    if (depth === 0) return tag.start;
+    if (depth === 0) {
+      return { from: opening.start + opening.text.length, closeStart: tag.start };
+    }
   }
 
-  if (openingName) {
+  if (opening) {
     throw new Error('章の扉（.chapter-opening）の閉じタグが見つかりません。');
   }
-  return -1;
+  return null;
+}
+
+/* 章の扉の閉じタグが始まる位置を返す。扉が無ければ -1 を返す */
+function chapterOpeningCloseStart(html) {
+  const range = chapterOpeningRange(html);
+  return range ? range.closeStart : -1;
 }
 
 /* つめの中身を入れる。print.css の position: running() で流し込みから外れるため、
