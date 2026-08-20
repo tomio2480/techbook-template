@@ -152,6 +152,20 @@ describe('parseReferenceHref', () => {
   it('ディレクトリを含む参照では file を null にする', () => {
     assert.deepEqual(parseReferenceHref('../other/01.html#idx-a-1'), { file: null, id: 'idx-a-1' });
   });
+
+  it('百分率符号化された参照を原稿の綴りへ戻す', () => {
+    assert.deepEqual(parseReferenceHref('01-introduction.html#idx-%E6%95%B0%E5%BC%8F'), {
+      file: '01-introduction.html',
+      id: 'idx-数式',
+    });
+  });
+
+  it('壊れた符号化はそのままの文字列として扱う', () => {
+    assert.deepEqual(parseReferenceHref('01-introduction.html#idx-%E6'), {
+      file: '01-introduction.html',
+      id: 'idx-%E6',
+    });
+  });
 });
 
 describe('crossCheck', () => {

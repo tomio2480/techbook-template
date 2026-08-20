@@ -147,6 +147,17 @@ export async function collectReferences(markdown) {
   return (await scanMarkdown(markdown)).references;
 }
 
+/* 百分率符号化された参照を原稿の綴りへ戻す．編集器が和文の id を
+   符号化して書き出す場合があり，そのままでは原稿と照合できない．
+   壊れた符号化はそのままの文字列として扱い，検査を落とさない */
+function decodeComponent(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 /**
  * 参照の `href` を出力 HTML のファイル名とアンカーの id へ分ける．
  * 生成 HTML は同じディレクトリへ並ぶため，ディレクトリを含む参照は
@@ -159,8 +170,8 @@ export function parseReferenceHref(href) {
     return { file: null, id: null };
   }
   const hashIndex = href.indexOf('#');
-  const filePart = hashIndex === -1 ? href : href.slice(0, hashIndex);
-  const idPart = hashIndex === -1 ? '' : href.slice(hashIndex + 1);
+  const filePart = decodeComponent(hashIndex === -1 ? href : href.slice(0, hashIndex));
+  const idPart = decodeComponent(hashIndex === -1 ? '' : href.slice(hashIndex + 1));
   const hasDirectory = filePart.includes('/') || filePart.includes('\\');
   return {
     file: filePart !== '' && !hasDirectory ? filePart : null,
