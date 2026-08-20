@@ -60,7 +60,8 @@
 
 - 索引の原稿を `src/chapters/99-index.md` へ置く．
   `vivliostyle.config.js` の `entry` では，あとがきと奥付の間へ並べる．
-- frontmatter で `class: book-index` を与える．
+- frontmatter で `class: index` を与える．
+  既存の原稿（`class: afterword` など）と同じく接頭辞は付けない．
 - **ページ番号を原稿へ書かない．** 参照は `href` だけを持つ．
 - 索引を持たない書籍は，原稿を消して `entry` から外せば足りる．
   索引が無い状態でも，骨組みの生成・参照の検査・ビルドが通る．
@@ -152,3 +153,5 @@
   原稿は執筆者のものであり，区分を変えても仕組みは壊れない．
   原稿のファイル名は Issue の案（`98-index.md`）から `99-index.md` へ改めた．
   既存の `98-afterword.md` と番号が重なるためである．
+  frontmatter の値も Issue の案（`book-index`）から `index` へ改めた．
+  既存の原稿が接頭辞を持たないためである．
