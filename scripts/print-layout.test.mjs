@@ -566,6 +566,18 @@ test('section_tabs: 未指定なら空で，指定はキーと値の組として
   );
 });
 
+test('section_tabs: キーが空文字なら例外を投げる', () => {
+  /* entry.includes('') は全エントリに一致し，表紙・目次・奥付までつめの対象になる */
+  assert.throws(
+    () => resolveSectionTabs({ print: { section_tabs: { '': 'X' } } }),
+    /キーは空でない文字列/
+  );
+  assert.throws(
+    () => resolveSectionTabs({ print: { section_tabs: { '   ': 'X' } } }),
+    /キーは空でない文字列/
+  );
+});
+
 test('section_tabs: 値が空文字や文字列以外，または配列なら例外を投げる', () => {
   assert.throws(
     () => resolveSectionTabs({ print: { section_tabs: { '97-appendix': '' } } }),

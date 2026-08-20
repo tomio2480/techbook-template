@@ -123,6 +123,13 @@ export function resolveSectionTabs(bookYaml) {
   }
   const patterns = Object.entries(configured);
   for (const [pattern, number] of patterns) {
+    /* 空のキーは entry.includes('') で全エントリに一致し，
+       表紙・目次・奥付まで含めてつめの対象になってしまう */
+    if (pattern.trim() === '') {
+      throw new Error(
+        'config/book.yaml の print.section_tabs のキーは空でない文字列で指定してください。'
+      );
+    }
     if (typeof number !== 'string' || number.trim() === '') {
       throw new Error(
         `config/book.yaml の print.section_tabs["${pattern}"] は空でない文字列で指定してください。`
