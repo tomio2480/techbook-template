@@ -49,6 +49,7 @@ jobs:
           npm run check:errata
           npm run check:isdn
           npm run check:preface
+          npm run check:index
 
   # PDF の生成は明示的に指示したときだけ行う．
   # 手動実行するか，PR へ build-pdf ラベルを付ける．
