@@ -4,6 +4,7 @@ import {
   DOC_START_MARKER,
   MEMO_FILE_PATTERN,
   calcFillerPages,
+  escapeHtml,
   extractChapterLabel,
   hasChapterOpening,
   injectHtmlClass,
@@ -21,6 +22,7 @@ import {
   sideClassName,
   sideForEntry,
   tabClassName,
+  tabLabelFor,
   tabNumberForEntry,
   toDocumentPageCounts,
 } from './print-layout.mjs';
@@ -480,30 +482,62 @@ test('つめには章番号とタイトルを並べる', () => {
   assert.match(markup, /aria-hidden="true"/);
 });
 
-test('生成 HTML から取り出した実体参照は素の文字へ戻す', () => {
-  /* 戻さないと，差し込み直前のエスケープで &amp;amp; と二重に符号化される */
-  const html = '<html><body><h1 id="x">R&amp;D &#39;24 &lt;要点&gt;</h1></body></html>';
-  assert.strictEqual(extractChapterLabel(html).title, "R&D '24 <要点>");
+test('生成 HTML から取り出したテキストは実体参照のまま返す', () => {
+  /* 取り出し元は HTML であり、実体参照は既に HTML として正しい形である．
+     戻して入れ直すと，扱える実体の範囲を絞った分だけ誌面が壊れる */
+  const html = '<html><body><h1 id="x">R&amp;D &copy; &nbsp;要点</h1></body></html>';
+  assert.strictEqual(extractChapterLabel(html).title, 'R&amp;D &copy; &nbsp;要点');
 });
 
-test('実体参照を含む章タイトルが誌面へ素の文字で出る', () => {
+test('実体参照を含む章タイトルは二重に符号化しない', () => {
   const html = '<html><body><h1 id="x">R&amp;D</h1></body></html>';
   const markup = renderTabMark(extractChapterLabel(html));
   assert.match(markup, /class="print-tab-mark-title">R&amp;D</);
   assert.doesNotMatch(markup, /&amp;amp;/);
 });
 
-test('つめへ差し込む前に HTML の特殊文字を実体参照へ直す', () => {
-  /* 番号は config/book.yaml 由来で素通しになる．タグとして解釈させない */
-  const markup = renderTabMark({ number: '<X>', title: '図表 & 数式' });
-  assert.match(markup, /class="print-tab-mark-number">&lt;X&gt;</);
-  assert.match(markup, /class="print-tab-mark-title">図表 &amp; 数式</);
-  assert.doesNotMatch(markup, /<X>/);
+test('escapeHtml は素のテキストを HTML へ差し込める形へ直す', () => {
+  assert.strictEqual(escapeHtml('<X>'), '&lt;X&gt;');
+  assert.strictEqual(escapeHtml('図表 & 数式'), '図表 &amp; 数式');
+  assert.strictEqual(escapeHtml('"A"'), '&quot;A&quot;');
 });
 
-test('閉じタグらしき指定でつめの体裁を壊さない', () => {
-  const markup = renderTabMark({ number: '</span><script>', title: '付録' });
-  assert.doesNotMatch(markup, /<script>/);
+// --- tabLabelFor ---
+
+test('tabLabelFor: 扉があれば扉の番号を使い，指定値を無視する', () => {
+  const html = `<html><body><section class="chapter-opening">
+<p class="chapter-number">2</p><p class="chapter-title">応用編</p>
+</section></body></html>`;
+  assert.deepStrictEqual(tabLabelFor('src/chapters/02-advanced.html', html, [['02-', 'X']]), {
+    number: '2',
+    title: '応用編',
+  });
+});
+
+test('tabLabelFor: 扉が無ければ指定値と h1 を使う', () => {
+  const html = '<html><body><h1 id="x">付録: 参考資料</h1></body></html>';
+  assert.deepStrictEqual(tabLabelFor('src/chapters/97-appendix.html', html, [['97-appendix', 'X']]), {
+    number: 'X',
+    title: '付録: 参考資料',
+  });
+});
+
+test('tabLabelFor: 指定が無ければ番号は空になる', () => {
+  const html = '<html><body><h1 id="x">あとがき</h1></body></html>';
+  assert.deepStrictEqual(tabLabelFor('src/chapters/98-afterword.html', html, []), {
+    number: '',
+    title: 'あとがき',
+  });
+});
+
+test('tabLabelFor: 指定値は素のテキストとして HTML へ直してから返す', () => {
+  /* config/book.yaml の値だけが素通しの経路である．タグとして解釈させない */
+  const html = '<html><body><h1 id="x">付録</h1></body></html>';
+  const label = tabLabelFor('src/chapters/97-appendix.html', html, [['97-appendix', '<X>']]);
+  assert.strictEqual(label.number, '&lt;X&gt;');
+
+  const markup = renderTabMark(label);
+  assert.doesNotMatch(markup, /<X>/);
   assert.strictEqual(markup.match(/<\/span>/g).length, 2);
 });
 

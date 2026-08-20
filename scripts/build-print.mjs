@@ -29,7 +29,6 @@ import {
   MEMO_FILE_PATTERN,
   PAGE_SEPARATOR,
   TAB_STYLESHEET_FILE,
-  extractChapterLabel,
   injectHtmlClass,
   injectTabMark,
   isTabTarget,
@@ -45,7 +44,7 @@ import {
   sideClassName,
   sideForEntry,
   tabClassName,
-  tabNumberForEntry,
+  tabLabelFor,
   toDocumentPageCounts,
 } from './print-layout.mjs';
 import { verifyNoIndexHtml, verifyConfigUsesMarkdown } from './verify-build.mjs';
@@ -237,9 +236,7 @@ function applyPrintMarkup(entries, sources, sides, sectionTabs = []) {
       html = injectHtmlClass(html, sideClassName(side));
     }
     if (tabOrder > 0) {
-      const label = extractChapterLabel(html);
-      const number = label.number || tabNumberForEntry(entry, sectionTabs) || '';
-      html = injectTabMark(html, renderTabMark({ ...label, number }));
+      html = injectTabMark(html, renderTabMark(tabLabelFor(entry, html, sectionTabs)));
       html = injectHtmlClass(html, tabClassName(tabOrder));
     }
     fs.writeFileSync(filePath, html, 'utf-8');

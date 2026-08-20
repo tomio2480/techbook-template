@@ -327,29 +327,6 @@ export function injectHtmlClass(html, className) {
 /* 生成 HTML から、章の扉に書かれた章番号と章タイトルを取り出す。
    番号・タイトルとも扉の記述（.chapter-number・.chapter-title）を出所とし、
    つめと扉で表示が食い違わないようにする */
-const NAMED_ENTITIES = new Map([
-  ['&amp;', '&'],
-  ['&lt;', '<'],
-  ['&gt;', '>'],
-  ['&quot;', '"'],
-  ['&apos;', "'"],
-]);
-
-/* 生成 HTML から取り出したテキストは実体参照のまま残る。
-   差し込み直前の escapeHtml が二重に符号化しないよう、ここで素の文字へ戻す。
-   1 度の走査で置き換え、&amp;lt; を < まで戻してしまわないようにする */
-function decodeHtmlEntities(text) {
-  return text.replace(/&(?:amp|lt|gt|quot|apos|#\d+|#[xX][0-9a-fA-F]+);/g, entity => {
-    const named = NAMED_ENTITIES.get(entity);
-    if (named) return named;
-
-    const hex = entity[2] === 'x' || entity[2] === 'X';
-    const code = parseInt(entity.slice(hex ? 3 : 2, -1), hex ? 16 : 10);
-    if (!Number.isInteger(code) || code < 0 || code > 0x10ffff) return entity;
-    return String.fromCodePoint(code);
-  });
-}
-
 /* 条件に合う最初の要素の中身を返す。無ければ空文字を返す。
    走査は htmlTags に任せ、コメントと raw text の中は読み飛ばす。
    正規表現で直接拾うと、原稿へ残した書き換え前の見出しのように、
@@ -363,7 +340,9 @@ function firstElementText(html, matches) {
     }
     if (tag.closing && tag.name === opening.name) {
       const from = opening.start + opening.text.length;
-      return decodeHtmlEntities(stripHtmlTags(html.slice(from, tag.start))).trim();
+      /* 取り出すのは HTML のテキストである。実体参照は既に HTML として
+         正しい形であり、戻さずそのまま差し込む */
+      return stripHtmlTags(html.slice(from, tag.start)).trim();
     }
   }
   return '';
@@ -389,10 +368,10 @@ export function extractChapterLabel(html) {
   };
 }
 
-/* 生成 HTML へ差し込む前に、テキストを HTML として安全な形へ直す。
-   つめの番号は config/book.yaml の値がそのまま来る。タグとして解釈させない。
-   タイトルも stripHtmlTags を通っただけで、閉じない < は残りうる */
-function escapeHtml(text) {
+/* 素のテキストを、HTML へ差し込める形へ直す。
+   対象は config/book.yaml のように HTML を経ていない出所の値に限る。
+   生成 HTML から取り出した値へ当てると、実体参照が二重に符号化される */
+export function escapeHtml(text) {
   return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -400,7 +379,20 @@ function escapeHtml(text) {
     .replace(/"/g, '&quot;');
 }
 
+/* つめへ出す番号とタイトルを決める。
+   番号は扉があれば扉を優先し、無いときだけ config/book.yaml の指定値を使う。
+   指定値だけが HTML を経ていない出所であり、ここで差し込める形へ直す */
+export function tabLabelFor(entry, html, sectionTabs = []) {
+  const label = extractChapterLabel(html);
+  const configured = tabNumberForEntry(entry, sectionTabs);
+  return {
+    number: label.number || (configured ? escapeHtml(configured) : ''),
+    title: label.title,
+  };
+}
+
 /* つめの中身を組み立てる。体裁は print.css が持つ。
+   受け取るのは HTML のテキストであり、ここでは符号化を挟まない。
    章番号が数字のときだけ「第」「章」を添える（付録の A などには添えない）。
    読み上げ対象からは外す。扉と同じ内容が重複して読まれるためである */
 export function renderTabMark({ number, title }) {
@@ -408,11 +400,9 @@ export function renderTabMark({ number, title }) {
 
   const numbered = /^\d+$/.test(number) ? ' is-numbered' : '';
   const numberSpan = number
-    ? `<span class="print-tab-mark-number${numbered}">${escapeHtml(number)}</span>`
+    ? `<span class="print-tab-mark-number${numbered}">${number}</span>`
     : '';
-  const titleSpan = title
-    ? `<span class="print-tab-mark-title">${escapeHtml(title)}</span>`
-    : '';
+  const titleSpan = title ? `<span class="print-tab-mark-title">${title}</span>` : '';
 
   return `<aside class="print-tab-mark" aria-hidden="true">${numberSpan}${titleSpan}</aside>`;
 }
