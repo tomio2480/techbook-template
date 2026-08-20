@@ -361,6 +361,14 @@ li {
   break-inside: avoid;
 }
 
+/* 番号付きリストは手順を表すことが多く，途中で改ページされると
+   読み手が前後を行き来することになるため，まとまりを保つ．
+   箇条書き（ul）は項目単位で読めるものが多いため効かせない．
+   目次は下の nav[role="doc-toc"] ol で除外する */
+ol {
+  break-inside: avoid;
+}
+
 /* リンク */
 a {
   color: var(--color-link);
@@ -981,6 +989,9 @@ nav[role="doc-toc"] ol,
 nav#toc ol {
   list-style: none;
   padding-left: 0;
+  /* 目次は章ごとの入れ子リストであり，ol のまとまりを保つ指定が効くと
+     章の途中で送られ，ページ末へ大きな空きが出る．目次では効かせない */
+  break-inside: auto;
 }
 
 nav[role="doc-toc"] li,
