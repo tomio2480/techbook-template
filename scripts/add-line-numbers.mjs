@@ -362,15 +362,17 @@ function localDocumentName(href) {
   return /\.html$/i.test(name) ? name : null;
 }
 
-// 目次の HTML に現れる原稿のファイル名を集める。
-// index.html の nav には entry の全原稿が並ぶ（表紙・目次・奥付を含む）。
-// 補助ページを取り除く前に呼ぶこと。取り除いた後では本に含まれる原稿を
-// 落としたものになり、手動追加の項目を誤って消してしまう。
-export function collectDocumentNames(tocInner) {
+// vivliostyle.config.js の entry から、本に含まれる原稿を出力 HTML の名前で集める。
+// 生成された目次（index.html の nav）ではなく設定を出所にする。
+// nav の作られ方は Vivliostyle の実装しだいであり、そこから引くと
+// 載らない原稿が出たときに手動追加の項目を消してしまう。
+// 追跡ファイルである toc.html を壊す向きの間違いは避ける。
+// 設定の書き換え（updateConfig）より前に呼ぶが、.html へ書き換えた後の
+// 設定を渡しても同じ結果になる。
+export function collectEntryDocumentNames(configText) {
   const names = new Set();
-  for (const match of tocInner.matchAll(/href="([^"]+)"/g)) {
-    const name = localDocumentName(match[1]);
-    if (name !== null) names.add(name);
+  for (const match of configText.matchAll(/['"]src\/chapters\/([^'"]+)['"]/g)) {
+    names.add(match[1].replace(/\.md$/i, '.html'));
   }
   return names;
 }
@@ -442,11 +444,9 @@ function updateTocFromIndex() {
   // パスを相対パスに変換（src/chapters/ を削除）
   tocInner = tocInner.replace(/href="src\/chapters\//g, 'href="');
 
-  /* 本に含まれる原稿の一覧を，補助ページを取り除く前に控える。
-     index.html の nav には entry の全原稿が並ぶ。生成 HTML の有無では
-     判定できない。entry から外した後も前回のビルドが作った HTML が
-     src/chapters/ に残るためである */
-  const liveDocuments = collectDocumentNames(tocInner);
+  /* 本に含まれる原稿の一覧は設定から引く。生成 HTML の有無では判定できない。
+     entry から外した後も前回のビルドが作った HTML が src/chapters/ に残る */
+  const liveDocuments = collectEntryDocumentNames(fs.readFileSync(configPath, 'utf-8'));
 
   // 表紙、目次自体、あとがき、奥付、裏表紙の項目を削除
   tocInner = removeExcludedTocEntries(tocInner);

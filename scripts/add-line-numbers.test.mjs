@@ -3,39 +3,45 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { parseListItems, mergeTocTrees, pruneDeadTocEntries, collectDocumentNames, serializeTocTree, writeBuildMarker, stripHtmlTags, extractHeadingOrDefault, removeExcludedTocEntries } from './add-line-numbers.mjs';
+import { parseListItems, mergeTocTrees, pruneDeadTocEntries, collectEntryDocumentNames, serializeTocTree, writeBuildMarker, stripHtmlTags, extractHeadingOrDefault, removeExcludedTocEntries } from './add-line-numbers.mjs';
 
-// --- collectDocumentNames ---
+// --- collectEntryDocumentNames ---
 
-test('collectDocumentNames: nav の href から原稿のファイル名を集める', () => {
-  const inner =
-    '<ol>' +
-    '<li><a href="cover.html">表紙</a></li>' +
-    '<li><a href="01-introduction.html">第1章</a></li>' +
-    '</ol>';
-  assert.deepEqual([...collectDocumentNames(inner)], ['cover.html', '01-introduction.html']);
+const CONFIG_TEXT = `export default {
+  entry: [
+    'src/chapters/cover.md',
+    'src/chapters/toc.html',
+    'src/chapters/01-introduction.md',
+    "src/chapters/back-cover.md",
+  ],
+};`;
+
+test('collectEntryDocumentNames: entry の原稿を出力 HTML の名前で集める', () => {
+  assert.deepEqual(
+    [...collectEntryDocumentNames(CONFIG_TEXT)],
+    ['cover.html', 'toc.html', '01-introduction.html', 'back-cover.html']
+  );
 });
 
-test('collectDocumentNames: アンカーを取り除いてファイル名だけにする', () => {
-  const inner = '<li><a href="01-introduction.html#sec">節</a></li>';
-  assert.deepEqual([...collectDocumentNames(inner)], ['01-introduction.html']);
+test('collectEntryDocumentNames: 見出しを持たない原稿も entry にあれば数える', () => {
+  assert.ok(collectEntryDocumentNames(CONFIG_TEXT).has('back-cover.html'));
 });
 
-test('collectDocumentNames: ディレクトリ付きの href もファイル名で数える', () => {
-  const inner = '<li><a href="src/chapters/01-introduction.html">第1章</a></li>';
-  assert.deepEqual([...collectDocumentNames(inner)], ['01-introduction.html']);
+test('collectEntryDocumentNames: entry に無い原稿は数えない', () => {
+  assert.ok(!collectEntryDocumentNames(CONFIG_TEXT).has('99-index.html'));
 });
 
-test('collectDocumentNames: 同じ原稿を指す複数の項目を 1 つにまとめる', () => {
-  const inner =
-    '<li><a href="01-introduction.html">第1章</a></li>' +
-    '<li><a href="01-introduction.html#sec">節</a></li>';
-  assert.deepEqual([...collectDocumentNames(inner)], ['01-introduction.html']);
+test('collectEntryDocumentNames: HTML へ書き換えた後の設定でも同じ結果になる', () => {
+  const asHtml = CONFIG_TEXT.replace(/\.md/g, '.html');
+  assert.deepEqual(
+    [...collectEntryDocumentNames(asHtml)],
+    [...collectEntryDocumentNames(CONFIG_TEXT)]
+  );
 });
 
-test('collectDocumentNames: 外部リンクは数えない', () => {
-  const inner = '<li><a href="https://example.com/">参考</a></li>';
-  assert.deepEqual([...collectDocumentNames(inner)], []);
+test('collectEntryDocumentNames: 同じ原稿が二度並んでも 1 つにまとめる', () => {
+  const doubled = "entry: ['src/chapters/cover.md', 'src/chapters/cover.md']";
+  assert.deepEqual([...collectEntryDocumentNames(doubled)], ['cover.html']);
 });
 
 // --- pruneDeadTocEntries ---
