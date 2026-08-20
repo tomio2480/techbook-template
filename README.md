@@ -472,6 +472,43 @@ HTML ブロック内で数式を表示するには， `data-math-typeset="true"`
 
 図の SVG へ白い矩形を敷く手もあるが，内部余白を詰めた分だけ白帯が細く浮き上がり，かえって目立つ．
 
+ **図を横に並べる**
+
+関連する図を左右に並べるには `figure-row` クラスの `div` で囲む．キャプションは 1 枚ずつ付ける．まとめて 1 つにすると，どちらの説明か読み取れない．番号も 1 枚ずつ付く．
+
+```html
+<div class="figure-row">
+<figure>
+<img src="../assets/diagrams/led-a.svg" alt="図の内容">
+<figcaption>キャプション</figcaption>
+</figure>
+<figure>
+<img src="../assets/diagrams/led-b.svg" alt="図の内容">
+<figcaption>キャプション</figcaption>
+</figure>
+</div>
+```
+
+並べた図は下端でそろえる．高さの違う図を上でそろえると，キャプションの行が段違いになり読み取りにくいためである．
+
+ **本文を回り込ませる**
+
+縦に細長い図を `figure-wrap` の `div` で囲むと，脇へ本文が回り込む．図には `figure-float` クラスを与える．回り込ませる本文も同じ枠へ入れる．
+
+```html
+<div class="figure-wrap">
+<figure class="figure-float">
+<img src="../assets/diagrams/led-circuit.svg" alt="図の内容">
+<figcaption>キャプション</figcaption>
+</figure>
+<p>図の脇へ回り込ませる本文を書く．</p>
+</div>
+```
+
+枠は 1 ページへ収まるように組む．ページをまたぐ回り込みは崩れるためである．既定の幅は版面の 4 割である．変える場合は `figure` へ `style="width: …"` を書く．
+
+回り込みが必ずページを減らすとはかぎらない．図の高さより本文が長ければ，かえって背が伸びる．適用の前後でページ数を測るとよい．
+
 ### 表の挿入
 
 表の直前にキャプション（タイトル）を 1 行で記述する．番号は自動で付与される．

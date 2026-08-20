@@ -570,6 +570,47 @@ figure img.on-white {
   background-color: #fff;
 }
 
+/* 図を横へ並べつつ，1 枚ずつキャプションを付ける．
+   まとめて 1 つのキャプションを付けると，どちらの説明かが読み取れない */
+.figure-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  /* 下端でそろえる．高さの違う図を上でそろえると，キャプションの行が
+     段違いになり，どちらの説明か読み取りにくい */
+  align-items: flex-end;
+  gap: 10pt;
+  margin: 16pt 0;
+  break-inside: avoid;
+}
+
+.figure-row > figure {
+  flex: 0 1 45%;
+  margin: 0;
+}
+
+/* 縦に細長い図の脇へ本文を回り込ませる．
+   本文中の float はページをまたぐと崩れるため，枠ごと 1 ページへ収める．
+   浮動を枠の高さへ含めるため flow-root を与える */
+.figure-wrap {
+  display: flow-root;
+  break-inside: avoid;
+  margin: 12pt 0;
+}
+
+.figure-wrap > figure.figure-float {
+  float: right;
+  /* 幅を与えないと，キャプションの最大幅まで枠が広がり本文の帯が潰れる．
+     原稿側で style="width: …" を書けば上書きできる */
+  width: 40%;
+  margin: 0 0 6pt 12pt;
+  text-align: center;
+}
+
+.figure-wrap > figure.figure-float img {
+  width: 100%;
+}
+
 figcaption {
   font-size: 9pt;
   font-family: var(--font-mincho);
@@ -580,31 +621,41 @@ figcaption {
 }
 
 /* 図番号：所属セクションに応じた形式 */
+/* .figure-row・.figure-wrap は figure を 1 段深くするため，
+   直下を前提にした採番から外れる．経由する枝を各レベルへ足す */
 /* 章直下（section.level1 > figure） */
 section.level1 > figure > figcaption::before,
 section.level1 .column > figure > figcaption::before,
-section.level1 .tips > figure > figcaption::before {
+section.level1 .tips > figure > figcaption::before,
+section.level1 .figure-row > figure > figcaption::before,
+section.level1 .figure-wrap > figure > figcaption::before {
   content: "図" counter(chapter) ".-" counter(figure) ": ";
 }
 
 /* h2直下（section.level2 > figure） */
 section.level2 > figure > figcaption::before,
 section.level2 .column > figure > figcaption::before,
-section.level2 .tips > figure > figcaption::before {
+section.level2 .tips > figure > figcaption::before,
+section.level2 .figure-row > figure > figcaption::before,
+section.level2 .figure-wrap > figure > figcaption::before {
   content: "図" counter(chapter) "." counter(section) ".-" counter(figure) ": ";
 }
 
 /* h3直下（section.level3 > figure） */
 section.level3 > figure > figcaption::before,
 section.level3 .column > figure > figcaption::before,
-section.level3 .tips > figure > figcaption::before {
+section.level3 .tips > figure > figcaption::before,
+section.level3 .figure-row > figure > figcaption::before,
+section.level3 .figure-wrap > figure > figcaption::before {
   content: "図" counter(chapter) "." counter(section) "." counter(subsection) ".-" counter(figure) ": ";
 }
 
 /* h4直下（section.level4 > figure） */
 section.level4 > figure > figcaption::before,
 section.level4 .column > figure > figcaption::before,
-section.level4 .tips > figure > figcaption::before {
+section.level4 .tips > figure > figcaption::before,
+section.level4 .figure-row > figure > figcaption::before,
+section.level4 .figure-wrap > figure > figcaption::before {
   content: "図" counter(chapter) "." counter(section) "." counter(subsection) "." counter(subsubsection) ".-" counter(figure) ": ";
 }
 
@@ -1603,16 +1654,26 @@ body.appendix h1::before {
 }
 
 /* 付録の図番号 */
-.appendix section.level1 > figure > figcaption::before {
+/* 本文側と同じく .figure-row・.figure-wrap を経由する枝を足す．
+   足さないと本文用の採番が当たり，付録なのに章番号が英字にならない */
+.appendix section.level1 > figure > figcaption::before,
+.appendix section.level1 .figure-row > figure > figcaption::before,
+.appendix section.level1 .figure-wrap > figure > figcaption::before {
   content: "図" counter(chapter, upper-alpha) ".-" counter(figure) ": ";
 }
-.appendix section.level2 > figure > figcaption::before {
+.appendix section.level2 > figure > figcaption::before,
+.appendix section.level2 .figure-row > figure > figcaption::before,
+.appendix section.level2 .figure-wrap > figure > figcaption::before {
   content: "図" counter(chapter, upper-alpha) "." counter(section) ".-" counter(figure) ": ";
 }
-.appendix section.level3 > figure > figcaption::before {
+.appendix section.level3 > figure > figcaption::before,
+.appendix section.level3 .figure-row > figure > figcaption::before,
+.appendix section.level3 .figure-wrap > figure > figcaption::before {
   content: "図" counter(chapter, upper-alpha) "." counter(section) "." counter(subsection) ".-" counter(figure) ": ";
 }
-.appendix section.level4 > figure > figcaption::before {
+.appendix section.level4 > figure > figcaption::before,
+.appendix section.level4 .figure-row > figure > figcaption::before,
+.appendix section.level4 .figure-wrap > figure > figcaption::before {
   content: "図" counter(chapter, upper-alpha) "." counter(section) "." counter(subsection) "." counter(subsubsection) ".-" counter(figure) ": ";
 }
 
