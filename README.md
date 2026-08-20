@@ -383,7 +383,7 @@ markup（HTML）, css, markdown, c, cpp
 </div>
 ```
 
-コラムや Tips 内へ図（`<figure>`）や数式（`<span class="math display">`）を配置できる．その場合も図番号・式番号は正しく連番で付与される．
+コラムや Tips 内へ図（`<figure>`）・表・数式（`<span class="math display">`）を配置できる．その場合も図番号・表番号・式番号は正しく連番で付与される．付録の中であれば，章番号はアルファベットになる．
 
 ### 注釈・注意
 
