@@ -327,20 +327,34 @@ export function injectHtmlClass(html, className) {
 /* 生成 HTML から、章の扉に書かれた章番号と章タイトルを取り出す。
    番号・タイトルとも扉の記述（.chapter-number・.chapter-title）を出所とし、
    つめと扉で表示が食い違わないようにする */
+/* 条件に合う最初の要素の中身を返す。無ければ空文字を返す。
+   走査は htmlTags に任せ、コメントと raw text の中は読み飛ばす。
+   正規表現で直接拾うと、原稿へ残した書き換え前の見出しのように、
+   コメントの中のタグを実在の要素と取り違える */
+function firstElementText(html, matches) {
+  let opening = null;
+  for (const tag of htmlTags(html)) {
+    if (!opening) {
+      if (!tag.closing && matches(tag)) opening = tag;
+      continue;
+    }
+    if (tag.closing && tag.name === opening.name) {
+      const from = opening.start + opening.text.length;
+      return stripHtmlTags(html.slice(from, tag.start)).trim();
+    }
+  }
+  return '';
+}
+
 function textOfClass(html, className) {
-  const pattern = new RegExp(
-    `<([a-z][a-z0-9]*)\\b[^>]*class="[^"]*\\b${className}\\b[^"]*"[^>]*>([\\s\\S]*?)</\\1>`,
-    'i'
-  );
-  const matched = html.match(pattern);
-  return matched ? stripHtmlTags(matched[2]).trim() : '';
+  const pattern = new RegExp(`class="[^"]*\\b${className}\\b[^"]*"`, 'i');
+  return firstElementText(html, tag => pattern.test(tag.text));
 }
 
 export function extractChapterLabel(html) {
-  const heading = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i);
   return {
     number: textOfClass(html, 'chapter-number'),
-    title: textOfClass(html, 'chapter-title') || (heading ? stripHtmlTags(heading[1]).trim() : ''),
+    title: textOfClass(html, 'chapter-title') || firstElementText(html, tag => tag.name === 'h1'),
   };
 }
 

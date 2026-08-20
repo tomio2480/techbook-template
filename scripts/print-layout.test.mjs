@@ -425,6 +425,27 @@ test('扉にタイトルが無ければ h1 から補う', () => {
   assert.deepStrictEqual(extractChapterLabel(html), { number: '', title: '解答' });
 });
 
+test('h1 から補うとき，コメントの中の見出しは拾わない', () => {
+  /* 原稿の HTML コメントは生成 HTML へそのまま残る．
+     書き換え前の見出しを残した原稿で，古い題がつめへ出ていた */
+  const html = `<html><body>
+<!-- 書き換え前: <h1>古い題</h1> -->
+<section class="level1"><h1 id="x">付録: 参考資料</h1></section>
+</body></html>`;
+  assert.strictEqual(extractChapterLabel(html).title, '付録: 参考資料');
+});
+
+test('章番号と章タイトルも，コメントの中の記述は拾わない', () => {
+  const html = `<html><body>
+<!-- 記入例: <p class="chapter-number">Z</p><p class="chapter-title">古い題</p> -->
+<section class="chapter-opening">
+<p class="chapter-number">A</p>
+<p class="chapter-title">付録: 参考資料</p>
+</section>
+</body></html>`;
+  assert.deepStrictEqual(extractChapterLabel(html), { number: 'A', title: '付録: 参考資料' });
+});
+
 test('つめには章番号とタイトルを並べる', () => {
   const markup = renderTabMark({ number: '2', title: '応用編' });
   assert.match(markup, /class="print-tab-mark-number is-numbered">2</);
