@@ -377,9 +377,9 @@ npm run gen:index
 npm run check:index
 ```
 
-参照先が本文に無いと `target-counter` がページ番号を解決できず，組版が終わらない．リンク切れは体裁の乱れでは済まないため，ビルドの前に止める．
+参照先が本文に無くても，ビルドは成功してしまう．Vivliostyle は解決できない `target-counter` を `??` で埋め，警告も出さない．気付かないまま `??` を刷った PDF を入稿しかねないため，ビルドの前に止める．
 
-索引を置かない本では，`src/chapters/99-index.md` を消して `vivliostyle.config.js` の `entry` から外す．検査とビルドはそのまま通る．
+索引を置かない本では，`src/chapters/99-index.md` を消して `vivliostyle.config.js` の `entry` から外す．検査とビルドはそのまま通る．目次（`src/chapters/toc.html`）に残る索引の項目は次のビルドが取り除くため，手で消す必要は無い．
 
 段組みはテーマ CSS の `--index-columns`・`--index-column-gap` で調整する．見出し語とページ番号の間，およびページ番号どうしの区切りは `--index-term-gap`・`--index-page-separator` で変える．区分見出しの色は `palette.css` の `--index-group-color`・`--index-group-rule` で変える．
 
