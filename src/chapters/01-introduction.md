@@ -38,7 +38,7 @@ body:
 
 ## コードブロックの例
 
-プログラムコードは以下のように記述します．
+<a id="idx-code-block-1" data-index="コードブロック" data-yomi="こーどぶろっく"></a>プログラムコードは以下のように記述します．
 
 ```javascript
 function greet(name) {

@@ -37,7 +37,7 @@ body:
 
 ### インライン数式
 
-文中に数式を埋め込む場合，$E = mc^2$ のように記述する．二次方程式の解の公式は $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$ である．
+<a id="idx-formula-1" data-index="数式" data-yomi="すうしき"></a>文中に数式を埋め込む場合，$E = mc^2$ のように記述する．二次方程式の解の公式は $x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}$ である．
 
 ### ブロック数式
 
@@ -88,7 +88,7 @@ $$
 
 ### SVG 図
 
-以下は LED 点滅回路の概念図である．
+<a id="idx-svg-2" data-index="SVG"></a>以下は LED 点滅回路の概念図である．
 
 ![LED点滅回路](../assets/diagrams/led-circuit.svg)
 
