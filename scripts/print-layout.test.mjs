@@ -480,6 +480,20 @@ test('つめには章番号とタイトルを並べる', () => {
   assert.match(markup, /aria-hidden="true"/);
 });
 
+test('つめへ差し込む前に HTML の特殊文字を実体参照へ直す', () => {
+  /* 番号は config/book.yaml 由来で素通しになる．タグとして解釈させない */
+  const markup = renderTabMark({ number: '<X>', title: '図表 & 数式' });
+  assert.match(markup, /class="print-tab-mark-number">&lt;X&gt;</);
+  assert.match(markup, /class="print-tab-mark-title">図表 &amp; 数式</);
+  assert.doesNotMatch(markup, /<X>/);
+});
+
+test('閉じタグらしき指定でつめの体裁を壊さない', () => {
+  const markup = renderTabMark({ number: '</span><script>', title: '付録' });
+  assert.doesNotMatch(markup, /<script>/);
+  assert.strictEqual(markup.match(/<\/span>/g).length, 2);
+});
+
 test('数字でない章番号には「第」「章」を添えない', () => {
   const markup = renderTabMark({ number: 'A', title: '付録: 参考資料' });
   assert.doesNotMatch(markup, /is-numbered/);

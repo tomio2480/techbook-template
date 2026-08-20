@@ -366,6 +366,17 @@ export function extractChapterLabel(html) {
   };
 }
 
+/* 生成 HTML へ差し込む前に、テキストを HTML として安全な形へ直す。
+   つめの番号は config/book.yaml の値がそのまま来る。タグとして解釈させない。
+   タイトルも stripHtmlTags を通っただけで、閉じない < は残りうる */
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
 /* つめの中身を組み立てる。体裁は print.css が持つ。
    章番号が数字のときだけ「第」「章」を添える（付録の A などには添えない）。
    読み上げ対象からは外す。扉と同じ内容が重複して読まれるためである */
@@ -374,9 +385,11 @@ export function renderTabMark({ number, title }) {
 
   const numbered = /^\d+$/.test(number) ? ' is-numbered' : '';
   const numberSpan = number
-    ? `<span class="print-tab-mark-number${numbered}">${number}</span>`
+    ? `<span class="print-tab-mark-number${numbered}">${escapeHtml(number)}</span>`
     : '';
-  const titleSpan = title ? `<span class="print-tab-mark-title">${title}</span>` : '';
+  const titleSpan = title
+    ? `<span class="print-tab-mark-title">${escapeHtml(title)}</span>`
+    : '';
 
   return `<aside class="print-tab-mark" aria-hidden="true">${numberSpan}${titleSpan}</aside>`;
 }
