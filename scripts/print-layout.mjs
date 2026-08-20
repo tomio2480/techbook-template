@@ -327,6 +327,29 @@ export function injectHtmlClass(html, className) {
 /* 生成 HTML から、章の扉に書かれた章番号と章タイトルを取り出す。
    番号・タイトルとも扉の記述（.chapter-number・.chapter-title）を出所とし、
    つめと扉で表示が食い違わないようにする */
+const NAMED_ENTITIES = new Map([
+  ['&amp;', '&'],
+  ['&lt;', '<'],
+  ['&gt;', '>'],
+  ['&quot;', '"'],
+  ['&apos;', "'"],
+]);
+
+/* 生成 HTML から取り出したテキストは実体参照のまま残る。
+   差し込み直前の escapeHtml が二重に符号化しないよう、ここで素の文字へ戻す。
+   1 度の走査で置き換え、&amp;lt; を < まで戻してしまわないようにする */
+function decodeHtmlEntities(text) {
+  return text.replace(/&(?:amp|lt|gt|quot|apos|#\d+|#[xX][0-9a-fA-F]+);/g, entity => {
+    const named = NAMED_ENTITIES.get(entity);
+    if (named) return named;
+
+    const hex = entity[2] === 'x' || entity[2] === 'X';
+    const code = parseInt(entity.slice(hex ? 3 : 2, -1), hex ? 16 : 10);
+    if (!Number.isInteger(code) || code < 0 || code > 0x10ffff) return entity;
+    return String.fromCodePoint(code);
+  });
+}
+
 /* 条件に合う最初の要素の中身を返す。無ければ空文字を返す。
    走査は htmlTags に任せ、コメントと raw text の中は読み飛ばす。
    正規表現で直接拾うと、原稿へ残した書き換え前の見出しのように、
@@ -340,7 +363,7 @@ function firstElementText(html, matches) {
     }
     if (tag.closing && tag.name === opening.name) {
       const from = opening.start + opening.text.length;
-      return stripHtmlTags(html.slice(from, tag.start)).trim();
+      return decodeHtmlEntities(stripHtmlTags(html.slice(from, tag.start))).trim();
     }
   }
   return '';

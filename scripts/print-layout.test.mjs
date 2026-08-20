@@ -480,6 +480,19 @@ test('つめには章番号とタイトルを並べる', () => {
   assert.match(markup, /aria-hidden="true"/);
 });
 
+test('生成 HTML から取り出した実体参照は素の文字へ戻す', () => {
+  /* 戻さないと，差し込み直前のエスケープで &amp;amp; と二重に符号化される */
+  const html = '<html><body><h1 id="x">R&amp;D &#39;24 &lt;要点&gt;</h1></body></html>';
+  assert.strictEqual(extractChapterLabel(html).title, "R&D '24 <要点>");
+});
+
+test('実体参照を含む章タイトルが誌面へ素の文字で出る', () => {
+  const html = '<html><body><h1 id="x">R&amp;D</h1></body></html>';
+  const markup = renderTabMark(extractChapterLabel(html));
+  assert.match(markup, /class="print-tab-mark-title">R&amp;D</);
+  assert.doesNotMatch(markup, /&amp;amp;/);
+});
+
 test('つめへ差し込む前に HTML の特殊文字を実体参照へ直す', () => {
   /* 番号は config/book.yaml 由来で素通しになる．タグとして解釈させない */
   const markup = renderTabMark({ number: '<X>', title: '図表 & 数式' });
