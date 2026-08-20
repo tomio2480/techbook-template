@@ -97,6 +97,26 @@ test('recto・verso 以外の面を指定したら例外を投げる', () => {
   );
 });
 
+test('section_start: キーが空文字なら例外を投げる', () => {
+  /* entry.includes('') は全エントリに一致し，面の指定が書籍全体へ及ぶ */
+  assert.throws(
+    () => resolveSectionSides({ print: { section_start: { '': 'recto' } } }),
+    /キーは空でない文字列/
+  );
+  assert.throws(
+    () => resolveSectionSides({ print: { section_start: { '   ': 'recto' } } }),
+    /キーは空でない文字列/
+  );
+});
+
+test('section_start: 配列なら例外を投げる', () => {
+  /* 配列を渡すと添字がキーになり，"0" が 00-preface などへ一致してしまう */
+  assert.throws(
+    () => resolveSectionSides({ print: { section_start: ['recto'] } }),
+    /キーと値の組/
+  );
+});
+
 // --- planPrintLayout ---
 
 function plan({ entries, pageCounts, sources, pageMultiple = 4, sides = SIDES, fillerBefore }) {

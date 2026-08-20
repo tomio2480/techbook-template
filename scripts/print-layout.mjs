@@ -80,11 +80,27 @@ export function resolvePageMultiple(bookYaml) {
   return configured;
 }
 
+/* 原稿ファイル名に含まれる文字列をキーに持つ指定を、キーと値の組の一覧として読む。
+   空のキーは entry.includes('') が全エントリに一致するため弾く。
+   配列を渡した場合も添字がキーになり（"0" が 00-preface へ一致する）意図から外れる */
+function patternEntries(configured, label) {
+  if (typeof configured !== 'object' || configured === null || Array.isArray(configured)) {
+    throw new Error(`config/book.yaml の ${label} はキーと値の組で指定してください。`);
+  }
+  const patterns = Object.entries(configured);
+  for (const [pattern] of patterns) {
+    if (pattern.trim() === '') {
+      throw new Error(`config/book.yaml の ${label} のキーは空でない文字列で指定してください。`);
+    }
+  }
+  return patterns;
+}
+
 /* 区分ごとの開始面を config/book.yaml から読む。
    section_start のキーは原稿ファイル名に含まれる文字列であり、前から順に照合する */
 export function resolveSectionSides(bookYaml) {
   const configured = bookYaml?.print?.section_start;
-  const patterns = Object.entries(configured ?? DEFAULT_SECTION_START);
+  const patterns = patternEntries(configured ?? DEFAULT_SECTION_START, 'print.section_start');
   for (const [pattern, side] of patterns) {
     assertSide(side, `config/book.yaml の print.section_start["${pattern}"]`);
   }
@@ -118,18 +134,8 @@ export function hasChapterOpening(source) {
 export function resolveSectionTabs(bookYaml) {
   const configured = bookYaml?.print?.section_tabs;
   if (configured === undefined || configured === null) return [];
-  if (typeof configured !== 'object' || Array.isArray(configured)) {
-    throw new Error('config/book.yaml の print.section_tabs はキーと値の組で指定してください。');
-  }
-  const patterns = Object.entries(configured);
+  const patterns = patternEntries(configured, 'print.section_tabs');
   for (const [pattern, number] of patterns) {
-    /* 空のキーは entry.includes('') で全エントリに一致し，
-       表紙・目次・奥付まで含めてつめの対象になってしまう */
-    if (pattern.trim() === '') {
-      throw new Error(
-        'config/book.yaml の print.section_tabs のキーは空でない文字列で指定してください。'
-      );
-    }
     if (typeof number !== 'string' || number.trim() === '') {
       throw new Error(
         `config/book.yaml の print.section_tabs["${pattern}"] は空でない文字列で指定してください。`
