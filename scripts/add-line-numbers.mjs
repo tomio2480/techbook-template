@@ -352,6 +352,48 @@ export function mergeTocTrees(autoTree, oldTree) {
   return [...merged, ...manualLeftovers];
 }
 
+// href がローカルの HTML 原稿を指すなら，そのファイル名を返す。
+// 外部リンク・同一ページ内のアンカー・HTML 以外は判定の対象にしない
+function localDocumentName(href) {
+  if (typeof href !== 'string' || href === '' || href.startsWith('#')) return null;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith('//')) return null;
+  /* 生成 HTML は 1 つのディレクトリへ並ぶため、比較はファイル名だけで足りる */
+  const name = normalizeHref(href).split('/').pop();
+  return /\.html$/i.test(name) ? name : null;
+}
+
+// 目次の HTML に現れる原稿のファイル名を集める。
+// index.html の nav には entry の全原稿が並ぶ（表紙・目次・奥付を含む）。
+// 補助ページを取り除く前に呼ぶこと。取り除いた後では本に含まれる原稿を
+// 落としたものになり、手動追加の項目を誤って消してしまう。
+export function collectDocumentNames(tocInner) {
+  const names = new Set();
+  for (const match of tocInner.matchAll(/href="([^"]+)"/g)) {
+    const name = localDocumentName(match[1]);
+    if (name !== null) names.add(name);
+  }
+  return names;
+}
+
+// 手動追加の項目のうち、参照先の原稿が本に無いものを落とす。
+// mergeTocTrees は old 側にのみ残った項目を手動追加として残すため、
+// entry から外した原稿への項目が toc.html に残り続ける。
+// Vivliostyle は解決できない target-counter を「??」で埋め、ビルドは成功する。
+// 警告も出ないため、気付かないまま「??」を刷った PDF を入稿しかねない。
+// 自動生成側の項目は entry に存在する原稿だけであり、判定の対象にしない。
+export function pruneDeadTocEntries(tree, documentExists) {
+  return tree
+    .filter(node => {
+      if (!node.isManual) return true;
+      const name = localDocumentName(node.href);
+      return name === null || documentExists(name);
+    })
+    .map(node => ({
+      ...node,
+      children: pruneDeadTocEntries(node.children ?? [], documentExists),
+    }));
+}
+
 // 既存 toc.html の nav 内側に手動編集された見出し（<h1>〜<h6>）があれば
 // それを保持し、なければデフォルトの「目次」見出しを使う
 export function extractHeadingOrDefault(oldNavInner) {
@@ -400,6 +442,12 @@ function updateTocFromIndex() {
   // パスを相対パスに変換（src/chapters/ を削除）
   tocInner = tocInner.replace(/href="src\/chapters\//g, 'href="');
 
+  /* 本に含まれる原稿の一覧を，補助ページを取り除く前に控える。
+     index.html の nav には entry の全原稿が並ぶ。生成 HTML の有無では
+     判定できない。entry から外した後も前回のビルドが作った HTML が
+     src/chapters/ に残るためである */
+  const liveDocuments = collectDocumentNames(tocInner);
+
   // 表紙、目次自体、あとがき、奥付、裏表紙の項目を削除
   tocInner = removeExcludedTocEntries(tocInner);
 
@@ -412,7 +460,9 @@ function updateTocFromIndex() {
   const oldTree = oldTocMatch ? parseListItems(oldTocMatch[1]) : [];
   const autoTree = parseListItems(tocInner);
   const mergedTree = mergeTocTrees(autoTree, oldTree);
-  const mergedOl = serializeTocTree(mergedTree);
+  /* 本から外した原稿への項目を落とす */
+  const prunedTree = pruneDeadTocEntries(mergedTree, name => liveDocuments.has(name));
+  const mergedOl = serializeTocTree(prunedTree);
   const heading = extractHeadingOrDefault(oldTocMatch ? oldTocMatch[1] : null);
 
   // toc.html の nav 内を、手動編集済みテキストを保持したままマージ結果で置換
