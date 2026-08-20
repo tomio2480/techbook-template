@@ -1639,39 +1639,58 @@ body.appendix h1::before {
   content: counter(chapter, upper-alpha) ". ";
 }
 
+/* 付録の表・図・数式の採番 */
+/* 本文側と同じく .column・.tips を経由する枝を足す．
+   足さないと本文用の採番が当たり，付録なのに章番号が英字にならない．
+   図はさらに .figure-row・.figure-wrap も経由する */
+
 /* 付録の表番号 */
-.appendix section.level1 > p:has(+ table)::before {
+.appendix section.level1 > p:has(+ table)::before,
+.appendix section.level1 .column > p:has(+ table)::before,
+.appendix section.level1 .tips > p:has(+ table)::before {
   content: "表" counter(chapter, upper-alpha) ".-" counter(table) ": ";
 }
-.appendix section.level2 > p:has(+ table)::before {
+.appendix section.level2 > p:has(+ table)::before,
+.appendix section.level2 .column > p:has(+ table)::before,
+.appendix section.level2 .tips > p:has(+ table)::before {
   content: "表" counter(chapter, upper-alpha) "." counter(section) ".-" counter(table) ": ";
 }
-.appendix section.level3 > p:has(+ table)::before {
+.appendix section.level3 > p:has(+ table)::before,
+.appendix section.level3 .column > p:has(+ table)::before,
+.appendix section.level3 .tips > p:has(+ table)::before {
   content: "表" counter(chapter, upper-alpha) "." counter(section) "." counter(subsection) ".-" counter(table) ": ";
 }
-.appendix section.level4 > p:has(+ table)::before {
+.appendix section.level4 > p:has(+ table)::before,
+.appendix section.level4 .column > p:has(+ table)::before,
+.appendix section.level4 .tips > p:has(+ table)::before {
   content: "表" counter(chapter, upper-alpha) "." counter(section) "." counter(subsection) "." counter(subsubsection) ".-" counter(table) ": ";
 }
 
 /* 付録の図番号 */
-/* 本文側と同じく .figure-row・.figure-wrap を経由する枝を足す．
-   足さないと本文用の採番が当たり，付録なのに章番号が英字にならない */
 .appendix section.level1 > figure > figcaption::before,
+.appendix section.level1 .column > figure > figcaption::before,
+.appendix section.level1 .tips > figure > figcaption::before,
 .appendix section.level1 .figure-row > figure > figcaption::before,
 .appendix section.level1 .figure-wrap > figure > figcaption::before {
   content: "図" counter(chapter, upper-alpha) ".-" counter(figure) ": ";
 }
 .appendix section.level2 > figure > figcaption::before,
+.appendix section.level2 .column > figure > figcaption::before,
+.appendix section.level2 .tips > figure > figcaption::before,
 .appendix section.level2 .figure-row > figure > figcaption::before,
 .appendix section.level2 .figure-wrap > figure > figcaption::before {
   content: "図" counter(chapter, upper-alpha) "." counter(section) ".-" counter(figure) ": ";
 }
 .appendix section.level3 > figure > figcaption::before,
+.appendix section.level3 .column > figure > figcaption::before,
+.appendix section.level3 .tips > figure > figcaption::before,
 .appendix section.level3 .figure-row > figure > figcaption::before,
 .appendix section.level3 .figure-wrap > figure > figcaption::before {
   content: "図" counter(chapter, upper-alpha) "." counter(section) "." counter(subsection) ".-" counter(figure) ": ";
 }
 .appendix section.level4 > figure > figcaption::before,
+.appendix section.level4 .column > figure > figcaption::before,
+.appendix section.level4 .tips > figure > figcaption::before,
 .appendix section.level4 .figure-row > figure > figcaption::before,
 .appendix section.level4 .figure-wrap > figure > figcaption::before {
   content: "図" counter(chapter, upper-alpha) "." counter(section) "." counter(subsection) "." counter(subsubsection) ".-" counter(figure) ": ";
@@ -1679,13 +1698,21 @@ body.appendix h1::before {
 
 /* 付録の数式番号 */
 .appendix section.level1 > p:has(> .math.display)::after,
-.appendix section.level1 > section.level2 > p:has(> .math.display)::after {
+.appendix section.level1 > section.level2 > p:has(> .math.display)::after,
+.appendix section.level1 .column > p:has(> .math.display)::after,
+.appendix section.level1 .tips > p:has(> .math.display)::after,
+.appendix section.level2 .column > p:has(> .math.display)::after,
+.appendix section.level2 .tips > p:has(> .math.display)::after {
   content: "(" counter(chapter, upper-alpha) "." counter(section) ".-" counter(equation) ")";
 }
-.appendix section.level3 > p:has(> .math.display)::after {
+.appendix section.level3 > p:has(> .math.display)::after,
+.appendix section.level3 .column > p:has(> .math.display)::after,
+.appendix section.level3 .tips > p:has(> .math.display)::after {
   content: "(" counter(chapter, upper-alpha) "." counter(section) "." counter(subsection) ".-" counter(equation) ")";
 }
-.appendix section.level4 > p:has(> .math.display)::after {
+.appendix section.level4 > p:has(> .math.display)::after,
+.appendix section.level4 .column > p:has(> .math.display)::after,
+.appendix section.level4 .tips > p:has(> .math.display)::after {
   content: "(" counter(chapter, upper-alpha) "." counter(section) "." counter(subsection) "." counter(subsubsection) ".-" counter(equation) ")";
 }
 
