@@ -8,6 +8,7 @@ import {
   hasChapterOpening,
   injectHtmlClass,
   injectTabMark,
+  isTabTarget,
   parseDocumentStartPages,
   planPrintLayout,
   renderMemoHtml,
@@ -16,9 +17,11 @@ import {
   resolveFillerBefore,
   resolvePageMultiple,
   resolveSectionSides,
+  resolveSectionTabs,
   sideClassName,
   sideForEntry,
   tabClassName,
+  tabNumberForEntry,
   toDocumentPageCounts,
 } from './print-layout.mjs';
 
@@ -550,6 +553,60 @@ test('body 要素が無ければ例外を投げる', () => {
 test('章かどうかは扉の有無で判定する', () => {
   assert.strictEqual(hasChapterOpening('<section class="chapter-opening">'), true);
   assert.strictEqual(hasChapterOpening('<h1>まえがき</h1>'), false);
+});
+
+// --- resolveSectionTabs・tabNumberForEntry・isTabTarget ---
+
+test('section_tabs: 未指定なら空で，指定はキーと値の組として読む', () => {
+  assert.deepStrictEqual(resolveSectionTabs({}), []);
+  assert.deepStrictEqual(resolveSectionTabs({ print: {} }), []);
+  assert.deepStrictEqual(
+    resolveSectionTabs({ print: { section_tabs: { '97-appendix': 'X' } } }),
+    [['97-appendix', 'X']]
+  );
+});
+
+test('section_tabs: 値が空文字や文字列以外，または配列なら例外を投げる', () => {
+  assert.throws(
+    () => resolveSectionTabs({ print: { section_tabs: { '97-appendix': '' } } }),
+    /空でない文字列/
+  );
+  assert.throws(
+    () => resolveSectionTabs({ print: { section_tabs: { '97-appendix': 1 } } }),
+    /空でない文字列/
+  );
+  assert.throws(
+    () => resolveSectionTabs({ print: { section_tabs: ['97-appendix'] } }),
+    /キーと値の組/
+  );
+});
+
+test('section_tabs: 原稿ファイル名に含まれる文字列で照合し，番号を返す', () => {
+  const tabs = [['97-appendix', 'X']];
+  assert.strictEqual(tabNumberForEntry('src/chapters/97-appendix-hands-on.html', tabs), 'X');
+  assert.strictEqual(tabNumberForEntry('src/chapters/98-afterword.html', tabs), null);
+});
+
+test('section_tabs: 前から順に照合し，先に一致した指定を採る', () => {
+  const tabs = [['97-appendix-a', 'X'], ['97-appendix', 'Y']];
+  assert.strictEqual(tabNumberForEntry('src/chapters/97-appendix-a.html', tabs), 'X');
+  assert.strictEqual(tabNumberForEntry('src/chapters/97-appendix-b.html', tabs), 'Y');
+});
+
+test('isTabTarget: 章扉を持つ原稿と section_tabs の指定がある原稿を対象にする', () => {
+  const tabs = [['97-appendix', 'X']];
+  const opening = '<section class="chapter-opening">';
+  assert.strictEqual(isTabTarget('src/chapters/01-introduction.html', opening, tabs), true);
+  assert.strictEqual(isTabTarget('src/chapters/97-appendix.html', '<h1>付録</h1>', tabs), true);
+  assert.strictEqual(isTabTarget('src/chapters/98-afterword.html', '<h1>あとがき</h1>', tabs), false);
+});
+
+test('isTabTarget: section_tabs を渡さないときは扉の有無だけで判定する', () => {
+  assert.strictEqual(isTabTarget('src/chapters/97-appendix.html', '<h1>付録</h1>'), false);
+  assert.strictEqual(
+    isTabTarget('src/chapters/01-introduction.html', '<section class="chapter-opening">'),
+    true
+  );
 });
 
 // --- parseDocumentStartPages・toDocumentPageCounts ---

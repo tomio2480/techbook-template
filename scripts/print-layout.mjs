@@ -112,6 +112,39 @@ export function hasChapterOpening(source) {
   return source.includes(CHAPTER_OPENING_CLASS);
 }
 
+/* 章扉を持たない区分（付録など）にもつめを付けたいときの指定を読む。
+   print.section_tabs のキーは原稿ファイル名に含まれる文字列，値はつめへ刷る
+   番号の文字（付録の X など）。タイトルは原稿の h1 から取る */
+export function resolveSectionTabs(bookYaml) {
+  const configured = bookYaml?.print?.section_tabs;
+  if (configured === undefined || configured === null) return [];
+  if (typeof configured !== 'object' || Array.isArray(configured)) {
+    throw new Error('config/book.yaml の print.section_tabs はキーと値の組で指定してください。');
+  }
+  const patterns = Object.entries(configured);
+  for (const [pattern, number] of patterns) {
+    if (typeof number !== 'string' || number.trim() === '') {
+      throw new Error(
+        `config/book.yaml の print.section_tabs["${pattern}"] は空でない文字列で指定してください。`
+      );
+    }
+  }
+  return patterns;
+}
+
+/* section_tabs で指定されたつめの番号を返す。指定が無い区分では null を返す。
+   照合は section_start と同じく前から順に行う */
+export function tabNumberForEntry(entry, sectionTabs) {
+  const matched = sectionTabs.find(([pattern]) => entry.includes(pattern));
+  return matched ? matched[1] : null;
+}
+
+/* つめを付ける区分かどうか。
+   章扉を持つ原稿に加え，section_tabs の指定がある原稿を対象にする */
+export function isTabTarget(entry, source, sectionTabs = []) {
+  return hasChapterOpening(source) || tabNumberForEntry(entry, sectionTabs) !== null;
+}
+
 /* 1 つのエントリを開始すべき面を返す。指定が無い区分では null を返す */
 export function sideForEntry(entry, source, sides) {
   const matched = sides.patterns.find(([pattern]) => entry.includes(pattern));

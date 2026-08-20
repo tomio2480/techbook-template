@@ -122,6 +122,23 @@ print:
   filler_before: "99-colophon" # 調整ページを寄せる先の原稿
 ```
 
+章扉（`chapter-opening`）を持つ原稿には，つめが自動で付く．
+扉を持たない区分（`# 見出し` から始まる付録など）へつめを付けたいときは，
+`print.section_tabs` へ対象を並べる．
+
+```yaml
+print:
+  section_tabs:
+    "97-appendix": "X"    # 付録のつめ．値はつめへ刷る番号の文字
+```
+
+キーは原稿ファイル名に含まれる文字列である．タイトルは原稿の `h1` から取る．
+番号は扉があれば扉を優先し，無いときだけ指定値を使う．
+面の指定は `section_start` が引き続き担い，`section_tabs` は面へ影響しない．
+つめの高さは対象の並び順で決まり，付録は章の後ろへ出る．
+
+本テンプレートの付録は扉を持つため，既につめの対象である．指定は要らない．
+
 つめの大きさと並べる範囲は `config/themes/techbook/print.css` の変数で調整する．
 対象は `--tab-width`・`--tab-height`・`--tab-area-top` の 3 つである．
 並べる範囲の高さは `--tab-area-height`，タイトルの長さは `--tab-title-length` で決まる．
