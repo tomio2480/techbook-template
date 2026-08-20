@@ -30,8 +30,8 @@ print:
     "97-appendix": "X"
 ```
 
-派生リポジトリ（`techbook-introduction-to-electronics-basic-led` PR #235）に
-先行実装があり，それを上流へ引き取る形で始めた．
+派生リポジトリには先行実装があり，それを上流へ引き取る形で始めた．
+`techbook-introduction-to-electronics-basic-led` の PR #235 を参照．
 
 ## レビュー 7 巡の連鎖
 
