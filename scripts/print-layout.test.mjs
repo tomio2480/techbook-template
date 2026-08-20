@@ -4,10 +4,12 @@ import {
   DOC_START_MARKER,
   MEMO_FILE_PATTERN,
   calcFillerPages,
+  escapeHtml,
   extractChapterLabel,
   hasChapterOpening,
   injectHtmlClass,
   injectTabMark,
+  isTabTarget,
   parseDocumentStartPages,
   planPrintLayout,
   renderMemoHtml,
@@ -16,9 +18,12 @@ import {
   resolveFillerBefore,
   resolvePageMultiple,
   resolveSectionSides,
+  resolveSectionTabs,
   sideClassName,
   sideForEntry,
   tabClassName,
+  tabLabelFor,
+  tabNumberForEntry,
   toDocumentPageCounts,
 } from './print-layout.mjs';
 
@@ -91,6 +96,26 @@ test('recto・verso 以外の面を指定したら例外を投げる', () => {
   assert.throws(
     () => resolveSectionSides({ print: { chapter_start: 'odd' } }),
     /recto または verso/
+  );
+});
+
+test('section_start: キーが空文字なら例外を投げる', () => {
+  /* entry.includes('') は全エントリに一致し，面の指定が書籍全体へ及ぶ */
+  assert.throws(
+    () => resolveSectionSides({ print: { section_start: { '': 'recto' } } }),
+    /キーは空でない文字列/
+  );
+  assert.throws(
+    () => resolveSectionSides({ print: { section_start: { '   ': 'recto' } } }),
+    /キーは空でない文字列/
+  );
+});
+
+test('section_start: 配列なら例外を投げる', () => {
+  /* 配列を渡すと添字がキーになり，"0" が 00-preface などへ一致してしまう */
+  assert.throws(
+    () => resolveSectionSides({ print: { section_start: ['recto'] } }),
+    /キーと値の組/
   );
 });
 
@@ -387,14 +412,41 @@ test('章番号と章タイトルを扉の記述から取り出す', () => {
 });
 
 test('入れ子のタグを含む章タイトルからタグを取り除く', () => {
-  const html = '<html><body><p class="chapter-title">応<b>用</b>編</p></body></html>';
+  const html =
+    '<html><body><section class="chapter-opening">' +
+    '<p class="chapter-title">応<b>用</b>編</p></section></body></html>';
   assert.strictEqual(extractChapterLabel(html).title, '応用編');
 });
 
 test('タグが再構成される並びでもタグを残さない', () => {
   // 単発の置換では断片が結合して新たなタグになりうる（CodeQL の指摘）
-  const html = '<html><body><p class="chapter-title">応<scr<b>ipt>用編</p></body></html>';
+  const html =
+    '<html><body><section class="chapter-opening">' +
+    '<p class="chapter-title">応<scr<b>ipt>用編</p></section></body></html>';
   assert.doesNotMatch(extractChapterLabel(html).title, /<[a-z]/i);
+});
+
+test('扉が無ければ，扉のクラスを持つ要素があっても出所にしない', () => {
+  /* 出所は扉の記述に限る（docs/spec/print-layout.md）．
+     扉を持たない区分で本文の要素を拾うと，section_tabs の指定値を上書きする */
+  const html = `<html><body>
+<section class="level1"><h1 id="x">付録: 参考資料</h1>
+<p class="chapter-number">2</p>
+<p class="chapter-title">応用編</p>
+</section>
+</body></html>`;
+  assert.deepStrictEqual(extractChapterLabel(html), { number: '', title: '付録: 参考資料' });
+});
+
+test('扉の外にある同じクラスの要素は，扉の記述より先にあっても使わない', () => {
+  const html = `<html><body>
+<p class="chapter-number">9</p>
+<section class="chapter-opening">
+<p class="chapter-number">2</p>
+<p class="chapter-title">応用編</p>
+</section>
+</body></html>`;
+  assert.deepStrictEqual(extractChapterLabel(html), { number: '2', title: '応用編' });
 });
 
 test('扉にタイトルが無ければ h1 から補う', () => {
@@ -402,11 +454,91 @@ test('扉にタイトルが無ければ h1 から補う', () => {
   assert.deepStrictEqual(extractChapterLabel(html), { number: '', title: '解答' });
 });
 
+test('h1 から補うとき，コメントの中の見出しは拾わない', () => {
+  /* 原稿の HTML コメントは生成 HTML へそのまま残る．
+     書き換え前の見出しを残した原稿で，古い題がつめへ出ていた */
+  const html = `<html><body>
+<!-- 書き換え前: <h1>古い題</h1> -->
+<section class="level1"><h1 id="x">付録: 参考資料</h1></section>
+</body></html>`;
+  assert.strictEqual(extractChapterLabel(html).title, '付録: 参考資料');
+});
+
+test('章番号と章タイトルも，コメントの中の記述は拾わない', () => {
+  const html = `<html><body>
+<!-- 記入例: <p class="chapter-number">Z</p><p class="chapter-title">古い題</p> -->
+<section class="chapter-opening">
+<p class="chapter-number">A</p>
+<p class="chapter-title">付録: 参考資料</p>
+</section>
+</body></html>`;
+  assert.deepStrictEqual(extractChapterLabel(html), { number: 'A', title: '付録: 参考資料' });
+});
+
 test('つめには章番号とタイトルを並べる', () => {
   const markup = renderTabMark({ number: '2', title: '応用編' });
   assert.match(markup, /class="print-tab-mark-number is-numbered">2</);
   assert.match(markup, /class="print-tab-mark-title">応用編</);
   assert.match(markup, /aria-hidden="true"/);
+});
+
+test('生成 HTML から取り出したテキストは実体参照のまま返す', () => {
+  /* 取り出し元は HTML であり、実体参照は既に HTML として正しい形である．
+     戻して入れ直すと，扱える実体の範囲を絞った分だけ誌面が壊れる */
+  const html = '<html><body><h1 id="x">R&amp;D &copy; &nbsp;要点</h1></body></html>';
+  assert.strictEqual(extractChapterLabel(html).title, 'R&amp;D &copy; &nbsp;要点');
+});
+
+test('実体参照を含む章タイトルは二重に符号化しない', () => {
+  const html = '<html><body><h1 id="x">R&amp;D</h1></body></html>';
+  const markup = renderTabMark(extractChapterLabel(html));
+  assert.match(markup, /class="print-tab-mark-title">R&amp;D</);
+  assert.doesNotMatch(markup, /&amp;amp;/);
+});
+
+test('escapeHtml は素のテキストを HTML へ差し込める形へ直す', () => {
+  assert.strictEqual(escapeHtml('<X>'), '&lt;X&gt;');
+  assert.strictEqual(escapeHtml('図表 & 数式'), '図表 &amp; 数式');
+  assert.strictEqual(escapeHtml('"A"'), '&quot;A&quot;');
+});
+
+// --- tabLabelFor ---
+
+test('tabLabelFor: 扉があれば扉の番号を使い，指定値を無視する', () => {
+  const html = `<html><body><section class="chapter-opening">
+<p class="chapter-number">2</p><p class="chapter-title">応用編</p>
+</section></body></html>`;
+  assert.deepStrictEqual(tabLabelFor('src/chapters/02-advanced.html', html, [['02-', 'X']]), {
+    number: '2',
+    title: '応用編',
+  });
+});
+
+test('tabLabelFor: 扉が無ければ指定値と h1 を使う', () => {
+  const html = '<html><body><h1 id="x">付録: 参考資料</h1></body></html>';
+  assert.deepStrictEqual(tabLabelFor('src/chapters/97-appendix.html', html, [['97-appendix', 'X']]), {
+    number: 'X',
+    title: '付録: 参考資料',
+  });
+});
+
+test('tabLabelFor: 指定が無ければ番号は空になる', () => {
+  const html = '<html><body><h1 id="x">あとがき</h1></body></html>';
+  assert.deepStrictEqual(tabLabelFor('src/chapters/98-afterword.html', html, []), {
+    number: '',
+    title: 'あとがき',
+  });
+});
+
+test('tabLabelFor: 指定値は素のテキストとして HTML へ直してから返す', () => {
+  /* config/book.yaml の値だけが素通しの経路である．タグとして解釈させない */
+  const html = '<html><body><h1 id="x">付録</h1></body></html>';
+  const label = tabLabelFor('src/chapters/97-appendix.html', html, [['97-appendix', '<X>']]);
+  assert.strictEqual(label.number, '&lt;X&gt;');
+
+  const markup = renderTabMark(label);
+  assert.doesNotMatch(markup, /<X>/);
+  assert.strictEqual(markup.match(/<\/span>/g).length, 2);
 });
 
 test('数字でない章番号には「第」「章」を添えない', () => {
@@ -550,6 +682,72 @@ test('body 要素が無ければ例外を投げる', () => {
 test('章かどうかは扉の有無で判定する', () => {
   assert.strictEqual(hasChapterOpening('<section class="chapter-opening">'), true);
   assert.strictEqual(hasChapterOpening('<h1>まえがき</h1>'), false);
+});
+
+// --- resolveSectionTabs・tabNumberForEntry・isTabTarget ---
+
+test('section_tabs: 未指定なら空で，指定はキーと値の組として読む', () => {
+  assert.deepStrictEqual(resolveSectionTabs({}), []);
+  assert.deepStrictEqual(resolveSectionTabs({ print: {} }), []);
+  assert.deepStrictEqual(
+    resolveSectionTabs({ print: { section_tabs: { '97-appendix': 'X' } } }),
+    [['97-appendix', 'X']]
+  );
+});
+
+test('section_tabs: キーが空文字なら例外を投げる', () => {
+  /* entry.includes('') は全エントリに一致し，表紙・目次・奥付までつめの対象になる */
+  assert.throws(
+    () => resolveSectionTabs({ print: { section_tabs: { '': 'X' } } }),
+    /キーは空でない文字列/
+  );
+  assert.throws(
+    () => resolveSectionTabs({ print: { section_tabs: { '   ': 'X' } } }),
+    /キーは空でない文字列/
+  );
+});
+
+test('section_tabs: 値が空文字や文字列以外，または配列なら例外を投げる', () => {
+  assert.throws(
+    () => resolveSectionTabs({ print: { section_tabs: { '97-appendix': '' } } }),
+    /空でない文字列/
+  );
+  assert.throws(
+    () => resolveSectionTabs({ print: { section_tabs: { '97-appendix': 1 } } }),
+    /空でない文字列/
+  );
+  assert.throws(
+    () => resolveSectionTabs({ print: { section_tabs: ['97-appendix'] } }),
+    /キーと値の組/
+  );
+});
+
+test('section_tabs: 原稿ファイル名に含まれる文字列で照合し，番号を返す', () => {
+  const tabs = [['97-appendix', 'X']];
+  assert.strictEqual(tabNumberForEntry('src/chapters/97-appendix-hands-on.html', tabs), 'X');
+  assert.strictEqual(tabNumberForEntry('src/chapters/98-afterword.html', tabs), null);
+});
+
+test('section_tabs: 前から順に照合し，先に一致した指定を採る', () => {
+  const tabs = [['97-appendix-a', 'X'], ['97-appendix', 'Y']];
+  assert.strictEqual(tabNumberForEntry('src/chapters/97-appendix-a.html', tabs), 'X');
+  assert.strictEqual(tabNumberForEntry('src/chapters/97-appendix-b.html', tabs), 'Y');
+});
+
+test('isTabTarget: 章扉を持つ原稿と section_tabs の指定がある原稿を対象にする', () => {
+  const tabs = [['97-appendix', 'X']];
+  const opening = '<section class="chapter-opening">';
+  assert.strictEqual(isTabTarget('src/chapters/01-introduction.html', opening, tabs), true);
+  assert.strictEqual(isTabTarget('src/chapters/97-appendix.html', '<h1>付録</h1>', tabs), true);
+  assert.strictEqual(isTabTarget('src/chapters/98-afterword.html', '<h1>あとがき</h1>', tabs), false);
+});
+
+test('isTabTarget: section_tabs を渡さないときは扉の有無だけで判定する', () => {
+  assert.strictEqual(isTabTarget('src/chapters/97-appendix.html', '<h1>付録</h1>'), false);
+  assert.strictEqual(
+    isTabTarget('src/chapters/01-introduction.html', '<section class="chapter-opening">'),
+    true
+  );
 });
 
 // --- parseDocumentStartPages・toDocumentPageCounts ---

@@ -80,11 +80,27 @@ export function resolvePageMultiple(bookYaml) {
   return configured;
 }
 
+/* 原稿ファイル名に含まれる文字列をキーに持つ指定を、キーと値の組の一覧として読む。
+   空のキーは entry.includes('') が全エントリに一致するため弾く。
+   配列を渡した場合も添字がキーになり（"0" が 00-preface へ一致する）意図から外れる */
+function patternEntries(configured, label) {
+  if (typeof configured !== 'object' || configured === null || Array.isArray(configured)) {
+    throw new Error(`config/book.yaml の ${label} はキーと値の組で指定してください。`);
+  }
+  const patterns = Object.entries(configured);
+  for (const [pattern] of patterns) {
+    if (pattern.trim() === '') {
+      throw new Error(`config/book.yaml の ${label} のキーは空でない文字列で指定してください。`);
+    }
+  }
+  return patterns;
+}
+
 /* 区分ごとの開始面を config/book.yaml から読む。
    section_start のキーは原稿ファイル名に含まれる文字列であり、前から順に照合する */
 export function resolveSectionSides(bookYaml) {
   const configured = bookYaml?.print?.section_start;
-  const patterns = Object.entries(configured ?? DEFAULT_SECTION_START);
+  const patterns = patternEntries(configured ?? DEFAULT_SECTION_START, 'print.section_start');
   for (const [pattern, side] of patterns) {
     assertSide(side, `config/book.yaml の print.section_start["${pattern}"]`);
   }
@@ -110,6 +126,36 @@ export function resolveFillerBefore(bookYaml) {
    ファイル名に依存させず、原稿を改名しても判定が壊れないようにする */
 export function hasChapterOpening(source) {
   return source.includes(CHAPTER_OPENING_CLASS);
+}
+
+/* 章扉を持たない区分（付録など）にもつめを付けたいときの指定を読む。
+   print.section_tabs のキーは原稿ファイル名に含まれる文字列，値はつめへ刷る
+   番号の文字（付録の X など）。タイトルは原稿の h1 から取る */
+export function resolveSectionTabs(bookYaml) {
+  const configured = bookYaml?.print?.section_tabs;
+  if (configured === undefined || configured === null) return [];
+  const patterns = patternEntries(configured, 'print.section_tabs');
+  for (const [pattern, number] of patterns) {
+    if (typeof number !== 'string' || number.trim() === '') {
+      throw new Error(
+        `config/book.yaml の print.section_tabs["${pattern}"] は空でない文字列で指定してください。`
+      );
+    }
+  }
+  return patterns;
+}
+
+/* section_tabs で指定されたつめの番号を返す。指定が無い区分では null を返す。
+   照合は section_start と同じく前から順に行う */
+export function tabNumberForEntry(entry, sectionTabs) {
+  const matched = sectionTabs.find(([pattern]) => entry.includes(pattern));
+  return matched ? matched[1] : null;
+}
+
+/* つめを付ける区分かどうか。
+   章扉を持つ原稿に加え，section_tabs の指定がある原稿を対象にする */
+export function isTabTarget(entry, source, sectionTabs = []) {
+  return hasChapterOpening(source) || tabNumberForEntry(entry, sectionTabs) !== null;
 }
 
 /* 1 つのエントリを開始すべき面を返す。指定が無い区分では null を返す */
@@ -281,24 +327,72 @@ export function injectHtmlClass(html, className) {
 /* 生成 HTML から、章の扉に書かれた章番号と章タイトルを取り出す。
    番号・タイトルとも扉の記述（.chapter-number・.chapter-title）を出所とし、
    つめと扉で表示が食い違わないようにする */
-function textOfClass(html, className) {
-  const pattern = new RegExp(
-    `<([a-z][a-z0-9]*)\\b[^>]*class="[^"]*\\b${className}\\b[^"]*"[^>]*>([\\s\\S]*?)</\\1>`,
-    'i'
-  );
-  const matched = html.match(pattern);
-  return matched ? stripHtmlTags(matched[2]).trim() : '';
+/* 条件に合う最初の要素の中身を返す。無ければ空文字を返す。
+   走査は htmlTags に任せ、コメントと raw text の中は読み飛ばす。
+   正規表現で直接拾うと、原稿へ残した書き換え前の見出しのように、
+   コメントの中のタグを実在の要素と取り違える */
+function firstElementText(html, matches) {
+  let opening = null;
+  for (const tag of htmlTags(html)) {
+    if (!opening) {
+      if (!tag.closing && matches(tag)) opening = tag;
+      continue;
+    }
+    if (tag.closing && tag.name === opening.name) {
+      const from = opening.start + opening.text.length;
+      /* 取り出すのは HTML のテキストである。実体参照は既に HTML として
+         正しい形であり、戻さずそのまま差し込む */
+      return stripHtmlTags(html.slice(from, tag.start)).trim();
+    }
+  }
+  return '';
 }
 
+function textOfClass(html, className) {
+  const pattern = new RegExp(`class="[^"]*\\b${className}\\b[^"]*"`, 'i');
+  return firstElementText(html, tag => pattern.test(tag.text));
+}
+
+/* 番号とタイトルの出所は扉の記述に限る。扉の外にある同じクラスの要素は使わない。
+   扉を持たない区分（section_tabs で加えた付録など）で本文の要素を拾うと、
+   config/book.yaml が指定した番号を黙って上書きする */
 export function extractChapterLabel(html) {
-  const heading = html.match(/<h1\b[^>]*>([\s\S]*?)<\/h1>/i);
+  const range = chapterOpeningRange(html);
+  const heading = firstElementText(html, tag => tag.name === 'h1');
+  if (!range) return { number: '', title: heading };
+
+  const opening = html.slice(range.from, range.closeStart);
   return {
-    number: textOfClass(html, 'chapter-number'),
-    title: textOfClass(html, 'chapter-title') || (heading ? stripHtmlTags(heading[1]).trim() : ''),
+    number: textOfClass(opening, 'chapter-number'),
+    title: textOfClass(opening, 'chapter-title') || heading,
+  };
+}
+
+/* 素のテキストを、HTML へ差し込める形へ直す。
+   対象は config/book.yaml のように HTML を経ていない出所の値に限る。
+   生成 HTML から取り出した値へ当てると、実体参照が二重に符号化される */
+export function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* つめへ出す番号とタイトルを決める。
+   番号は扉があれば扉を優先し、無いときだけ config/book.yaml の指定値を使う。
+   指定値だけが HTML を経ていない出所であり、ここで差し込める形へ直す */
+export function tabLabelFor(entry, html, sectionTabs = []) {
+  const label = extractChapterLabel(html);
+  const configured = tabNumberForEntry(entry, sectionTabs);
+  return {
+    number: label.number || (configured ? escapeHtml(configured) : ''),
+    title: label.title,
   };
 }
 
 /* つめの中身を組み立てる。体裁は print.css が持つ。
+   受け取るのは HTML のテキストであり、ここでは符号化を挟まない。
    章番号が数字のときだけ「第」「章」を添える（付録の A などには添えない）。
    読み上げ対象からは外す。扉と同じ内容が重複して読まれるためである */
 export function renderTabMark({ number, title }) {
@@ -382,30 +476,38 @@ function classNames(tag) {
   return (attribute[1] ?? attribute[2] ?? attribute[3] ?? '').trim().split(/\s+/);
 }
 
-/* 章の扉（.chapter-opening）の閉じタグが始まる位置を返す。扉が無ければ -1 を返す。
+/* 章の扉（.chapter-opening）の中身の範囲を返す。扉が無ければ null を返す。
    クラスは空白で区切ってから突き合わせ、chapter-opening-note のように
    前方一致するだけの別クラスを扉と見なさない。
    閉じタグは同じ名前のタグを数えて求め、入れ子があっても取り違えない */
-function chapterOpeningCloseStart(html) {
-  let openingName = '';
+function chapterOpeningRange(html) {
+  let opening = null;
   let depth = 0;
   for (const tag of htmlTags(html)) {
-    if (!openingName) {
+    if (!opening) {
       if (!tag.closing && classNames(tag).includes(CHAPTER_OPENING_CLASS)) {
-        openingName = tag.name;
+        opening = tag;
         depth = 1;
       }
       continue;
     }
-    if (tag.name !== openingName) continue;
+    if (tag.name !== opening.name) continue;
     depth += tag.closing ? -1 : 1;
-    if (depth === 0) return tag.start;
+    if (depth === 0) {
+      return { from: opening.start + opening.text.length, closeStart: tag.start };
+    }
   }
 
-  if (openingName) {
+  if (opening) {
     throw new Error('章の扉（.chapter-opening）の閉じタグが見つかりません。');
   }
-  return -1;
+  return null;
+}
+
+/* 章の扉の閉じタグが始まる位置を返す。扉が無ければ -1 を返す */
+function chapterOpeningCloseStart(html) {
+  const range = chapterOpeningRange(html);
+  return range ? range.closeStart : -1;
 }
 
 /* つめの中身を入れる。print.css の position: running() で流し込みから外れるため、
