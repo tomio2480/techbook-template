@@ -362,17 +362,27 @@ function localDocumentName(href) {
   return /\.html$/i.test(name) ? name : null;
 }
 
+// entry の各要素は文字列か { path } のオブジェクトを取りうる
+function entryPath(entry) {
+  if (typeof entry === 'string') return entry;
+  return typeof entry?.path === 'string' ? entry.path : null;
+}
+
 // vivliostyle.config.js の entry から、本に含まれる原稿を出力 HTML の名前で集める。
 // 生成された目次（index.html の nav）ではなく設定を出所にする。
 // nav の作られ方は Vivliostyle の実装しだいであり、そこから引くと
 // 載らない原稿が出たときに手動追加の項目を消してしまう。
 // 追跡ファイルである toc.html を壊す向きの間違いは避ける。
-// 設定の書き換え（updateConfig）より前に呼ぶが、.html へ書き換えた後の
-// 設定を渡しても同じ結果になる。
-export function collectEntryDocumentNames(configText) {
+// 設定は import して評価済みの値を受け取る。設定ファイルの文字列を
+// 正規表現で読むと、コメントアウトした entry まで本の一部として数える。
+// .html へ書き換えた後の設定を渡しても同じ結果になる。
+export function collectEntryDocumentNames(entries) {
   const names = new Set();
-  for (const match of configText.matchAll(/['"]src\/chapters\/([^'"]+)['"]/g)) {
-    names.add(match[1].replace(/\.md$/i, '.html'));
+  for (const entry of Array.isArray(entries) ? entries : []) {
+    const value = entryPath(entry);
+    if (value === null) continue;
+    const name = value.split('/').pop().replace(/\.md$/i, '.html');
+    if (name !== '') names.add(name);
   }
   return names;
 }
@@ -383,17 +393,41 @@ export function collectEntryDocumentNames(configText) {
 // Vivliostyle は解決できない target-counter を「??」で埋め、ビルドは成功する。
 // 警告も出ないため、気付かないまま「??」を刷った PDF を入稿しかねない。
 // 自動生成側の項目は entry に存在する原稿だけであり、判定の対象にしない。
-export function pruneDeadTocEntries(tree, documentExists) {
-  return tree
-    .filter(node => {
-      if (!node.isManual) return true;
-      const name = localDocumentName(node.href);
-      return name === null || documentExists(name);
-    })
-    .map(node => ({
+// 手動追加の項目の子孫も手動追加として扱う。mergeTocTrees が isManual を
+// 立てるのは最上位の残り物だけであり、その下の項目には印が付かない。
+function prunedSubtree(tree, documentExists, inManual) {
+  let changed = false;
+  const kept = [];
+
+  for (const node of tree) {
+    const manual = inManual || node.isManual === true;
+    const name = localDocumentName(node.href);
+    if (manual && name !== null && !documentExists(name)) {
+      changed = true;
+      continue;
+    }
+
+    const children = prunedSubtree(node.children ?? [], documentExists, manual);
+    if (!children.changed) {
+      kept.push(node);
+      continue;
+    }
+    changed = true;
+    kept.push({
       ...node,
-      children: pruneDeadTocEntries(node.children ?? [], documentExists),
-    }));
+      children: children.tree,
+      /* 子を落とした項目は控えておいた元の HTML を使えない。消したはずの
+         子が rawOuterHtml の中に残り、そのまま出力されてしまう。
+         組み直すため null にする（serializeTocNode が href と text から作る） */
+      rawOuterHtml: null,
+    });
+  }
+
+  return { tree: kept, changed };
+}
+
+export function pruneDeadTocEntries(tree, documentExists) {
+  return prunedSubtree(tree, documentExists, false).tree;
 }
 
 // 既存 toc.html の nav 内側に手動編集された見出し（<h1>〜<h6>）があれば
@@ -411,7 +445,9 @@ export function serializeTocTree(tree) {
 }
 
 function serializeTocNode(node) {
-  if (node.isManual) {
+  /* 手動追加の項目は手で書いた文言と属性をそのまま残す。
+     ただし子を落とした項目は rawOuterHtml を捨ててあり、組み直す */
+  if (node.isManual && node.rawOuterHtml) {
     return node.rawOuterHtml;
   }
   const levelAttr = node.level !== null ? ` data-section-level="${node.level}"` : '';
@@ -421,7 +457,7 @@ function serializeTocNode(node) {
 }
 
 // index.html から目次を抽出して toc.html に挿入
-function updateTocFromIndex() {
+async function updateTocFromIndex() {
   if (!fs.existsSync(indexPath) || !fs.existsSync(tocPath)) {
     console.log('index.html or toc.html not found, skipping TOC update');
     return;
@@ -445,8 +481,11 @@ function updateTocFromIndex() {
   tocInner = tocInner.replace(/href="src\/chapters\//g, 'href="');
 
   /* 本に含まれる原稿の一覧は設定から引く。生成 HTML の有無では判定できない。
-     entry から外した後も前回のビルドが作った HTML が src/chapters/ に残る */
-  const liveDocuments = collectEntryDocumentNames(fs.readFileSync(configPath, 'utf-8'));
+     entry から外した後も前回のビルドが作った HTML が src/chapters/ に残る。
+     設定は import して評価済みの entry を読む。ファイルの文字列を正規表現で
+     読むと、コメントアウトした entry まで本の一部として数えてしまう */
+  const config = (await import(pathToFileURL(configPath).href)).default;
+  const liveDocuments = collectEntryDocumentNames(config?.entry);
 
   // 表紙、目次自体、あとがき、奥付、裏表紙の項目を削除
   tocInner = removeExcludedTocEntries(tocInner);
@@ -491,7 +530,7 @@ if (isMainModule) {
   if (args.includes('--restore')) {
     restoreConfig();
   } else {
-    updateTocFromIndex();
+    await updateTocFromIndex();
     removeIndexHtml();
     processHtmlFiles();
     updateConfig();

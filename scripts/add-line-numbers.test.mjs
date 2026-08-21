@@ -7,41 +7,33 @@ import { parseListItems, mergeTocTrees, pruneDeadTocEntries, collectEntryDocumen
 
 // --- collectEntryDocumentNames ---
 
-const CONFIG_TEXT = `export default {
-  entry: [
-    'src/chapters/cover.md',
-    'src/chapters/toc.html',
-    'src/chapters/01-introduction.md',
-    "src/chapters/back-cover.md",
-  ],
-};`;
-
 test('collectEntryDocumentNames: entry の原稿を出力 HTML の名前で集める', () => {
+  const entries = ['src/chapters/cover.md', 'src/chapters/toc.html', 'src/chapters/01-introduction.md'];
   assert.deepEqual(
-    [...collectEntryDocumentNames(CONFIG_TEXT)],
-    ['cover.html', 'toc.html', '01-introduction.html', 'back-cover.html']
+    [...collectEntryDocumentNames(entries)],
+    ['cover.html', 'toc.html', '01-introduction.html']
   );
+});
+
+test('collectEntryDocumentNames: オブジェクト形式の entry も扱う', () => {
+  const entries = [{ path: 'src/chapters/01-introduction.md', title: '第1章' }];
+  assert.deepEqual([...collectEntryDocumentNames(entries)], ['01-introduction.html']);
 });
 
 test('collectEntryDocumentNames: 見出しを持たない原稿も entry にあれば数える', () => {
-  assert.ok(collectEntryDocumentNames(CONFIG_TEXT).has('back-cover.html'));
+  assert.ok(collectEntryDocumentNames(['src/chapters/back-cover.md']).has('back-cover.html'));
 });
 
 test('collectEntryDocumentNames: entry に無い原稿は数えない', () => {
-  assert.ok(!collectEntryDocumentNames(CONFIG_TEXT).has('99-index.html'));
+  assert.ok(!collectEntryDocumentNames(['src/chapters/cover.md']).has('99-index.html'));
 });
 
-test('collectEntryDocumentNames: HTML へ書き換えた後の設定でも同じ結果になる', () => {
-  const asHtml = CONFIG_TEXT.replace(/\.md/g, '.html');
-  assert.deepEqual(
-    [...collectEntryDocumentNames(asHtml)],
-    [...collectEntryDocumentNames(CONFIG_TEXT)]
-  );
+test('collectEntryDocumentNames: 配列でなければ空を返す', () => {
+  assert.equal(collectEntryDocumentNames(undefined).size, 0);
 });
 
-test('collectEntryDocumentNames: 同じ原稿が二度並んでも 1 つにまとめる', () => {
-  const doubled = "entry: ['src/chapters/cover.md', 'src/chapters/cover.md']";
-  assert.deepEqual([...collectEntryDocumentNames(doubled)], ['cover.html']);
+test('collectEntryDocumentNames: 文字列でもオブジェクトでもない要素は飛ばす', () => {
+  assert.deepEqual([...collectEntryDocumentNames([null, 'src/chapters/cover.md'])], ['cover.html']);
 });
 
 // --- pruneDeadTocEntries ---
@@ -115,6 +107,49 @@ test('pruneDeadTocEntries: 入れ子の手動項目も対象にする', () => {
   const pruned = pruneDeadTocEntries(tree, documentExists);
   assert.equal(pruned.length, 1);
   assert.deepEqual(pruned[0].children, []);
+});
+
+test('pruneDeadTocEntries: 手動項目の下にある消えた原稿への子も落とす', () => {
+  const tree = [
+    {
+      href: '98-afterword.html',
+      level: 1,
+      text: 'あとがき',
+      children: [manual('99-index.html', '索引')],
+      rawOuterHtml: '<li data-section-level="1"><a href="98-afterword.html">あとがき</a><ol><li><a href="99-index.html">索引</a></li></ol></li>',
+      isManual: true,
+    },
+  ];
+  const pruned = pruneDeadTocEntries(tree, documentExists);
+  assert.equal(pruned.length, 1);
+  assert.deepEqual(pruned[0].children, []);
+});
+
+test('pruneDeadTocEntries: 子を落とした手動項目は元の HTML を使わない', () => {
+  const tree = [
+    {
+      href: '98-afterword.html',
+      level: 1,
+      text: 'あとがき',
+      children: [
+        { href: '99-index.html', level: 2, text: '索引', children: [], rawOuterHtml: '<li data-section-level="2"><a href="99-index.html">索引</a></li>' },
+      ],
+      rawOuterHtml: '<li data-section-level="1"><a href="98-afterword.html">あとがき</a><ol><li data-section-level="2"><a href="99-index.html">索引</a></li></ol></li>',
+      isManual: true,
+    },
+  ];
+  const html = serializeTocTree(pruneDeadTocEntries(tree, documentExists));
+  assert.ok(!html.includes('99-index.html'));
+  assert.ok(html.includes('98-afterword.html'));
+  assert.ok(html.includes('あとがき'));
+});
+
+test('pruneDeadTocEntries: 何も落ちない手動項目は元の HTML のまま出す', () => {
+  const tree = [manual('98-afterword.html', 'あとがき（手で書いた文言）')];
+  const html = serializeTocTree(pruneDeadTocEntries(tree, documentExists));
+  assert.equal(html, `<ol>
+${tree[0].rawOuterHtml}
+</ol>`);
 });
 
 test('pruneDeadTocEntries: .html 以外を指す手動項目は落とさない', () => {
