@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { parseListItems, mergeTocTrees, pruneDeadTocEntries, collectEntryDocumentNames, serializeTocTree, writeBuildMarker, stripHtmlTags, extractHeadingOrDefault, removeExcludedTocEntries } from './add-line-numbers.mjs';
+import { parseListItems, mergeTocTrees, pruneDeadTocEntries, replaceChildrenHtml, collectEntryDocumentNames, serializeTocTree, writeBuildMarker, stripHtmlTags, extractHeadingOrDefault, removeExcludedTocEntries } from './add-line-numbers.mjs';
 
 // --- collectEntryDocumentNames ---
 
@@ -150,6 +150,56 @@ test('pruneDeadTocEntries: 何も落ちない手動項目は元の HTML のま�
   assert.equal(html, `<ol>
 ${tree[0].rawOuterHtml}
 </ol>`);
+});
+
+test('pruneDeadTocEntries: 子を落としても親の手書きマークアップを残す', () => {
+  const html =
+    '<ol>' +
+    '<li data-section-level="1" id="my-part" class="part" aria-label="第 1 部">' +
+    '<a href="98-afterword.html">あとがき</a><span class="note">補足</span>' +
+    '<ol>' +
+    '<li data-section-level="2"><a href="99-index.html">索引</a></li>' +
+    '<li data-section-level="2"><a href="01-introduction.html">第1章</a></li>' +
+    '</ol></li></ol>';
+  const tree = parseListItems(html).map(node => ({ ...node, isManual: true }));
+  const out = serializeTocTree(pruneDeadTocEntries(tree, documentExists));
+  assert.ok(out.includes('id="my-part"'));
+  assert.ok(out.includes('class="part"'));
+  assert.ok(out.includes('aria-label="第 1 部"'));
+  assert.ok(out.includes('<span class="note">補足</span>'));
+  assert.ok(out.includes('01-introduction.html'));
+  assert.ok(!out.includes('99-index.html'));
+});
+
+test('pruneDeadTocEntries: 子がすべて落ちたら子リストごと消す', () => {
+  const html =
+    '<ol>' +
+    '<li data-section-level="1" id="my-part"><a href="98-afterword.html">あとがき</a>' +
+    '<ol><li data-section-level="2"><a href="99-index.html">索引</a></li></ol>' +
+    '</li></ol>';
+  const tree = parseListItems(html).map(node => ({ ...node, isManual: true }));
+  const out = serializeTocTree(pruneDeadTocEntries(tree, documentExists));
+  assert.ok(out.includes('id="my-part"'));
+  assert.ok(!out.includes('99-index.html'));
+  /* 外側の <ol> 1 つだけが残る（子リストは消える） */
+  assert.equal(out.split('<ol').length - 1, 1);
+});
+
+// --- replaceChildrenHtml ---
+
+test('replaceChildrenHtml: 子リストの範囲だけを差し替える', () => {
+  const [node] = parseListItems(
+    '<ol><li id="a"><a href="98-afterword.html">あとがき</a><ol><li>子</li></ol></li></ol>'
+  );
+  assert.equal(
+    replaceChildrenHtml(node, '<ol><li>別の子</li></ol>'),
+    '<li id="a"><a href="98-afterword.html">あとがき</a><ol><li>別の子</li></ol></li>'
+  );
+});
+
+test('replaceChildrenHtml: 子リストを持たない項目では null を返す', () => {
+  const [node] = parseListItems('<ol><li id="a"><a href="98-afterword.html">あとがき</a></li></ol>');
+  assert.equal(replaceChildrenHtml(node, '<ol><li>子</li></ol>'), null);
 });
 
 test('pruneDeadTocEntries: .html 以外を指す手動項目は落とさない', () => {

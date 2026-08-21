@@ -274,7 +274,14 @@ function parseLiNode(liHtml) {
 
   const children = childrenHtml.includes('<ol') ? parseListItems(childrenHtml) : [];
 
-  return { href, level, text, children, rawOuterHtml: liHtml };
+  /* 子リストが rawOuterHtml のどこにあるかを控える。手動追加の項目から
+     子を落とすとき、この範囲だけを差し替えれば手で書いた属性や
+     独自のマークアップを保てる */
+  const childrenStart = innerStart + olIndex;
+  const childrenEnd = innerEndIndex === -1 ? liHtml.length : innerEndIndex;
+  const childrenRange = olIndex !== -1 ? [childrenStart, childrenEnd] : null;
+
+  return { href, level, text, children, rawOuterHtml: liHtml, childrenRange };
 }
 
 // nav 内側などの HTML から、トップレベル <ol> 直下の <li> 群を再帰的に解析する
@@ -393,6 +400,21 @@ export function collectEntryDocumentNames(entries) {
 // Vivliostyle は解決できない target-counter を「??」で埋め、ビルドは成功する。
 // 警告も出ないため、気付かないまま「??」を刷った PDF を入稿しかねない。
 // 自動生成側の項目は entry に存在する原稿だけであり、判定の対象にしない。
+// 控えておいた <li> の中の子リストだけを差し替える。
+// 親自身のマークアップ（id・class・aria-*・独自の span など）は手で書いた
+// ものであり、子を落とすためだけに捨てない。
+// 範囲が分からない項目では null を返し、呼び出し側が組み直す。
+export function replaceChildrenHtml(node, childrenHtml) {
+  if (typeof node.rawOuterHtml !== 'string' || !Array.isArray(node.childrenRange)) {
+    return null;
+  }
+  const [start, end] = node.childrenRange;
+  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end > node.rawOuterHtml.length || start > end) {
+    return null;
+  }
+  return node.rawOuterHtml.slice(0, start) + childrenHtml + node.rawOuterHtml.slice(end);
+}
+
 // 手動追加の項目の子孫も手動追加として扱う。mergeTocTrees が isManual を
 // 立てるのは最上位の残り物だけであり、その下の項目には印が付かない。
 function prunedSubtree(tree, documentExists, inManual) {
@@ -413,13 +435,14 @@ function prunedSubtree(tree, documentExists, inManual) {
       continue;
     }
     changed = true;
+    /* 子を落とした項目は控えておいた元の HTML をそのまま使えない。
+       消したはずの子が rawOuterHtml の中に残り、そのまま出力されてしまう。
+       子リストの範囲だけを差し替え、手で書いた属性や独自のマークアップは残す。
+       範囲が分からない項目だけ、href と text から組み直す */
     kept.push({
       ...node,
       children: children.tree,
-      /* 子を落とした項目は控えておいた元の HTML を使えない。消したはずの
-         子が rawOuterHtml の中に残り、そのまま出力されてしまう。
-         組み直すため null にする（serializeTocNode が href と text から作る） */
-      rawOuterHtml: null,
+      rawOuterHtml: replaceChildrenHtml(node, serializeTocTree(children.tree)),
     });
   }
 
