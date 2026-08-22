@@ -14,6 +14,8 @@ Claude が作業する際の必須事項を定める．
 - 表紙・本扉・裏表紙（`cover.md`・`title-page.md`・`back-cover.md`）は
   `docs/spec/cover.md` が扱う．背景画像・テーマ CSS 変数も同じ spec の
   範囲である．着手前に必ず読むこと．
+- 索引（`99-index.md`・`npm run gen:index`・`npm run check:index`）は
+  `docs/spec/index-page.md` が扱う．着手前に必ず読むこと．
 - `config/isdn.yaml` へ申請フォームのパスワード等の認証情報を書かない．
   氏名・メールアドレスなどの個人情報も既定では書かない．
 - 出版・版番号の変更・正誤を追記したら，`npm run check:errata` で
