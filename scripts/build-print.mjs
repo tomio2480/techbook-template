@@ -63,7 +63,12 @@ const BUILD_MARKER = path.join('dist', '.build-marker');
 const CHAPTERS_DIR = path.join('src', 'chapters');
 const TAB_STYLESHEET = path.join('config', 'themes', 'techbook', TAB_STYLESHEET_FILE);
 /* ビルド前に走らせる機械検査。npm run build と同じ内容を同じ順で実行する */
-const CHECK_SCRIPTS = ['check-errata.mjs', 'check-isdn.mjs', 'check-preface-errata.mjs'];
+const CHECK_SCRIPTS = [
+  'check-errata.mjs',
+  'check-isdn.mjs',
+  'check-preface-errata.mjs',
+  'check-index.mjs',
+];
 /* npx を介さず CLI のエントリポイントを node で直接起動する（tag-pdf.mjs と同じ方針） */
 const VIVLIOSTYLE_CLI = path.join('node_modules', '@vivliostyle', 'cli', 'dist', 'cli.js');
 const OPENDATALOADER_CLI = path.join('node_modules', '@opendataloader', 'pdf', 'dist', 'cli.js');

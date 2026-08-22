@@ -274,7 +274,14 @@ function parseLiNode(liHtml) {
 
   const children = childrenHtml.includes('<ol') ? parseListItems(childrenHtml) : [];
 
-  return { href, level, text, children, rawOuterHtml: liHtml };
+  /* 子リストが rawOuterHtml のどこにあるかを控える。手動追加の項目から
+     子を落とすとき、この範囲だけを差し替えれば手で書いた属性や
+     独自のマークアップを保てる */
+  const childrenStart = innerStart + olIndex;
+  const childrenEnd = innerEndIndex === -1 ? liHtml.length : innerEndIndex;
+  const childrenRange = olIndex !== -1 ? [childrenStart, childrenEnd] : null;
+
+  return { href, level, text, children, rawOuterHtml: liHtml, childrenRange };
 }
 
 // nav 内側などの HTML から、トップレベル <ol> 直下の <li> 群を再帰的に解析する
@@ -352,6 +359,100 @@ export function mergeTocTrees(autoTree, oldTree) {
   return [...merged, ...manualLeftovers];
 }
 
+// href がローカルの HTML 原稿を指すなら，そのファイル名を返す。
+// 外部リンク・同一ページ内のアンカー・HTML 以外は判定の対象にしない
+function localDocumentName(href) {
+  if (typeof href !== 'string' || href === '' || href.startsWith('#')) return null;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith('//')) return null;
+  /* 生成 HTML は 1 つのディレクトリへ並ぶため、比較はファイル名だけで足りる */
+  const name = normalizeHref(href).split('/').pop();
+  return /\.html$/i.test(name) ? name : null;
+}
+
+// entry の各要素は文字列か { path } のオブジェクトを取りうる
+function entryPath(entry) {
+  if (typeof entry === 'string') return entry;
+  return typeof entry?.path === 'string' ? entry.path : null;
+}
+
+// vivliostyle.config.js の entry から、本に含まれる原稿を出力 HTML の名前で集める。
+// 生成された目次（index.html の nav）ではなく設定を出所にする。
+// nav の作られ方は Vivliostyle の実装しだいであり、そこから引くと
+// 載らない原稿が出たときに手動追加の項目を消してしまう。
+// 追跡ファイルである toc.html を壊す向きの間違いは避ける。
+// 設定は import して評価済みの値を受け取る。設定ファイルの文字列を
+// 正規表現で読むと、コメントアウトした entry まで本の一部として数える。
+// .html へ書き換えた後の設定を渡しても同じ結果になる。
+export function collectEntryDocumentNames(entries) {
+  const names = new Set();
+  for (const entry of Array.isArray(entries) ? entries : []) {
+    const value = entryPath(entry);
+    if (value === null) continue;
+    const name = value.split('/').pop().replace(/\.md$/i, '.html');
+    if (name !== '') names.add(name);
+  }
+  return names;
+}
+
+// 手動追加の項目のうち、参照先の原稿が本に無いものを落とす。
+// mergeTocTrees は old 側にのみ残った項目を手動追加として残すため、
+// entry から外した原稿への項目が toc.html に残り続ける。
+// Vivliostyle は解決できない target-counter を「??」で埋め、ビルドは成功する。
+// 警告も出ないため、気付かないまま「??」を刷った PDF を入稿しかねない。
+// 自動生成側の項目は entry に存在する原稿だけであり、判定の対象にしない。
+// 控えておいた <li> の中の子リストだけを差し替える。
+// 親自身のマークアップ（id・class・aria-*・独自の span など）は手で書いた
+// ものであり、子を落とすためだけに捨てない。
+// 範囲が分からない項目では null を返し、呼び出し側が組み直す。
+export function replaceChildrenHtml(node, childrenHtml) {
+  if (typeof node.rawOuterHtml !== 'string' || !Array.isArray(node.childrenRange)) {
+    return null;
+  }
+  const [start, end] = node.childrenRange;
+  if (!Number.isInteger(start) || !Number.isInteger(end) || start < 0 || end > node.rawOuterHtml.length || start > end) {
+    return null;
+  }
+  return node.rawOuterHtml.slice(0, start) + childrenHtml + node.rawOuterHtml.slice(end);
+}
+
+// 手動追加の項目の子孫も手動追加として扱う。mergeTocTrees が isManual を
+// 立てるのは最上位の残り物だけであり、その下の項目には印が付かない。
+function prunedSubtree(tree, documentExists, inManual) {
+  let changed = false;
+  const kept = [];
+
+  for (const node of tree) {
+    const manual = inManual || node.isManual === true;
+    const name = localDocumentName(node.href);
+    if (manual && name !== null && !documentExists(name)) {
+      changed = true;
+      continue;
+    }
+
+    const children = prunedSubtree(node.children ?? [], documentExists, manual);
+    if (!children.changed) {
+      kept.push(node);
+      continue;
+    }
+    changed = true;
+    /* 子を落とした項目は控えておいた元の HTML をそのまま使えない。
+       消したはずの子が rawOuterHtml の中に残り、そのまま出力されてしまう。
+       子リストの範囲だけを差し替え、手で書いた属性や独自のマークアップは残す。
+       範囲が分からない項目だけ、href と text から組み直す */
+    kept.push({
+      ...node,
+      children: children.tree,
+      rawOuterHtml: replaceChildrenHtml(node, serializeTocTree(children.tree)),
+    });
+  }
+
+  return { tree: kept, changed };
+}
+
+export function pruneDeadTocEntries(tree, documentExists) {
+  return prunedSubtree(tree, documentExists, false).tree;
+}
+
 // 既存 toc.html の nav 内側に手動編集された見出し（<h1>〜<h6>）があれば
 // それを保持し、なければデフォルトの「目次」見出しを使う
 export function extractHeadingOrDefault(oldNavInner) {
@@ -367,7 +468,9 @@ export function serializeTocTree(tree) {
 }
 
 function serializeTocNode(node) {
-  if (node.isManual) {
+  /* 手動追加の項目は手で書いた文言と属性をそのまま残す。
+     ただし子を落とした項目は rawOuterHtml を捨ててあり、組み直す */
+  if (node.isManual && node.rawOuterHtml) {
     return node.rawOuterHtml;
   }
   const levelAttr = node.level !== null ? ` data-section-level="${node.level}"` : '';
@@ -377,7 +480,7 @@ function serializeTocNode(node) {
 }
 
 // index.html から目次を抽出して toc.html に挿入
-function updateTocFromIndex() {
+async function updateTocFromIndex() {
   if (!fs.existsSync(indexPath) || !fs.existsSync(tocPath)) {
     console.log('index.html or toc.html not found, skipping TOC update');
     return;
@@ -400,6 +503,13 @@ function updateTocFromIndex() {
   // パスを相対パスに変換（src/chapters/ を削除）
   tocInner = tocInner.replace(/href="src\/chapters\//g, 'href="');
 
+  /* 本に含まれる原稿の一覧は設定から引く。生成 HTML の有無では判定できない。
+     entry から外した後も前回のビルドが作った HTML が src/chapters/ に残る。
+     設定は import して評価済みの entry を読む。ファイルの文字列を正規表現で
+     読むと、コメントアウトした entry まで本の一部として数えてしまう */
+  const config = (await import(pathToFileURL(configPath).href)).default;
+  const liveDocuments = collectEntryDocumentNames(config?.entry);
+
   // 表紙、目次自体、あとがき、奥付、裏表紙の項目を削除
   tocInner = removeExcludedTocEntries(tocInner);
 
@@ -412,7 +522,9 @@ function updateTocFromIndex() {
   const oldTree = oldTocMatch ? parseListItems(oldTocMatch[1]) : [];
   const autoTree = parseListItems(tocInner);
   const mergedTree = mergeTocTrees(autoTree, oldTree);
-  const mergedOl = serializeTocTree(mergedTree);
+  /* 本から外した原稿への項目を落とす */
+  const prunedTree = pruneDeadTocEntries(mergedTree, name => liveDocuments.has(name));
+  const mergedOl = serializeTocTree(prunedTree);
   const heading = extractHeadingOrDefault(oldTocMatch ? oldTocMatch[1] : null);
 
   // toc.html の nav 内を、手動編集済みテキストを保持したままマージ結果で置換
@@ -441,7 +553,7 @@ if (isMainModule) {
   if (args.includes('--restore')) {
     restoreConfig();
   } else {
-    updateTocFromIndex();
+    await updateTocFromIndex();
     removeIndexHtml();
     processHtmlFiles();
     updateConfig();

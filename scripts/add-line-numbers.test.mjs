@@ -3,7 +3,209 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { parseListItems, mergeTocTrees, serializeTocTree, writeBuildMarker, stripHtmlTags, extractHeadingOrDefault, removeExcludedTocEntries } from './add-line-numbers.mjs';
+import { parseListItems, mergeTocTrees, pruneDeadTocEntries, replaceChildrenHtml, collectEntryDocumentNames, serializeTocTree, writeBuildMarker, stripHtmlTags, extractHeadingOrDefault, removeExcludedTocEntries } from './add-line-numbers.mjs';
+
+// --- collectEntryDocumentNames ---
+
+test('collectEntryDocumentNames: entry の原稿を出力 HTML の名前で集める', () => {
+  const entries = ['src/chapters/cover.md', 'src/chapters/toc.html', 'src/chapters/01-introduction.md'];
+  assert.deepEqual(
+    [...collectEntryDocumentNames(entries)],
+    ['cover.html', 'toc.html', '01-introduction.html']
+  );
+});
+
+test('collectEntryDocumentNames: オブジェクト形式の entry も扱う', () => {
+  const entries = [{ path: 'src/chapters/01-introduction.md', title: '第1章' }];
+  assert.deepEqual([...collectEntryDocumentNames(entries)], ['01-introduction.html']);
+});
+
+test('collectEntryDocumentNames: 見出しを持たない原稿も entry にあれば数える', () => {
+  assert.ok(collectEntryDocumentNames(['src/chapters/back-cover.md']).has('back-cover.html'));
+});
+
+test('collectEntryDocumentNames: entry に無い原稿は数えない', () => {
+  assert.ok(!collectEntryDocumentNames(['src/chapters/cover.md']).has('99-index.html'));
+});
+
+test('collectEntryDocumentNames: 配列でなければ空を返す', () => {
+  assert.equal(collectEntryDocumentNames(undefined).size, 0);
+});
+
+test('collectEntryDocumentNames: 文字列でもオブジェクトでもない要素は飛ばす', () => {
+  assert.deepEqual([...collectEntryDocumentNames([null, 'src/chapters/cover.md'])], ['cover.html']);
+});
+
+// --- pruneDeadTocEntries ---
+
+/* 手動追加の項目は参照先が消えても残る（mergeTocTrees の仕様）．
+   本にもう無い原稿を指したままだと，目次のページ番号が ?? と刷られる．
+   Vivliostyle は解決できない target-counter を ?? で埋め，ビルドは成功する．
+   黙って通る失敗になるため，参照先の消えた手動項目はここで落とす */
+
+const aliveDocuments = new Set(['01-introduction.html', '98-afterword.html']);
+const documentExists = (name) => aliveDocuments.has(name);
+
+function manual(href, text) {
+  return {
+    href,
+    level: 1,
+    text,
+    children: [],
+    rawOuterHtml: `<li data-section-level="1"><a href="${href}">${text}</a></li>`,
+    isManual: true,
+  };
+}
+
+test('pruneDeadTocEntries: 参照先の原稿が無い手動項目を落とす', () => {
+  const tree = [manual('99-index.html', '索引')];
+  assert.deepEqual(pruneDeadTocEntries(tree, documentExists), []);
+});
+
+test('pruneDeadTocEntries: 参照先の原稿がある手動項目は残す', () => {
+  const tree = [manual('98-afterword.html', 'あとがき')];
+  assert.equal(pruneDeadTocEntries(tree, documentExists).length, 1);
+});
+
+test('pruneDeadTocEntries: アンカー付きでもファイル名で判定する', () => {
+  const tree = [manual('99-index.html#top', '索引')];
+  assert.deepEqual(pruneDeadTocEntries(tree, documentExists), []);
+});
+
+test('pruneDeadTocEntries: 自動生成の項目は落とさない', () => {
+  const tree = [
+    { href: '99-index.html', level: 1, text: '索引', children: [], rawOuterHtml: null },
+  ];
+  assert.equal(pruneDeadTocEntries(tree, documentExists).length, 1);
+});
+
+test('pruneDeadTocEntries: 外部リンクの手動項目は落とさない', () => {
+  const tree = [manual('https://example.com/', '参考')];
+  assert.equal(pruneDeadTocEntries(tree, documentExists).length, 1);
+});
+
+test('pruneDeadTocEntries: 同じページ内のアンカーだけの手動項目は落とさない', () => {
+  const tree = [manual('#memo', 'メモ')];
+  assert.equal(pruneDeadTocEntries(tree, documentExists).length, 1);
+});
+
+test('pruneDeadTocEntries: href を持たない手動項目は落とさない', () => {
+  const tree = [{ href: null, level: 1, text: '見出しのみ', children: [], rawOuterHtml: '<li>見出しのみ</li>', isManual: true }];
+  assert.equal(pruneDeadTocEntries(tree, documentExists).length, 1);
+});
+
+test('pruneDeadTocEntries: 入れ子の手動項目も対象にする', () => {
+  const tree = [
+    {
+      href: '01-introduction.html',
+      level: 1,
+      text: '第1章',
+      children: [manual('99-index.html', '索引')],
+      rawOuterHtml: null,
+    },
+  ];
+  const pruned = pruneDeadTocEntries(tree, documentExists);
+  assert.equal(pruned.length, 1);
+  assert.deepEqual(pruned[0].children, []);
+});
+
+test('pruneDeadTocEntries: 手動項目の下にある消えた原稿への子も落とす', () => {
+  const tree = [
+    {
+      href: '98-afterword.html',
+      level: 1,
+      text: 'あとがき',
+      children: [manual('99-index.html', '索引')],
+      rawOuterHtml: '<li data-section-level="1"><a href="98-afterword.html">あとがき</a><ol><li><a href="99-index.html">索引</a></li></ol></li>',
+      isManual: true,
+    },
+  ];
+  const pruned = pruneDeadTocEntries(tree, documentExists);
+  assert.equal(pruned.length, 1);
+  assert.deepEqual(pruned[0].children, []);
+});
+
+test('pruneDeadTocEntries: 子を落とした手動項目は元の HTML を使わない', () => {
+  const tree = [
+    {
+      href: '98-afterword.html',
+      level: 1,
+      text: 'あとがき',
+      children: [
+        { href: '99-index.html', level: 2, text: '索引', children: [], rawOuterHtml: '<li data-section-level="2"><a href="99-index.html">索引</a></li>' },
+      ],
+      rawOuterHtml: '<li data-section-level="1"><a href="98-afterword.html">あとがき</a><ol><li data-section-level="2"><a href="99-index.html">索引</a></li></ol></li>',
+      isManual: true,
+    },
+  ];
+  const html = serializeTocTree(pruneDeadTocEntries(tree, documentExists));
+  assert.ok(!html.includes('99-index.html'));
+  assert.ok(html.includes('98-afterword.html'));
+  assert.ok(html.includes('あとがき'));
+});
+
+test('pruneDeadTocEntries: 何も落ちない手動項目は元の HTML のまま出す', () => {
+  const tree = [manual('98-afterword.html', 'あとがき（手で書いた文言）')];
+  const html = serializeTocTree(pruneDeadTocEntries(tree, documentExists));
+  assert.equal(html, `<ol>
+${tree[0].rawOuterHtml}
+</ol>`);
+});
+
+test('pruneDeadTocEntries: 子を落としても親の手書きマークアップを残す', () => {
+  const html =
+    '<ol>' +
+    '<li data-section-level="1" id="my-part" class="part" aria-label="第 1 部">' +
+    '<a href="98-afterword.html">あとがき</a><span class="note">補足</span>' +
+    '<ol>' +
+    '<li data-section-level="2"><a href="99-index.html">索引</a></li>' +
+    '<li data-section-level="2"><a href="01-introduction.html">第1章</a></li>' +
+    '</ol></li></ol>';
+  const tree = parseListItems(html).map(node => ({ ...node, isManual: true }));
+  const out = serializeTocTree(pruneDeadTocEntries(tree, documentExists));
+  assert.ok(out.includes('id="my-part"'));
+  assert.ok(out.includes('class="part"'));
+  assert.ok(out.includes('aria-label="第 1 部"'));
+  assert.ok(out.includes('<span class="note">補足</span>'));
+  assert.ok(out.includes('01-introduction.html'));
+  assert.ok(!out.includes('99-index.html'));
+});
+
+test('pruneDeadTocEntries: 子がすべて落ちたら子リストごと消す', () => {
+  const html =
+    '<ol>' +
+    '<li data-section-level="1" id="my-part"><a href="98-afterword.html">あとがき</a>' +
+    '<ol><li data-section-level="2"><a href="99-index.html">索引</a></li></ol>' +
+    '</li></ol>';
+  const tree = parseListItems(html).map(node => ({ ...node, isManual: true }));
+  const out = serializeTocTree(pruneDeadTocEntries(tree, documentExists));
+  assert.ok(out.includes('id="my-part"'));
+  assert.ok(!out.includes('99-index.html'));
+  /* 外側の <ol> 1 つだけが残る（子リストは消える） */
+  assert.equal(out.split('<ol').length - 1, 1);
+});
+
+// --- replaceChildrenHtml ---
+
+test('replaceChildrenHtml: 子リストの範囲だけを差し替える', () => {
+  const [node] = parseListItems(
+    '<ol><li id="a"><a href="98-afterword.html">あとがき</a><ol><li>子</li></ol></li></ol>'
+  );
+  assert.equal(
+    replaceChildrenHtml(node, '<ol><li>別の子</li></ol>'),
+    '<li id="a"><a href="98-afterword.html">あとがき</a><ol><li>別の子</li></ol></li>'
+  );
+});
+
+test('replaceChildrenHtml: 子リストを持たない項目では null を返す', () => {
+  const [node] = parseListItems('<ol><li id="a"><a href="98-afterword.html">あとがき</a></li></ol>');
+  assert.equal(replaceChildrenHtml(node, '<ol><li>子</li></ol>'), null);
+});
+
+test('pruneDeadTocEntries: .html 以外を指す手動項目は落とさない', () => {
+  const tree = [manual('appendix.pdf', '別冊')];
+  assert.equal(pruneDeadTocEntries(tree, documentExists).length, 1);
+});
 
 // --- removeExcludedTocEntries ---
 

@@ -1077,39 +1077,39 @@ nav[role="doc-toc"] > ol {
   counter-reset: toc-chapter toc-appendix-chapter;
 }
 
-/* まえがき・解答・あとがき・表紙・目次自体・奥付・付録以外の章（data-section-level="1"）にカウンターを適用 */
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"])) {
+/* まえがき・解答・あとがき・表紙・目次自体・奥付・付録・索引以外の章（data-section-level="1"）にカウンターを適用 */
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"], > a[href*="index"])) {
   counter-increment: toc-chapter;
   counter-reset: toc-section;
 }
 
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"])) > a::before {
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"], > a[href*="index"])) > a::before {
   content: counter(toc-chapter) ". ";
 }
 
-/* まえがき・解答・あとがき・表紙・目次自体・奥付・付録の子セクションには番号を付けない */
+/* まえがき・解答・あとがき・表紙・目次自体・奥付・付録・索引の子セクションには番号を付けない */
 /* 付録・解答は後続の専用採番ルールが同じ詳細度で上書きする（記述順が優先） */
-nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"]) li[data-section-level="2"] > a::before,
-nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"]) li[data-section-level="3"] > a::before {
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"], > a[href*="index"]) li[data-section-level="2"] > a::before,
+nav[role="doc-toc"] li[data-section-level="1"]:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"], > a[href*="index"]) li[data-section-level="3"] > a::before {
   content: none;
 }
 
 /* 通常の章のセクション */
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"])) li[data-section-level="2"] {
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"], > a[href*="index"])) li[data-section-level="2"] {
   counter-increment: toc-section;
   counter-reset: toc-subsection;
 }
 
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"])) li[data-section-level="2"] > a::before {
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"], > a[href*="index"])) li[data-section-level="2"] > a::before {
   content: counter(toc-chapter) "." counter(toc-section) ". ";
 }
 
 /* 通常の章のサブセクション */
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"])) li[data-section-level="3"] {
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"], > a[href*="index"])) li[data-section-level="3"] {
   counter-increment: toc-subsection;
 }
 
-nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"])) li[data-section-level="3"] > a::before {
+nav[role="doc-toc"] li[data-section-level="1"]:not(:has(> a[href*="preface"], > a[href*="answer"], > a[href*="afterword"], > a[href*="cover"], > a[href*="toc"], > a[href*="colophon"], > a[href*="appendix"], > a[href*="index"])) li[data-section-level="3"] > a::before {
   content: counter(toc-chapter) "." counter(toc-section) "." counter(toc-subsection) ". ";
 }
 
@@ -1319,7 +1319,7 @@ body.colophon .colophon-author-bio {
   margin: 0 0 2pt 0;
 }
 
-/* まえがき・目次・あとがきのヘッダーを非表示 */
+/* まえがき・目次・あとがき・索引のヘッダーを非表示 */
 @page no-header {
   @top-center {
     content: none;
@@ -1328,7 +1328,8 @@ body.colophon .colophon-author-bio {
 
 body.toc,
 body.preface,
-body.afterword {
+body.afterword,
+body.index {
   page: no-header;
 }
 
@@ -1485,6 +1486,93 @@ body.afterword h2 {
 .afterword h2::before,
 body.afterword h2::before {
   content: none !important;
+}
+
+/* 索引 */
+/* ページ番号は原稿へ書かず，参照先のアンカーから target-counter で解決する．
+   目次と同じ仕組みであり，本文が動いてもページ番号が古くならない．
+   要求・要件は docs/spec/index-page.md を参照 */
+:root {
+  /* 段組みと項目の間隔．語数と判型に合わせて変える */
+  --index-columns: 2;
+  --index-column-gap: 14pt;
+  --index-group-space: 12pt;
+  --index-item-space: 2pt;
+  /* 見出し語とページ番号の間．和文の字間を空けすぎない幅を既定にする */
+  --index-term-gap: "\2002";
+  /* 同じ語が複数ページにあるときの区切り */
+  --index-page-separator: ", ";
+}
+
+.index h1,
+body.index h1 {
+  counter-increment: none;
+  string-set: chapter-header "";
+}
+
+.index h1::before,
+body.index h1::before {
+  content: none !important;
+}
+
+/* 索引の本体．語数が多くなるため段で組む */
+.index-body {
+  column-count: var(--index-columns);
+  column-gap: var(--index-column-gap);
+  font-size: 0.9em;
+}
+
+/* 区分の見出し（英字・あ行 …）．見出しだけが段末へ残らないようにする */
+.index-group {
+  margin: var(--index-group-space) 0 4pt;
+  font-family: var(--font-gothic);
+  font-weight: bold;
+  color: var(--index-group-color);
+  border-bottom: 0.5pt solid var(--index-group-rule);
+  text-indent: 0;
+  break-after: avoid;
+  break-inside: avoid;
+}
+
+/* 段の頭に来る最初の区分見出しだけは上アキを詰める */
+.index-body > .index-group:first-child {
+  margin-top: 0;
+}
+
+.index-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  /* 索引は 1 語ずつ独立しており，段や紙をまたいでよい */
+  break-inside: auto;
+}
+
+.index-list li {
+  margin-bottom: var(--index-item-space);
+  /* 折り返した行は見出し語の下へぶら下げる */
+  padding-left: 1em;
+  text-indent: -1em;
+  break-inside: avoid;
+}
+
+.index-page {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+/* 見出し語とページ番号の間を空ける */
+.index-term + .index-page::before {
+  content: var(--index-term-gap);
+}
+
+/* 2 つ目以降のページ番号の前へ区切りを出す */
+.index-page + .index-page::before {
+  content: var(--index-page-separator);
+}
+
+/* ページ番号は参照先のアンカーから解決する．原稿には書かない */
+.index-page::after {
+  content: target-counter(attr(href url), page);
 }
 
 /* 章の扉ページ */

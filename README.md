@@ -36,6 +36,7 @@ Vivliostyle を使用した技術書執筆のためのテンプレートリポ�
 - 2 パスビルド中断時の検証（フェイルセーフ）
 - 全角文字間の文中改行を自動で詰める処理（意図しない半角スペースの防止）
 - ビルド後処理によるタグ付き PDF（Tagged PDF）の自動生成
+- 索引（ページ番号は `target-counter` で解決．骨組みの生成と参照の検査つき）
 - 紙入稿用 PDF の別出力（改丁・面付け・MEMO ページ・章名入りの小口のつめ・塗り足し）
 - GitHub Actions による CI/CD
 - Issue テンプレートによる進捗管理
@@ -349,6 +350,42 @@ copyright:
 データが無い場合，マーカーは出力から取り除かれ，ビルド時に警告が出る．番号の形式（13 桁・プレフィックス 278/279・チェックディジット）は `npm run check:isdn` が検査する．この検査は `npm run build` の冒頭でも自動実行される．
 
 バーコードの位置・幅はテーマ CSS の変数で調整できる．対象は `--isdn-barcode-top`・`--isdn-barcode-right`・`--isdn-barcode-width` である．申請フォームの管理用パスワードは `config/isdn.yaml` へ書かないこと．要求・要件の詳細は [ISDN 対応 要求・要件](docs/spec/isdn.md) を参照．
+
+### 索引
+
+用語からページを引く索引を巻末に置ける．原稿は `src/chapters/99-index.md` で，frontmatter に `class: index` を与える．**ページ番号は原稿へ書かない．** テーマ CSS の `target-counter` が組版の結果から解決するため，本文が動いても古くならない．
+
+本文側には，索引に載せる語の直前へアンカーを置く．和文の語には読みを添える．五十音の区分と並び順に使う．
+
+```markdown
+<a id="idx-svg-1" data-index="SVG"></a>回路図は SVG 形式でエクスポートする．
+
+<a id="idx-formula-1" data-index="数式" data-yomi="すうしき"></a>文中に数式を埋め込む場合，…
+```
+
+索引の骨組みは次のコマンドで作れる．
+
+```bash
+npm run gen:index
+```
+
+本文のアンカーを集め，区分（英字・数字・あ行〜わ行・未分類）ごとに並べたものが標準出力へ出る．原稿は書き換えない．載せる語を選ぶのは執筆者であり，出力を取捨して `<div class="index-body">` の中へ貼る．見出し語や読みが未指定の項目は標準エラーへ挙がる．
+
+参照の食い違いは次のコマンドで調べる．`npm run build` と `npm run build:print` の前段でも走る．
+
+```bash
+npm run check:index
+```
+
+参照先が本文に無くても，ビルドは成功してしまう．Vivliostyle は解決できない `target-counter` を `??` で埋め，警告も出さない．気付かないまま `??` を刷った PDF を入稿しかねないため，ビルドの前に止める．
+
+索引を置かない本では，`src/chapters/99-index.md` を消して `vivliostyle.config.js` の `entry` から外す．検査とビルドはそのまま通る．目次（`src/chapters/toc.html`）に残る索引の項目は次のビルドが取り除くため，手で消す必要は無い．
+
+段組みはテーマ CSS の `--index-columns`・`--index-column-gap` で調整する．見出し語とページ番号の間，およびページ番号どうしの区切りは `--index-term-gap`・`--index-page-separator` で変える．区分見出しの色は `palette.css` の `--index-group-color`・`--index-group-rule` で変える．
+
+目次の章番号は，原稿ファイル名に `index` を含む区分を除外する仕組みで抑えている．索引の原稿を改名するときは，テーマ CSS の除外リストも合わせて直す．
+
+要求・要件の詳細は [索引 要求・要件](docs/spec/index-page.md) を参照．
 
 ### 見出し
 
@@ -759,6 +796,7 @@ techbook-template/
 │   │   ├── 96-answers.md      # 解答
 │   │   ├── 97-appendix.md     # 付録
 │   │   ├── 98-afterword.md    # あとがき
+│   │   ├── 99-index.md        # 索引（用語からページを引く一覧）
 │   │   ├── 99-colophon.md     # 奥付
 │   │   └── back-cover.md      # 裏表紙（ISDN バーコード配置）
 │   ├── design-samples/        # 装飾スタイルカタログ原稿
@@ -788,6 +826,8 @@ techbook-template/
 │   ├── count-pdf-pages.mjs    # PDF のページ数の読み取り
 │   ├── check-errata.mjs       # 正誤表スキーマ・版整合の検査
 │   ├── check-isdn.mjs         # ISDN 番号・バーコード整合の検査
+│   ├── check-index.mjs        # 索引の参照と本文のアンカーの突合
+│   ├── gen-index.mjs          # 索引の骨組みの生成（標準出力）
 │   └── *.test.mjs             # 各スクリプトの単体テスト
 ├── dist/                      # 出力先（.gitignore 済）
 ├── .textlintrc.json           # 日本語文章検査の設定（原稿の文体宣言を含む）

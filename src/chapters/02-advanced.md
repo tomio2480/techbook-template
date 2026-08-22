@@ -35,7 +35,7 @@ body:
 
 ## 回路図の埋め込み
 
-電子工作の技術書では，回路図が必須となる．KiCad や Fritzing で作成した回路図は SVG 形式でエクスポートし，以下のように埋め込む．
+<a id="idx-svg-1" data-index="SVG"></a>電子工作の技術書では，回路図が必須となる．KiCad や Fritzing で作成した回路図は SVG 形式でエクスポートし，以下のように埋め込む．
 
 ```markdown
 ![LED点滅回路](../assets/diagrams/led-blink.svg)

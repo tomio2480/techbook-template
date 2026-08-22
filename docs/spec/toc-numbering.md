@@ -22,9 +22,8 @@
 （[Issue #10](https://github.com/tomio2480/techbook-template/issues/10)，
 [PR #12](https://github.com/tomio2480/techbook-template/pull/12)）．
 
-派生書籍リポジトリ
-[techbook-introduction-to-electronics-basic-led](https://github.com/tomio2480/techbook-introduction-to-electronics-basic-led)
-では，この仕組みを解答章と付録章へ拡張した実績がある．
+派生書籍リポジトリでは，この仕組みを解答章と付録章へ拡張した実績がある．
+対象は `techbook-introduction-to-electronics-basic-led` である．
 解答や付録を持つ書籍構成は一般にありうるため，テンプレート側へ一般化して
 取り込み，派生書籍で再利用できる状態を保つ
 （[Issue #27](https://github.com/tomio2480/techbook-template/issues/27)）．
@@ -62,6 +61,7 @@
 | 付録 | `appendix` | `A.`／`A.n.`／`A.n.n.`（出現順に A，B，…） |
 | あとがき | `afterword` | なし |
 | 奥付 | `colophon` | なし |
+| 索引 | `index` | なし |
 
 ### 付録の採番
 
@@ -119,5 +119,8 @@
 
 ## 変更記録
 
-- 2026-07-16: 初版作成．解答・付録の目次採番の追加にあわせて明文化
-  （Issue #27，関連 Issue #8・#10）．
+- 2026-07-16: 初版作成．解答・付録の目次採番の追加にあわせて明文化した．
+  Issue #27 を参照．関連は Issue #8・#10 である．
+- 2026-08-20: 除外対象へ索引（`index`）を足した．
+  索引に章番号が付くと，本文の章と同じ扱いに見えるためである．
+  索引そのものの要求・要件は `docs/spec/index-page.md` が扱う．Issue #131 を参照．

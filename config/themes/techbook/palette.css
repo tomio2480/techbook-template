@@ -164,4 +164,8 @@
   --tab-bg: var(--palette-primary-soft);
   --tab-label-color: var(--palette-paper);
   --tab-title-color: var(--palette-ink);
+
+  /* 索引の区分見出し（英字・あ行 …）．地色を敷かず，文字色と細い罫で示す */
+  --index-group-color: var(--palette-primary);
+  --index-group-rule: var(--palette-primary-mid);
 }
