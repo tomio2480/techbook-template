@@ -76,6 +76,12 @@ npm run build
 `src/chapters/toc.html` の `<nav>` 内は手動編集してよい．追加した項目や
 言い換えたリンク文言は，次回 `npm run build` 実行後も保持される．
 
+ただし `vivliostyle.config.js` の `entry` に無い原稿を指す項目だけは，
+ビルドが取り除く．消えた原稿を指したままだと，ページ番号が `??` と
+刷られるためである（`target-counter` が解決できない）．
+項目を残したまま原稿を消すことはできない．
+親の項目に付けた属性や独自のマークアップは，子を取り除いても保たれる．
+
 ### 紙入稿用 PDF のビルド
 
 ```bash
@@ -254,6 +260,7 @@ class: preface
 | 裏表紙 | `back-cover` |
 | 付録 | `appendix` |
 | 解答 | `answers` |
+| 索引 | `index` |
 
 ### 付録（Appendix）
 
@@ -826,6 +833,7 @@ techbook-template/
 │   ├── count-pdf-pages.mjs    # PDF のページ数の読み取り
 │   ├── check-errata.mjs       # 正誤表スキーマ・版整合の検査
 │   ├── check-isdn.mjs         # ISDN 番号・バーコード整合の検査
+│   ├── check-preface-errata.mjs # まえがきの正誤表案内マーカーの検査
 │   ├── check-index.mjs        # 索引の参照と本文のアンカーの突合
 │   ├── gen-index.mjs          # 索引の骨組みの生成（標準出力）
 │   └── *.test.mjs             # 各スクリプトの単体テスト
