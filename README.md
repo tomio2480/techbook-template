@@ -38,6 +38,7 @@ Vivliostyle を使用した技術書執筆のためのテンプレートリポ�
 - ビルド後処理によるタグ付き PDF（Tagged PDF）の自動生成
 - 索引（ページ番号は `target-counter` で解決．骨組みの生成と参照の検査つき）
 - 紙入稿用 PDF の別出力（改丁・面付け・MEMO ページ・章名入りの小口のつめ・塗り足し）
+- 表紙単体の入稿データの書き出し（表 1・表 4 を別ファイルへ．塗り足しと `TrimBox` つき）
 - GitHub Actions による CI/CD
 - Issue テンプレートによる進捗管理
 
@@ -175,6 +176,34 @@ print:
 先方の資料に散っている．要件の表と，出力した PDF を測る観点の雛形として
 [紙入稿要件 要求・要件（雛形）](docs/spec/print-submission.md) を置いてある．
 数値は入稿先を決めた書籍側で埋める．本テンプレートは枠組みだけを持つ．
+
+### 表紙単体の入稿データのビルド
+
+```bash
+npm run build:cover
+```
+
+表 1（表紙）と表 4（裏表紙）を 1 ページずつ書き出す．
+出力先は `dist/cover.pdf` と `dist/back-cover.pdf` である．
+多くの印刷所は表紙を本文と別のデータで受け取る．
+
+表 1 と表 4 は 1 枚続きにせず，別のファイルへ書き出す．
+別にすると印刷所が背幅を両者から半分ずつ取る．背幅を自分で加えずに済む．
+背表紙（スパイン）・表 2・表 3 は対象外である．
+
+寸法は紙入稿用の本文とそろえ，塗り足しを含める．
+量は `print.css` の `--bleed` を単一の出所として読み，表紙側で書き写さない．
+仕上がりの位置は `TrimBox` として記録される．
+
+書き出した後に次の 3 つを検査する．
+
+- 1 ページで組まれている．
+- 塗り足しが指定どおりである．
+- 表 1 と表 4 の仕上がり寸法がそろっている．
+
+本文 PDF から表紙を外すかどうかは `print.cover.include` で別に指定する．
+外す指定は本文側の話であり，表紙そのものを渡す手立てにならない．
+要求・要件の詳細は [表紙・裏表紙テンプレート 要求・要件](docs/spec/cover.md) を参照．
 
 ### スクリプトのテスト
 
@@ -848,6 +877,7 @@ techbook-template/
 │   ├── tag-pdf.mjs            # タグ付き PDF 生成（ビルド後処理）
 │   ├── build-print.mjs        # 紙入稿用 PDF のビルド（改丁・面付け）
 │   ├── print-layout.mjs       # 改丁・面付けの計算と MEMO ページ生成
+│   ├── build-cover.mjs        # 表紙単体の入稿データのビルド（表 1・表 4）
 │   ├── count-pdf-pages.mjs    # PDF のページ数の読み取り
 │   ├── check-errata.mjs       # 正誤表スキーマ・版整合の検査
 │   ├── check-isdn.mjs         # ISDN 番号・バーコード整合の検査
@@ -862,6 +892,7 @@ techbook-template/
 ├── package.json
 ├── vivliostyle.config.js
 ├── vivliostyle.print.config.js # 紙入稿用ビルド設定
+├── vivliostyle.cover.config.js # 表紙単体ビルド設定
 ├── vivliostyle.design-samples.config.js # カタログ用ビルド設定
 └── README.md
 ```

@@ -208,7 +208,7 @@ function resolveStreamEnds(text, dict, dataStart) {
 // 圧縮データの中に現れる同じ並びを本物の辞書と取り違える。
 // キーワードは辞書の中の文字列や圧縮データにも現れるため、その位置で
 // オブジェクトを区切らず、キーワードごとに辞書として読めるかで判定する
-function decodeObjectStreams(text, buffer) {
+export function decodeObjectStreams(text, buffer) {
   const decoded = [];
   /* 同じストリームへ複数の起点からたどり着くことがある。見出しの後ろの
      コメントが obj で終わる形が例であり、二重に数えないようデータの位置で覚える */
