@@ -125,8 +125,10 @@ export function boxSizeMm(box) {
   return { width: toMm(x1 - x0), height: toMm(y1 - y0) };
 }
 
-/* 塗り足しは仕上がりの外側へ四方に付く。紙面（MediaBox）は仕上がり（TrimBox）より
-   天地・左右それぞれ塗り足し 2 つ分だけ大きくなる。
+/* 塗り足しは仕上がりの外側へ四方に付く。紙面（MediaBox）から仕上がり（TrimBox）
+   までの隔たりを，四辺それぞれ量る。
+   天地・左右の寸法差で量ると，仕上がりが紙面の中で寄っていても平均が合えば通る。
+   片側 0 mm・反対側 6 mm の版が入稿へ届く。
    寸法そのものを想定値と突き合わせないのは，判型を変えた本でも同じ検査を
    使えるようにするためである */
 export function verifyBleedSize(boxes, bleedMm, label) {
@@ -142,20 +144,22 @@ export function verifyBleedSize(boxes, bleedMm, label) {
     }
   }
 
-  const media = boxSizeMm(boxes.mediaBox[0]);
-  const trim = boxSizeMm(boxes.trimBox[0]);
-  const actual = { width: (media.width - trim.width) / 2, height: (media.height - trim.height) / 2 };
-  const tolerance = BOX_TOLERANCE_MM / 2;
+  /* PDF の座標は左下が原点である。天は上端，地は下端に当たる */
+  const [mediaLeft, mediaBottom, mediaRight, mediaTop] = boxes.mediaBox[0];
+  const [trimLeft, trimBottom, trimRight, trimTop] = boxes.trimBox[0];
+  const edges = [
+    ['天', mediaTop - trimTop],
+    ['地', trimBottom - mediaBottom],
+    ['左', trimLeft - mediaLeft],
+    ['右', mediaRight - trimRight],
+  ].map(([name, points]) => [name, (points / POINTS_PER_INCH) * MM_PER_INCH]);
 
-  if (
-    Math.abs(actual.width - bleedMm) > tolerance ||
-    Math.abs(actual.height - bleedMm) > tolerance
-  ) {
+  const off = edges.filter(([, mm]) => Math.abs(mm - bleedMm) > BOX_TOLERANCE_MM);
+  if (off.length > 0) {
+    const actual = off.map(([name, mm]) => `${name} ${mm.toFixed(1)} mm`).join('・');
     return {
       ok: false,
-      message:
-        `${label}の塗り足しが左右 ${actual.width.toFixed(1)} mm・` +
-        `天地 ${actual.height.toFixed(1)} mm です（想定は ${bleedMm} mm）。`,
+      message: `${label}の塗り足しが ${actual} です（想定は四方 ${bleedMm} mm）。`,
     };
   }
 

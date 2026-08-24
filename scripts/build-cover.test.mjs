@@ -189,6 +189,19 @@ test('verifyBleedSize: 塗り足しの量が違えば実測と想定を添えて
   assert.match(result.message, /5/);
 });
 
+test('verifyBleedSize: 仕上がりが紙面の中で寄っていれば失敗する', () => {
+  /* 寸法の差は塗り足し 2 つ分に合うが，左と地は 0 mm・右と天は 6 mm になる．
+     天地・左右の差だけで量ると通ってしまう版である */
+  const shifted = {
+    mediaBox: [[0, 0, 532.9132, 745.92]],
+    trimBox: [[0, 0, 515.9055, 728.5039]],
+  };
+  const result = verifyBleedSize(shifted, 3, '表 1（表紙）');
+  assert.equal(result.ok, false);
+  assert.match(result.message, /左/);
+  assert.match(result.message, /地/);
+});
+
 test('verifyBleedSize: 塗り足しが付いていなければ失敗する', () => {
   const noBleed = {
     mediaBox: [[0, 0, 515.9055, 728.5039]],
