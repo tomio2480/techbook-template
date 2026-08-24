@@ -31,7 +31,7 @@
 |---|---|
 | 表紙（cover） | 本の最初のページ（表 1）．`src/chapters/cover.md` で書く |
 | 本扉（title-page） | 表紙をめくった 1 枚目．`src/chapters/title-page.md` で書く |
-| 裏表紙（back-cover） | 本文 PDF の最終ページ（表 4）．`src/chapters/back-cover.md` で書く |
+| 裏表紙（back-cover） | 表 4．`src/chapters/back-cover.md` で書く．本文 PDF へ含める場合は最終ページに置く |
 | 背景画像 | ページ全面に敷く装飾画像．表紙は `img` 要素，裏表紙は CSS 背景で敷く |
 | プレースホルダー画像 | テンプレート初期状態の背景画像．執筆者が差し替える前提で置く |
 | 文字情報 | タイトル・著者名など，実テキストのまま背景の上へ重ねる情報 |
@@ -131,3 +131,6 @@
   背表紙（スパイン）・表 2・表 3 はスコープ外のまま残した．
   Issue #141 と `techbook-introduction-to-electronics-basic-led` の
   PR #275 を参照．
+- 2026-08-24: 用語変更．裏表紙の説明から「本文 PDF の最終ページ」という
+  無条件の言い切りを外した．`print.cover.include` を `false` にすると
+  本文 PDF へ入らないためである．PR #164 の Codex レビュー指摘による．
