@@ -128,7 +128,15 @@ print:
     "99-colophon": verso
   chapter_start: recto    # 章扉を持つ原稿の始まりの面
   filler_before: "99-colophon" # 調整ページを寄せる先の原稿
+  cover:
+    include: true         # 本文 PDF へ表紙・裏表紙を含めるか
 ```
+
+多くの印刷所は表紙を本文と別のデータで受け取る．
+その場合は `print.cover.include` を `false` にする．
+本文 PDF は本扉から始まる．面付けの計算でも表紙を外す．
+総ページ数は `page_multiple` の倍数を保つ．
+電子書籍用の `npm run build` は，この指定に関わらず表紙・裏表紙を含める．
 
 章扉（`chapter-opening`）を持つ原稿には，つめが自動で付く．
 扉を持たない区分（`# 見出し` から始まる付録など）へつめを付けたいときは，

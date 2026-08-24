@@ -9,12 +9,14 @@ import {
   hasChapterOpening,
   injectHtmlClass,
   injectTabMark,
+  isCoverEntry,
   isTabTarget,
   parseDocumentStartPages,
   planPrintLayout,
   renderMemoHtml,
   renderTabMark,
   renderTabStylesheet,
+  resolveCoverInclude,
   resolveFillerBefore,
   resolvePageMultiple,
   resolveSectionSides,
@@ -121,8 +123,24 @@ test('section_start: 配列なら例外を投げる', () => {
 
 // --- planPrintLayout ---
 
-function plan({ entries, pageCounts, sources, pageMultiple = 4, sides = SIDES, fillerBefore }) {
-  return planPrintLayout({ entries, pageCounts, sources, sides, pageMultiple, fillerBefore });
+function plan({
+  entries,
+  pageCounts,
+  sources,
+  pageMultiple = 4,
+  sides = SIDES,
+  fillerBefore,
+  coverInclude,
+}) {
+  return planPrintLayout({
+    entries,
+    pageCounts,
+    sources,
+    sides,
+    pageMultiple,
+    fillerBefore,
+    coverInclude,
+  });
 }
 
 test('面がずれる区分の前へ MEMO ページを差し込む', () => {
@@ -299,6 +317,121 @@ test('改丁と面付けの両方が要る構成でも総ページ数が倍数�
   assert.strictEqual(result.totalPages % 4, 0);
   assert.strictEqual(result.entry.length, 4 + result.memoDocuments.length);
   assert.strictEqual(result.entry.at(-1), 'src/chapters/back-cover.md');
+});
+
+// --- resolveCoverInclude・isCoverEntry ---
+
+test('表紙を含めるかは book.yaml から読み，既定は含める', () => {
+  assert.strictEqual(resolveCoverInclude({}), true);
+  assert.strictEqual(resolveCoverInclude(null), true);
+  assert.strictEqual(resolveCoverInclude({ print: { cover: { include: false } } }), false);
+  assert.strictEqual(resolveCoverInclude({ print: { cover: { include: true } } }), true);
+});
+
+test('表紙を含めるかの指定が真偽値でなければ例外を投げる', () => {
+  assert.throws(
+    () => resolveCoverInclude({ print: { cover: { include: 'false' } } }),
+    /true または false/
+  );
+  assert.throws(() => resolveCoverInclude({ print: { cover: 'false' } }), /true または false/);
+});
+
+test('表紙と見なすのは cover と back-cover の 2 つに限る', () => {
+  assert.strictEqual(isCoverEntry('src/chapters/cover.md'), true);
+  assert.strictEqual(isCoverEntry('src/chapters/back-cover.md'), true);
+  /* 行番号付与で .html へ差し替わった後も同じ判定になる */
+  assert.strictEqual(isCoverEntry('src/chapters/cover.html'), true);
+  assert.strictEqual(isCoverEntry('src/chapters/back-cover.html'), true);
+});
+
+test('末尾だけ一致する原稿を表紙と見なさない', () => {
+  assert.strictEqual(isCoverEntry('src/chapters/hard-cover.md'), false);
+  assert.strictEqual(isCoverEntry('src/chapters/hard-back-cover.md'), false);
+  assert.strictEqual(isCoverEntry('src/chapters/cover-notes.md'), false);
+  assert.strictEqual(isCoverEntry('src/chapters/title-page.md'), false);
+});
+
+test('末尾だけ一致する原稿の前へ調整ページを寄せない', () => {
+  /* 裏表紙の判定も境界で行う。hard-back-cover.md の前へ入れると
+     その原稿が最終ページに残り，寄せ先の意図から外れる */
+  const result = plan({
+    entries: ['src/chapters/01-introduction.md', 'src/chapters/hard-back-cover.md'],
+    pageCounts: [1, 1],
+    sources: ['', ''],
+  });
+
+  assert.deepStrictEqual(result.entry, [
+    'src/chapters/01-introduction.md',
+    'src/chapters/hard-back-cover.md',
+    'src/chapters/print-memo-1.html',
+  ]);
+  assert.strictEqual(result.totalPages, 4);
+});
+
+test('表紙を含めない指定では表紙と裏表紙を面付けの計算から外す', () => {
+  const result = plan({
+    entries: [
+      'src/chapters/cover.md',
+      'src/chapters/title-page.md',
+      'src/chapters/99-colophon.md',
+      'src/chapters/back-cover.md',
+    ],
+    pageCounts: [1, 1, 1, 1],
+    sources: ['', '', '', ''],
+    coverInclude: false,
+  });
+
+  assert.deepStrictEqual(result.entry, [
+    'src/chapters/title-page.md',
+    'src/chapters/print-memo-1.html',
+    'src/chapters/99-colophon.md',
+  ]);
+  assert.strictEqual(result.memoDocuments[0].pages, 2);
+  assert.strictEqual(result.totalPages, 4);
+});
+
+test('表紙を含めなくても末尾だけ一致する原稿は残す', () => {
+  const result = plan({
+    entries: ['src/chapters/cover.md', 'src/chapters/hard-cover.md'],
+    pageCounts: [1, 3],
+    sources: ['', ''],
+    coverInclude: false,
+  });
+
+  assert.deepStrictEqual(result.entry, ['src/chapters/hard-cover.md', 'src/chapters/print-memo-1.html']);
+  assert.strictEqual(result.totalPages, 4);
+});
+
+test('表紙を含めない指定では調整ページの端数 1 ページを末尾へ残す', () => {
+  /* 本扉 1 + あとがき 1 + 奥付 2 に，あとがきを recto へ寄せる 1 ページを加えて
+     5 ページ．8 の倍数まで 3 ページ足りず，奥付の面を保つと 1 ページが余る */
+  const result = plan({
+    entries: [
+      'src/chapters/cover.md',
+      'src/chapters/title-page.md',
+      'src/chapters/98-afterword.md',
+      'src/chapters/99-colophon.md',
+      'src/chapters/back-cover.md',
+    ],
+    pageCounts: [1, 1, 1, 2, 1],
+    sources: ['', '', '', '', ''],
+    pageMultiple: 8,
+    coverInclude: false,
+  });
+
+  assert.deepStrictEqual(result.entry, [
+    'src/chapters/title-page.md',
+    'src/chapters/print-memo-1.html', // あとがきを奇数ページへ寄せる
+    'src/chapters/98-afterword.md',
+    'src/chapters/print-memo-2.html', // 調整ページのうち偶数分
+    'src/chapters/99-colophon.md',
+    'src/chapters/print-memo-3.html', // 端数の 1 ページ
+  ]);
+  assert.deepStrictEqual(
+    result.memoDocuments.map(memo => memo.pages),
+    [1, 2, 1]
+  );
+  assert.strictEqual(result.totalPages, 8);
 });
 
 test('件数が食い違う入力は例外を投げる', () => {

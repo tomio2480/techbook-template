@@ -37,6 +37,7 @@ import {
   renderMemoHtml,
   renderTabMark,
   renderTabStylesheet,
+  resolveCoverInclude,
   resolveFillerBefore,
   resolvePageMultiple,
   resolveSectionSides,
@@ -286,6 +287,7 @@ async function main() {
   const sides = resolveSectionSides(bookYaml);
   const fillerBefore = resolveFillerBefore(bookYaml);
   const sectionTabs = resolveSectionTabs(bookYaml);
+  const coverInclude = resolveCoverInclude(bookYaml);
   const pdfPath = path.join(repoRoot, 'dist', PRINT_PDF_NAME);
   const planPath = path.join(repoRoot, PLAN_FILE);
 
@@ -318,7 +320,11 @@ async function main() {
       sides,
       pageMultiple,
       fillerBefore,
+      coverInclude,
     });
+    if (!coverInclude) {
+      console.log('表紙・裏表紙を本文 PDF から外します（print.cover.include: false）。');
+    }
     console.log(
       `MEMO ページを ${plan.memoDocuments.length} 箇所（計 ` +
         `${plan.memoDocuments.reduce((sum, memo) => sum + memo.pages, 0)} ページ）挿入します。`
