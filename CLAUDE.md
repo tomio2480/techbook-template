@@ -9,14 +9,16 @@ Claude が作業する際の必須事項を定める．
   関わる作業がある．着手前に必ず `docs/spec/colophon.md` を読むこと．
 - ISDN（`config/isdn.yaml`・`back-cover.md`・奥付の `{{isdn}}`）は
   `docs/spec/isdn.md` が扱う．着手前に必ず読むこと．
-- 紙入稿用 PDF（`npm run build:print`・改丁・面付け・MEMO ページ）は
-  `docs/spec/print-layout.md` が扱う．着手前に必ず読むこと．
+- 紙入稿用 PDF（`npm run build:print`・改丁・面付け・MEMO ページ・
+  表紙の同梱可否）は `docs/spec/print-layout.md` が扱う．
+  着手前に必ず読むこと．
 - 入稿先の要件（`docs/spec/print-submission.md`）は雛形である．
   入稿先を決めるとき，または入稿データを作るときに読むこと．
   本テンプレートでは数値を埋めない．実在する印刷所の要件は書籍側で書く．
 - 表紙・本扉・裏表紙（`cover.md`・`title-page.md`・`back-cover.md`）は
-  `docs/spec/cover.md` が扱う．背景画像・テーマ CSS 変数も同じ spec の
-  範囲である．着手前に必ず読むこと．
+  `docs/spec/cover.md` が扱う．背景画像・テーマ CSS 変数と，
+  表紙単体の入稿データ生成も同じ spec の範囲である．
+  着手前に必ず読むこと．
 - 索引（`99-index.md`・`npm run gen:index`・`npm run check:index`）は
   `docs/spec/index-page.md` が扱う．着手前に必ず読むこと．
 - `config/isdn.yaml` へ申請フォームのパスワード等の認証情報を書かない．
