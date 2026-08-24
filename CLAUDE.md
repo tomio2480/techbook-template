@@ -11,6 +11,9 @@ Claude が作業する際の必須事項を定める．
   `docs/spec/isdn.md` が扱う．着手前に必ず読むこと．
 - 紙入稿用 PDF（`npm run build:print`・改丁・面付け・MEMO ページ）は
   `docs/spec/print-layout.md` が扱う．着手前に必ず読むこと．
+- 入稿先の要件（`docs/spec/print-submission.md`）は雛形である．
+  入稿先を決めるとき，または入稿データを作るときに読むこと．
+  本テンプレートでは数値を埋めない．実在する印刷所の要件は書籍側で書く．
 - 表紙・本扉・裏表紙（`cover.md`・`title-page.md`・`back-cover.md`）は
   `docs/spec/cover.md` が扱う．背景画像・テーマ CSS 変数も同じ spec の
   範囲である．着手前に必ず読むこと．
