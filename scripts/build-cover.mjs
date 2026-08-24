@@ -17,6 +17,7 @@ import fs from 'fs';
 import path from 'path';
 import { spawnSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { parse } from 'yaml';
 
 import { countPdfPages, decodeObjectStreams } from './count-pdf-pages.mjs';
 import { verifyNoIndexHtml } from './verify-build.mjs';
@@ -30,6 +31,7 @@ const COVER_CONFIG = 'vivliostyle.cover.config.js';
    同じ値を書き写さず、組むときも検査するときもこのファイルから取る */
 const COVER_STYLE = path.join('config', 'themes', 'techbook', 'print.css');
 const VIVLIOSTYLE_CLI = path.join('node_modules', '@vivliostyle', 'cli', 'dist', 'cli.js');
+const OPENDATALOADER_CLI = path.join('node_modules', '@opendataloader', 'pdf', 'dist', 'cli.js');
 /* 裏表紙はバーコードを載せるため、入稿前に ISDN の設定を検査する */
 const CHECK_SCRIPTS = ['check-isdn.mjs'];
 
@@ -89,6 +91,55 @@ export function resolveBleedMm(cssText) {
     throw new Error(`${COVER_STYLE} の --bleed は 0 より大きい値で指定してください（現在 ${match[1]}mm）。`);
   }
   return bleed;
+}
+
+/* 誌面へ必ず現れる文字を，対象ごとに config/book.yaml から引く。
+   表紙は書名と著者名をマーカーで流し込む（docs/spec/cover.md）。
+   流し込みは値が無くても警告だけで進み，空文字へ置き換わる。
+   入稿データが白紙のまま成功扱いになるのを防ぐため，ここで先に弾く。
+   裏表紙の文言は執筆者が自由に書くため，決まった文字列を求めない */
+export function resolveExpectedTexts(target, bookYaml) {
+  if (target.key !== 'cover') return [];
+
+  return ['title', 'author'].map(key => {
+    const value = bookYaml?.[key];
+    if (typeof value !== 'string' || value.trim() === '') {
+      throw new Error(
+        `config/book.yaml の ${key} を空でない文字列で指定してください（${target.label}へ流し込みます）。`
+      );
+    }
+    return value;
+  });
+}
+
+/* 抽出した文字を突き合わせられる形へそろえる。
+   PDF から取り出した漢字は康熙部首へ化けることがあり（「行」が U+2F8F），
+   素の包含判定では原稿の文字列と一致しない。
+   組版で入る改行と空白も，原稿の並びとは違う位置に来る */
+export function normalizeExtractedText(text) {
+  return text.normalize('NFKC').replace(/\s+/g, '');
+}
+
+/* 文字が画像にならず，実テキストのまま入っているかを見る（docs/spec/cover.md）。
+   求める文字列を持たない対象でも，1 文字も取り出せなければ落とす */
+export function verifyExtractedText(text, expected, label) {
+  const normalized = normalizeExtractedText(text);
+  if (normalized === '') {
+    return {
+      ok: false,
+      message: `${label}の PDF から文字を抽出できませんでした。文字が画像になっている可能性があります。`,
+    };
+  }
+
+  const missing = expected.filter(value => !normalized.includes(normalizeExtractedText(value)));
+  if (missing.length > 0) {
+    return {
+      ok: false,
+      message: `${label}の PDF に「${missing.join('」「')}」が見当たりません。`,
+    };
+  }
+
+  return { ok: true };
 }
 
 export function verifySinglePage(pageCount, label) {
@@ -191,10 +242,10 @@ export function verifyTrimSizeMatch(measured) {
   return { ok: true };
 }
 
-function run(command, args, env = {}) {
+function run(command, args, { env = {}, capture = false } = {}) {
   const result = spawnSync(command, args, {
     cwd: repoRoot,
-    stdio: 'inherit',
+    stdio: capture ? ['ignore', 'pipe', 'inherit'] : 'inherit',
     encoding: 'utf-8',
     env: { ...process.env, ...env },
   });
@@ -206,6 +257,7 @@ function run(command, args, env = {}) {
   if (result.status !== 0) {
     throw new Error(`${label} が失敗しました（exit code: ${result.status}）。`);
   }
+  return result.stdout;
 }
 
 function runScript(scriptName) {
@@ -223,13 +275,31 @@ function buildCoverPdf(target) {
       '--style',
       path.join(repoRoot, COVER_STYLE),
     ],
-    { COVER_TARGET: target.key }
+    { env: { COVER_TARGET: target.key } }
+  );
+}
+
+/* PDF からテキストを取り出す。表紙の文字は余白ボックスへ置かれることがあるため
+   ヘッダー・フッターも対象へ含める（scripts/build-print.mjs と同じ扱い） */
+function extractPdfText(pdfPath) {
+  return run(
+    process.execPath,
+    [
+      path.join(repoRoot, OPENDATALOADER_CLI),
+      '--format',
+      'text',
+      '--include-header-footer',
+      '--to-stdout',
+      '--quiet',
+      pdfPath,
+    ],
+    { capture: true }
   );
 }
 
 /* 書き出した PDF を測り、検査の結果と仕上がり寸法を返す。
    寸法は表 1 と表 4 の突き合わせに使う */
-function inspectCoverPdf(target, bleedMm) {
+function inspectCoverPdf(target, bleedMm, expectedTexts) {
   const pdfPath = path.join(repoRoot, target.output);
   if (!fs.existsSync(pdfPath)) {
     return {
@@ -246,6 +316,7 @@ function inspectCoverPdf(target, bleedMm) {
     results: [
       verifySinglePage(countPdfPages(buffer), target.label),
       verifyBleedSize(boxes, bleedMm, target.label),
+      verifyExtractedText(extractPdfText(pdfPath), expectedTexts, target.label),
     ],
     measured:
       boxes.trimBox.length === 1
@@ -256,6 +327,13 @@ function inspectCoverPdf(target, bleedMm) {
 
 async function main() {
   const bleedMm = resolveBleedMm(fs.readFileSync(path.join(repoRoot, COVER_STYLE), 'utf-8'));
+  const bookYaml =
+    parse(fs.readFileSync(path.join(repoRoot, 'config', 'book.yaml'), 'utf-8')) ?? {};
+  /* 誌面へ求める文字は組む前にすべて解決する。設定の不足でやり直すとき，
+     1 枚目を組む時間を無駄にしない */
+  const expectations = new Map(
+    COVER_TARGETS.map(target => [target.key, resolveExpectedTexts(target, bookYaml)])
+  );
 
   for (const scriptName of CHECK_SCRIPTS) {
     runScript(scriptName);
@@ -265,7 +343,7 @@ async function main() {
   const measured = [];
   for (const target of COVER_TARGETS) {
     buildCoverPdf(target);
-    const inspected = inspectCoverPdf(target, bleedMm);
+    const inspected = inspectCoverPdf(target, bleedMm, expectations.get(target.key));
     failures.push(...inspected.results.filter(result => !result.ok));
     if (inspected.measured) measured.push(inspected.measured);
   }

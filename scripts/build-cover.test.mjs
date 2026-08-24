@@ -6,10 +6,13 @@ import {
   BOX_TOLERANCE_MM,
   COVER_TARGETS,
   boxSizeMm,
+  normalizeExtractedText,
   readPdfBoxes,
   resolveBleedMm,
   resolveCoverTarget,
+  resolveExpectedTexts,
   verifyBleedSize,
+  verifyExtractedText,
   verifySinglePage,
   verifyTrimSizeMatch,
 } from './build-cover.mjs';
@@ -238,6 +241,74 @@ test('verifyBleedSize: 許容の幅に収まるずれは通す', () => {
     trimBox: [[8.50395, 8.9119, 524.4093, 737.416]],
   };
   assert.equal(verifyBleedSize(rounded, 3, '表 1（表紙）').ok, true);
+});
+
+// --- resolveExpectedTexts ---
+
+const BOOK_YAML = { title: '書籍タイトル', author: '著者名' };
+
+test('resolveExpectedTexts: 表 1 は書名と著者名を求める', () => {
+  assert.deepEqual(resolveExpectedTexts(COVER_TARGETS[0], BOOK_YAML), ['書籍タイトル', '著者名']);
+});
+
+test('resolveExpectedTexts: 表 4 は決まった文字列を持たない', () => {
+  /* 裏表紙の文言は執筆者が自由に書く．文字が抽出できることだけを求める */
+  assert.deepEqual(resolveExpectedTexts(COVER_TARGETS[1], BOOK_YAML), []);
+});
+
+test('resolveExpectedTexts: 書名が無ければ出所を添えて失敗する', () => {
+  assert.throws(() => resolveExpectedTexts(COVER_TARGETS[0], { author: '著者名' }), /title/);
+  assert.throws(() => resolveExpectedTexts(COVER_TARGETS[0], {}), /config\/book\.yaml/);
+});
+
+test('resolveExpectedTexts: 著者名が空文字なら失敗する', () => {
+  assert.throws(
+    () => resolveExpectedTexts(COVER_TARGETS[0], { title: '書籍タイトル', author: '  ' }),
+    /author/
+  );
+});
+
+// --- normalizeExtractedText ---
+
+test('normalizeExtractedText: 空白を落として比べられる形にする', () => {
+  assert.equal(normalizeExtractedText(' 書籍 タイトル\n著者名 '), '書籍タイトル著者名');
+});
+
+/* PDF から取り出した文字は「行」が康熙部首（U+2F8F）になることがある．
+   素の包含判定では原稿の文字列と一致しない */
+const KANGXI_RADICAL_GYOU = String.fromCodePoint(0x2f8f);
+
+test('normalizeExtractedText: 康熙部首へ化けた文字を通常の漢字へそろえる', () => {
+  assert.equal(normalizeExtractedText(`発${KANGXI_RADICAL_GYOU}`), '発行');
+});
+
+// --- verifyExtractedText ---
+
+test('verifyExtractedText: 求める文字列がすべて含まれれば成功する', () => {
+  const result = verifyExtractedText('書籍タイトル 著者名', ['書籍タイトル', '著者名'], '表 1（表紙）');
+  assert.equal(result.ok, true);
+});
+
+test('verifyExtractedText: 化けた文字を含む抽出結果でも見つけられる', () => {
+  const extracted = `発${KANGXI_RADICAL_GYOU} サークル名`;
+  assert.equal(verifyExtractedText(extracted, ['発行'], '表 4（裏表紙）').ok, true);
+});
+
+test('verifyExtractedText: 求める文字列が欠ければ欠けた分を添えて失敗する', () => {
+  const result = verifyExtractedText('書籍タイトル', ['書籍タイトル', '著者名'], '表 1（表紙）');
+  assert.equal(result.ok, false);
+  assert.match(result.message, /著者名/);
+  assert.match(result.message, /表 1（表紙）/);
+});
+
+test('verifyExtractedText: 文字を 1 つも抽出できなければ失敗する', () => {
+  const result = verifyExtractedText('  \n ', [], '表 4（裏表紙）');
+  assert.equal(result.ok, false);
+  assert.match(result.message, /表 4（裏表紙）/);
+});
+
+test('verifyExtractedText: 求める文字列が無くても文字があれば成功する', () => {
+  assert.equal(verifyExtractedText('キャッチコピー', [], '表 4（裏表紙）').ok, true);
 });
 
 // --- verifyTrimSizeMatch ---
