@@ -55,6 +55,15 @@ const DEFAULT_CHAPTER_START = 'recto';
 const DEFAULT_FILLER_BEFORE = '99-colophon';
 const SIDES = ['recto', 'verso'];
 
+/* 本文 PDF へ表紙・裏表紙を含めるかの既定。含める側を既定にし、
+   指定を書かない書籍の出力を従来どおりに保つ */
+const DEFAULT_COVER_INCLUDE = true;
+/* 表紙と見なす原稿。多くの印刷所は表紙を本文と別のデータで受け取る。
+   末尾だけ一致する原稿（hard-cover.md など）を巻き込まないよう境界で照合する。
+   拡張子は行番号付与で .md から .html へ差し替わるため、どちらも受ける */
+const BACK_COVER_ENTRY_PATTERN = /(^|\/)back-cover\.(md|html)$/;
+const COVER_ENTRY_PATTERN = /(^|\/)(cover|back-cover)\.(md|html)$/;
+
 function assertPositiveInteger(value, label) {
   if (!Number.isInteger(value) || value < 1) {
     throw new Error(`${label}は 1 以上の整数で指定してください（現在 ${value}）。`);
@@ -122,6 +131,28 @@ export function resolveFillerBefore(bookYaml) {
   return configured;
 }
 
+/* 本文 PDF へ表紙・裏表紙を含めるかを config/book.yaml から読む。
+   電子書籍用のビルドはこの指定を見ず、常に表紙・裏表紙を含める */
+export function resolveCoverInclude(bookYaml) {
+  const cover = bookYaml?.print?.cover;
+  if (cover === undefined || cover === null) return DEFAULT_COVER_INCLUDE;
+
+  const configured =
+    typeof cover === 'object' && !Array.isArray(cover) ? cover.include : cover;
+  if (configured === undefined || configured === null) return DEFAULT_COVER_INCLUDE;
+  if (typeof configured !== 'boolean') {
+    throw new Error(
+      'config/book.yaml の print.cover.include は true または false で指定してください。'
+    );
+  }
+  return configured;
+}
+
+/* 表紙・裏表紙の原稿かどうか。対象は cover と back-cover の 2 つに限る */
+export function isCoverEntry(entry) {
+  return COVER_ENTRY_PATTERN.test(entry);
+}
+
 /* 章かどうかは扉（chapter-opening）の有無で判定する。
    ファイル名に依存させず、原稿を改名しても判定が壊れないようにする */
 export function hasChapterOpening(source) {
@@ -183,6 +214,7 @@ function memoDocument(index, pages) {
  * 面付けの調整ページは fillerBefore が指す区分（既定では奥付）の直前へ寄せる。
  * その区分に面の指定があるときは，面を保つために入れられるのは偶数ページ分に
  * 限られる。端数の 1 ページは裏表紙の直前（奥付の後ろ）へ残す。
+ * 表紙を含めない場合は後ろへ置く裏表紙が無く，端数は末尾へ残る。
  *
  * @param {object} params
  * @param {string[]} params.entries      ビルド対象のエントリ（電子書籍用と同じ並び）
@@ -191,6 +223,7 @@ function memoDocument(index, pages) {
  * @param {object}   params.sides        resolveSectionSides の戻り値
  * @param {number}   params.pageMultiple 綴じの単位
  * @param {string}   params.fillerBefore 調整ページを寄せる先（省略時は奥付）
+ * @param {boolean}  params.coverInclude 表紙・裏表紙を含めるか（省略時は含める）
  * @returns {{entry: string[], memoDocuments: object[], totalPages: number}}
  */
 export function planPrintLayout({
@@ -200,18 +233,25 @@ export function planPrintLayout({
   sides,
   pageMultiple,
   fillerBefore = DEFAULT_FILLER_BEFORE,
+  coverInclude = DEFAULT_COVER_INCLUDE,
 }) {
   if (entries.length !== pageCounts.length || entries.length !== sources.length) {
     throw new Error('エントリ・ページ数・原稿内容の件数が一致しません。');
   }
+
+  /* 表紙を外すのは改丁の計算より前に行う。表紙を抜くと後続の面がすべてずれ，
+     MEMO ページの入る位置と枚数が変わるためである */
+  const planned = entries
+    .map((current, index) => ({ current, pages: pageCounts[index], source: sources[index] }))
+    .filter(item => coverInclude || !isCoverEntry(item.current));
 
   /* MEMO ページは印（{ memoPages }）として並べ，最後にページ順で番号を振る */
   const entry = [];
   let pageNumber = 1;
   let fillerAnchor = null;
 
-  entries.forEach((current, index) => {
-    const side = sideForEntry(current, sources[index], sides);
+  planned.forEach(({ current, pages, source }) => {
+    const side = sideForEntry(current, source, sides);
     const aligning = side ? pagesToAlign(pageNumber, side) : 0;
 
     if (aligning > 0) {
@@ -224,7 +264,7 @@ export function planPrintLayout({
     }
 
     entry.push(current);
-    pageNumber += pageCounts[index];
+    pageNumber += pages;
   });
 
   const contentPages = pageNumber - 1;
@@ -239,9 +279,10 @@ export function planPrintLayout({
       : 0;
     const trailing = fillerPages - anchored;
 
-    /* 端数は裏表紙の直前へ入れ，裏表紙を最終ページに保つ */
+    /* 端数は裏表紙の直前へ入れ，裏表紙を最終ページに保つ。
+       表紙を含めない場合は裏表紙が無く，端数は末尾へ残る */
     const backCoverIndex = entry.findIndex(
-      item => typeof item === 'string' && /back-cover\.(md|html)$/.test(item)
+      item => typeof item === 'string' && BACK_COVER_ENTRY_PATTERN.test(item)
     );
     const insertions = [
       { at: backCoverIndex === -1 ? entry.length : backCoverIndex, pages: trailing },
