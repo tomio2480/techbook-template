@@ -762,6 +762,10 @@ Vivliostyle CLI が生成する PDF は，タグ付き PDF（Tagged PDF）にな
 [Figure タグ /Alt 調査と現状追認の判断](docs/notes/2026-07-16-figure-alt-investigation.md)
 を参照する．
 
+要求・要件の詳細は
+[タグ付き PDF 生成（アクセシビリティ対応）要求・要件](docs/spec/pdf-tagging.md)
+を参照．
+
 ### 前提環境
 
 タグ付け処理には Java 11 以上が必要である．`java -version` で確認し，
@@ -1073,7 +1077,7 @@ CI の結果を正とする．
 ## 📚 版管理と正誤表
 
 書籍の版（初版・第 2 版ほか）と正誤情報を管理する仕組みを備える．
-詳細な運用ルールは [docs/spec/edition-errata.md](docs/spec/edition-errata.md) を参照．
+詳細な運用ルールは [版管理と正誤表運用](docs/spec/edition-errata.md) を参照．
 
 - 版番号は `package.json` の semver の major と一致させる（`v1.x.x` が初版）．
 - 出版のたびに `errata/errata.yml` の `editions` へ版を追記する．
