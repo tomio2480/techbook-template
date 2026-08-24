@@ -248,22 +248,42 @@ test('verifyBleedSize: 許容の幅に収まるずれは通す', () => {
 const BOOK_YAML = { title: '書籍タイトル', author: '著者名' };
 
 test('resolveExpectedTexts: 表 1 は書名と著者名を求める', () => {
-  assert.deepEqual(resolveExpectedTexts(COVER_TARGETS[0], BOOK_YAML), ['書籍タイトル', '著者名']);
+  assert.deepEqual(resolveExpectedTexts(COVER_TARGETS[0], BOOK_YAML, {}), ['書籍タイトル', '著者名']);
 });
 
-test('resolveExpectedTexts: 表 4 は決まった文字列を持たない', () => {
-  /* 裏表紙の文言は執筆者が自由に書く．文字が抽出できることだけを求める */
-  assert.deepEqual(resolveExpectedTexts(COVER_TARGETS[1], BOOK_YAML), []);
+test('resolveExpectedTexts: 表 4 は ISDN 未発行なら決まった文字列を持たない', () => {
+  /* 裏表紙の文言は執筆者が自由に書く．番号未発行は正常な状態である */
+  assert.deepEqual(resolveExpectedTexts(COVER_TARGETS[1], BOOK_YAML, {}), []);
+  assert.deepEqual(resolveExpectedTexts(COVER_TARGETS[1], BOOK_YAML, { issued: { number: '' } }), []);
+  assert.deepEqual(resolveExpectedTexts(COVER_TARGETS[1], BOOK_YAML, undefined), []);
+});
+
+test('resolveExpectedTexts: 表 4 は発行済みの ISDN 番号を求める', () => {
+  /* バーコード画像が無いと，番号が正しくても情報ブロックごと出力から消える．
+     検査は警告どまりであり，バーコードを欠いた表 4 が入稿データになる */
+  assert.deepEqual(
+    resolveExpectedTexts(COVER_TARGETS[1], BOOK_YAML, { issued: { number: '278-4-876543-21-9' } }),
+    ['278-4-876543-21-9']
+  );
+});
+
+test('resolveExpectedTexts: 表 4 は形式の違う番号を求めない', () => {
+  /* 形式の違反は check-isdn.mjs がビルドの前に落とす．
+     誌面へも出ないため，ここで求めると必ず食い違う */
+  assert.deepEqual(
+    resolveExpectedTexts(COVER_TARGETS[1], BOOK_YAML, { issued: { number: '123-4-567890-12-3' } }),
+    []
+  );
 });
 
 test('resolveExpectedTexts: 書名が無ければ出所を添えて失敗する', () => {
-  assert.throws(() => resolveExpectedTexts(COVER_TARGETS[0], { author: '著者名' }), /title/);
-  assert.throws(() => resolveExpectedTexts(COVER_TARGETS[0], {}), /config\/book\.yaml/);
+  assert.throws(() => resolveExpectedTexts(COVER_TARGETS[0], { author: '著者名' }, {}), /title/);
+  assert.throws(() => resolveExpectedTexts(COVER_TARGETS[0], {}, {}), /config\/book\.yaml/);
 });
 
 test('resolveExpectedTexts: 著者名が空文字なら失敗する', () => {
   assert.throws(
-    () => resolveExpectedTexts(COVER_TARGETS[0], { title: '書籍タイトル', author: '  ' }),
+    () => resolveExpectedTexts(COVER_TARGETS[0], { title: '書籍タイトル', author: '  ' }, {}),
     /author/
   );
 });

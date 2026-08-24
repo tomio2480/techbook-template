@@ -20,6 +20,7 @@ import { fileURLToPath, pathToFileURL } from 'url';
 import { parse } from 'yaml';
 
 import { countPdfPages, decodeObjectStreams } from './count-pdf-pages.mjs';
+import { validateIsdnNumber } from './check-isdn.mjs';
 import { verifyNoIndexHtml } from './verify-build.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -93,13 +94,28 @@ export function resolveBleedMm(cssText) {
   return bleed;
 }
 
-/* 誌面へ必ず現れる文字を，対象ごとに config/book.yaml から引く。
+/* 誌面へ必ず現れる文字を，対象ごとに設定から引く。
+   流し込みはどれも，値が無ければ警告だけで進んで出力から消える。
+   入稿データが必要な記載を欠いたまま成功扱いになるのを防ぐ。
+
    表紙は書名と著者名をマーカーで流し込む（docs/spec/cover.md）。
-   流し込みは値が無くても警告だけで進み，空文字へ置き換わる。
-   入稿データが白紙のまま成功扱いになるのを防ぐため，ここで先に弾く。
-   裏表紙の文言は執筆者が自由に書くため，決まった文字列を求めない */
-export function resolveExpectedTexts(target, bookYaml) {
-  if (target.key !== 'cover') return [];
+   値が無ければ空文字へ置き換わるため，組む前に弾く。
+
+   裏表紙の文言は執筆者が自由に書くため，決まった文字列を求めない。
+   ただし ISDN を発行済みなら，情報ブロックの番号を求める。
+   バーコード画像が無いと，番号が正しくても情報ブロックごと出力から消える
+   （scripts/inject-isdn.mjs）。検査は警告どまりであり，
+   バーコードを欠いた表 4 が入稿データとして出来上がる。
+   番号未発行は正常な状態であり（docs/spec/isdn.md），求める文字列を持たない */
+export function resolveExpectedTexts(target, bookYaml, isdnYaml) {
+  if (target.key !== 'cover') {
+    const number = isdnYaml?.issued?.number;
+    const issued =
+      (typeof number === 'string' && number.trim() !== '') || typeof number === 'number';
+    /* 形式の違う番号は check-isdn.mjs が先に落とす。ここでは誌面へ出る形だけを見る */
+    if (!issued || validateIsdnNumber(number).length > 0) return [];
+    return [String(number).trim()];
+  }
 
   return ['title', 'author'].map(key => {
     const value = bookYaml?.[key];
@@ -329,10 +345,13 @@ async function main() {
   const bleedMm = resolveBleedMm(fs.readFileSync(path.join(repoRoot, COVER_STYLE), 'utf-8'));
   const bookYaml =
     parse(fs.readFileSync(path.join(repoRoot, 'config', 'book.yaml'), 'utf-8')) ?? {};
+  /* ISDN は取らない本もある。設定ファイルが無い状態を正常として扱う */
+  const isdnPath = path.join(repoRoot, 'config', 'isdn.yaml');
+  const isdnYaml = fs.existsSync(isdnPath) ? (parse(fs.readFileSync(isdnPath, 'utf-8')) ?? {}) : {};
   /* 誌面へ求める文字は組む前にすべて解決する。設定の不足でやり直すとき，
      1 枚目を組む時間を無駄にしない */
   const expectations = new Map(
-    COVER_TARGETS.map(target => [target.key, resolveExpectedTexts(target, bookYaml)])
+    COVER_TARGETS.map(target => [target.key, resolveExpectedTexts(target, bookYaml, isdnYaml)])
   );
 
   for (const scriptName of CHECK_SCRIPTS) {
