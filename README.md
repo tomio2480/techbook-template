@@ -1211,9 +1211,9 @@ npm run build
   画像が無いと，番号が正しくても情報ブロックごと出力から消える．
   置き場所は `config/isdn.yaml` の `issued.barcode` が指す．
 
-`塗り足しが…です` と表示される場合は，`config/themes/techbook/print.css` の
-`--bleed` と組み上がった PDF が食い違っている．
-表紙のページに独自の寸法指定を足していないか確認する．
+`塗り足しが…です` と表示される場合を説明する．
+`config/themes/techbook/print.css` の `--bleed` と，組み上がった PDF が
+食い違っている．表紙のページに独自の寸法指定を足していないか確認する．
 
 ## 📄 ライセンス
 
