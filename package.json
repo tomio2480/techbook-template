@@ -12,6 +12,8 @@
     "check:isdn": "node scripts/check-isdn.mjs",
     "check:preface": "node scripts/check-preface-errata.mjs",
     "check:index": "node scripts/check-index.mjs",
+    "check:icon-bake": "node scripts/check-icon-bake.mjs",
+    "check:transparency": "node scripts/check-print-transparency.mjs",
     "gen:index": "node scripts/gen-index.mjs",
     "test": "node --test scripts/*.test.mjs",
     "preview": "vivliostyle preview",

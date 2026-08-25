@@ -7,7 +7,8 @@
  *
  * theme.css の上へ重ねて使う（vivliostyle build の --style で全ドキュメントへ適用する）．
  * 電子書籍用の PDF（dist/book.pdf）には読み込まれない．
- * 扱うのは面付けに関する体裁だけであり，本文の体裁は theme.css を単一の出所とする．
+ * 扱うのは面付けに関する体裁と，入稿要件が求める描画の置き換えに限る．
+ * 本文の体裁は theme.css を単一の出所とする．
  * 要求・要件は docs/spec/print-layout.md を参照．
  */
 
@@ -38,6 +39,66 @@
   left: calc(-1 * var(--bleed));
   width: calc(182mm + var(--bleed) * 2);
   height: calc(257mm + var(--bleed) * 2);
+}
+
+/* ── 枠アイコンの透明を外す ──────────────────────────────
+ * 印刷所は透明効果を再現できないことがある．入稿データからは取り除く．
+ * theme.css の枠アイコンは mask で切り抜いた面を opacity: 0.12 で敷いており，
+ * PDF ではソフトマスク（/SMask）と定数アルファ（/ca）になる．
+ * ここでは合成後の色を焼いた線画へ置き換え，透明の指定を持たせない．
+ *
+ * 焼いた色 #e6ebf1 は，枠の地色 #fff へ --palette-primary（#2f5b8c）を
+ * 0.12 で重ねた結果である．組版と同じ Chromium で実測して確かめた．
+ * scripts/check-icon-bake.mjs が，パレットと不透明度から計算した色と
+ * 突き合わせる．基調色を差し替えた本では，この色も焼き直す必要がある．
+ * 線画の形は theme.css を写している．同じ検査が形の一致も見る．
+ *
+ * 焼いた線画は不透明であるため，本文の上に重なると文字を隠す．
+ * 枠の中身を z-index で上へ置き，アイコンを最背面へ下げる．
+ * 見出しの ::before は要素の子ではないため，個別に指定する．
+ *
+ * 残った透明は scripts/check-print-transparency.mjs が検出する．
+ * 要求・要件は docs/spec/print-layout.md を参照．
+ */
+:root {
+  --tips-icon-baked: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23e6ebf1' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 9a6.5 6.5 0 0 0-4.2 11.4c.9.8 1.7 1.7 1.7 2.6h5c0-.9.8-1.8 1.7-2.6A6.5 6.5 0 0 0 16 9z'/%3E%3Cpath d='M13.5 26h5'/%3E%3Cpath d='M14.5 28.5h3'/%3E%3Cpath d='M16 2.5v3'/%3E%3Cpath d='M7 6l2.1 2.1'/%3E%3Cpath d='M25 6l-2.1 2.1'/%3E%3Cpath d='M3.5 14h3'/%3E%3Cpath d='M25.5 14h3'/%3E%3C/svg%3E");
+  --note-icon-baked: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23e6ebf1' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 4.5h9l5 5v18H10z'/%3E%3Cpath d='M19 4.5V9.5h5'/%3E%3Cpath d='M13 15h8'/%3E%3Cpath d='M13 19.5h8'/%3E%3Cpath d='M13 24h5'/%3E%3Cpath d='M3.5 8l2.6 1.3'/%3E%3Cpath d='M3 13.5h3'/%3E%3Cpath d='M3.5 19l2.6-1.3'/%3E%3C/svg%3E");
+  --caution-icon-baked: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23e6ebf1' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 5.5 5.5 23.5h21z'/%3E%3Cpath d='M16 11.5v6'/%3E%3Ccircle cx='16' cy='20.8' r='1.5' fill='%23e6ebf1' stroke='none'/%3E%3Cpath d='M16 1v2.3'/%3E%3Cpath d='M8.5 2.5l1.4 2'/%3E%3Cpath d='M23.5 2.5l-1.4 2'/%3E%3C/svg%3E");
+}
+
+.tips {
+  --box-icon-baked: var(--tips-icon-baked);
+}
+
+.note {
+  --box-icon-baked: var(--note-icon-baked);
+}
+
+.caution {
+  --box-icon-baked: var(--caution-icon-baked);
+}
+
+.tips::after,
+.note::after,
+.caution::after {
+  opacity: 1;
+  -webkit-mask: none;
+  mask: none;
+  background-color: transparent;
+  background-image: var(--box-icon-baked);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  z-index: 0;
+}
+
+.tips > *,
+.note > *,
+.caution > *,
+.note::before,
+.caution::before {
+  position: relative;
+  z-index: 1;
 }
 
 /* ── 改丁（区分の始まりページの面）──────────────────────────

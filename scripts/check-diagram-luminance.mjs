@@ -12,8 +12,8 @@
  * hex へ解釈できない色値と CSS プロパティ形式の色指定は，
  * 検査のすり抜けを防ぐため黙認せず違反として報告する．
  *
- * DIAGRAM_TIER_COLORS・EXCLUDED_FILES は本ごとに差し替える定数として
- * 先頭に集約している．配色替えの本では，この 2 定数と
+ * DIAGRAM_TIER_COLORS・DIAGRAM_WASH_COLORS・EXCLUDED_FILES は本ごとに
+ * 差し替える定数として先頭に集約している．配色替えの本では，この 3 定数と
  * palette.css の --palette-diagram-annotation を合わせて調整する．
  */
 
@@ -32,6 +32,17 @@ export const DIAGRAM_TIER_COLORS = ['#2f5b8c', '#5588bb', '#8cb2d8'];
  * しない方針のため除外する．種別の判別は部品形状・ラベルが担う．
  */
 export const EXCLUDED_FILES = ['led-circuit.svg'];
+
+/**
+ * 図版で許可する淡い塗り（面の下地）．本ごとに差し替える．既定は空とする．
+ *
+ * 明度段は線と記号の判別に使う色であり，帯（MID_BAND）へ収める．
+ * 面を塗る下地はそれより明るく，帯を外れる．役割が違うため別の区分として持つ．
+ * 塗りを透明で薄めると，指定値だけを読む本検査が実際に刷られる色を見逃す．
+ * 合成後の色を焼いて，ここへ登録することで盲点を塞ぐ
+ * （紙入稿では透明そのものを外す．docs/spec/print-layout.md を参照）．
+ */
+export const DIAGRAM_WASH_COLORS = [];
 
 /** 明度段が収まるべき Rec.601 輝度の帯（%）．黒・白との判別を担保する． */
 export const MID_BAND = { min: 20, max: 80 };
@@ -179,12 +190,14 @@ export function findMissingExcludedFiles(realFileNames, excludedFiles = EXCLUDED
  * 図版 SVG 群と palette.css を配色規約に照らして検査する．
  * @param {Map<string, string>} svgFiles ファイル名 → SVG テキスト
  * @param {string} paletteCss palette.css の内容
- * @param {{ tierColors?: string[], excludedFiles?: string[] }} [options]
+ * @param {{ tierColors?: string[], washColors?: string[], excludedFiles?: string[] }} [options]
  * @returns {Array<{ type: string, file?: string, color?: string, message: string }>}
  */
 export function checkDiagramColors(svgFiles, paletteCss, options = {}) {
   const tierColors = (options.tierColors ?? DIAGRAM_TIER_COLORS).map(normalizeHex);
+  const washColors = (options.washColors ?? DIAGRAM_WASH_COLORS).map(normalizeHex);
   const excludedFiles = options.excludedFiles ?? EXCLUDED_FILES;
+  const allowedColors = [...tierColors, ...washColors];
   const violations = [];
 
   for (const color of tierColors) {
@@ -197,6 +210,19 @@ export function checkDiagramColors(svgFiles, paletteCss, options = {}) {
       });
     }
   }
+  /* 淡い塗りは帯より明るいことを条件に許可する．帯の中へ入ると
+     明度段と紛れ，グレースケールで線と面を見分けられなくなる */
+  for (const color of washColors) {
+    const luma = rec601Luminance(color);
+    if (luma <= MID_BAND.max) {
+      violations.push({
+        type: 'wash-not-light',
+        color,
+        message: `淡い塗り ${color}（${luma.toFixed(1)}%）が明度段の帯の上限 ${MID_BAND.max}% を超えていない`,
+      });
+    }
+  }
+
   const sortedTiers = [...tierColors].sort((a, b) => rec601Luminance(a) - rec601Luminance(b));
   for (let i = 1; i < sortedTiers.length; i += 1) {
     const gap = rec601Luminance(sortedTiers[i]) - rec601Luminance(sortedTiers[i - 1]);
@@ -234,12 +260,12 @@ export function checkDiagramColors(svgFiles, paletteCss, options = {}) {
       });
     }
     for (const color of colors) {
-      if (isChromatic(color) && !tierColors.includes(color)) {
+      if (isChromatic(color) && !allowedColors.includes(color)) {
         violations.push({
           type: 'unregistered-chromatic',
           file,
           color,
-          message: `${file} の有彩色 ${color} が明度段パレットに登録されていない`,
+          message: `${file} の有彩色 ${color} が明度段パレットにも淡い塗りにも登録されていない`,
         });
       }
     }
