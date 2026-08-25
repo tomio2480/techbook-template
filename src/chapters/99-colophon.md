@@ -18,8 +18,8 @@ class: colophon
 | 発行 | サークル名 / 出版社名 |
 | 印刷 | 印刷所名 |
 | 組版 | Vivliostyle |
-| 連絡先 | example@example.com |
-| Web | https://example.com |
+| 連絡先 | メールアドレス |
+| Web | サイトの URL |
 
 本書の内容に関するお問い合わせは，上記連絡先までお願いいたします．
 

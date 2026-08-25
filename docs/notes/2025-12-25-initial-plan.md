@@ -94,7 +94,7 @@ Markdown を入力として，書籍ごとのカスタマイズ設定と共に P
 
 ## リポジトリ構造（設計）
 
-```
+```text
 techbook-template/
 ├── .github/
 │   ├── workflows/
