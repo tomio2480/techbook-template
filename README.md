@@ -849,6 +849,9 @@ Java 11 を導入している．
 
 ## 📂 ディレクトリ構造
 
+`scripts/` は全数を載せる．前半には単体で実行するものが並ぶ．
+後半は他のスクリプトから呼ばれる部品である．
+
 ```
 techbook-template/
 ├── src/
@@ -884,19 +887,28 @@ techbook-template/
 │           └── code-highlight.css
 ├── errata/
 │   └── errata.yml             # 正誤表の原本（版一覧・正誤情報）
-├── scripts/
+├── scripts/                   # 全数を掲載．前半は単体実行，後半は部品
 │   ├── add-line-numbers.mjs   # 行番号追加・目次マージスクリプト
 │   ├── verify-build.mjs       # ビルド中断検知（フェイルセーフ）
 │   ├── tag-pdf.mjs            # タグ付き PDF 生成（ビルド後処理）
 │   ├── build-print.mjs        # 紙入稿用 PDF のビルド（改丁・面付け）
-│   ├── print-layout.mjs       # 改丁・面付けの計算と MEMO ページ生成
 │   ├── build-cover.mjs        # 表紙単体の入稿データのビルド（表 1・表 4）
-│   ├── count-pdf-pages.mjs    # PDF のページ数の読み取り
+│   ├── gen-index.mjs          # 索引の骨組みの生成（標準出力）
 │   ├── check-errata.mjs       # 正誤表スキーマ・版整合の検査
 │   ├── check-isdn.mjs         # ISDN 番号・バーコード整合の検査
 │   ├── check-preface-errata.mjs # まえがきの正誤表案内マーカーの検査
 │   ├── check-index.mjs        # 索引の参照と本文のアンカーの突合
-│   ├── gen-index.mjs          # 索引の骨組みの生成（標準出力）
+│   ├── check-contrast.mjs     # 配色のコントラスト比の検査
+│   ├── check-diagram-luminance.mjs # 図版 SVG の明度段パレットの検査
+│   ├── check-gradient-hardstops.mjs # ハードストップ透過の検査
+│   ├── check-icon-bake.mjs    # 焼いた枠アイコンと theme.css の一致の検査
+│   ├── check-print-transparency.mjs # 入稿データの透明効果の検査
+│   ├── print-layout.mjs       # 改丁・面付けの計算と MEMO ページ生成
+│   ├── count-pdf-pages.mjs    # PDF のページ数の読み取り
+│   ├── inject-book-meta.mjs   # 書名・著者名の流し込み
+│   ├── inject-colophon.mjs    # 奥付の流し込み
+│   ├── inject-isdn.mjs        # ISDN の流し込み
+│   ├── join-cjk-line-breaks.mjs # 全角文字間の文中改行の詰め
 │   └── *.test.mjs             # 各スクリプトの単体テスト
 ├── dist/                      # 出力先（.gitignore 済）
 ├── .textlintrc.json           # 日本語文章検査の設定（原稿の文体宣言を含む）
