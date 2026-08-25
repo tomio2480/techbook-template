@@ -8,7 +8,7 @@ assignees: ''
 
 ## 対象
 
-- 章: 第X章
+- 章: 第 X 章
 - ファイル: `src/chapters/XX-title.md`
 
 ## レビュー観点
