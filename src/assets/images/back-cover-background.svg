@@ -7,13 +7,21 @@
     （#2f5b8c / #b0c4de / #f0f4f8）．
     右上は ISDN バーコードの規定位置（docs/spec/isdn.md）のため，
     天側 60mm ほどは無地を保つ．
+
+    透明は使わない．理由と焼き直しの手順は cover-background.svg と同じである．
+    元の指定は次のとおり．
+
+      地色       #f0f4f8
+      地の罫線   #2f5b8c opacity 0.5  → #90a8c2
+      地の帯     #b0c4de opacity 0.35 → #dae4ef
+      角落とし   #2f5b8c opacity 0.3  → #a6bad1（地の帯の上に重なる）
   -->
   <rect width="182" height="257" fill="#f0f4f8"/>
 
-  <!-- 地側の帯と罫線（文字情報の背面．可読性を保つ淡色にとどめる） -->
-  <rect y="205.8" width="182" height="1.2" fill="#2f5b8c" opacity="0.5"/>
-  <rect y="207" width="182" height="50" fill="#b0c4de" opacity="0.35"/>
+  <!-- 地の帯と罫線（文字情報の背面．可読性を保つ淡色にとどめる） -->
+  <rect y="205.8" width="182" height="1.2" fill="#90a8c2"/>
+  <rect y="207" width="182" height="50" fill="#dae4ef"/>
 
   <!-- 右下の角落とし（ドッグイヤー）モチーフ -->
-  <path d="M182 257 L182 227 L152 257 Z" fill="#2f5b8c" opacity="0.3"/>
+  <path d="M182 257 L182 227 L152 257 Z" fill="#a6bad1"/>
 </svg>

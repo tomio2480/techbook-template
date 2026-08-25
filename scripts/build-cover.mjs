@@ -22,6 +22,7 @@ import { parse } from 'yaml';
 import { countPdfPages, decodeObjectStreams } from './count-pdf-pages.mjs';
 import { validateIsdnNumber } from './check-isdn.mjs';
 import { verifyNoIndexHtml } from './verify-build.mjs';
+import { verifyNoTransparency } from './check-print-transparency.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -333,6 +334,9 @@ function inspectCoverPdf(target, bleedMm, expectedTexts) {
       verifySinglePage(countPdfPages(buffer), target.label),
       verifyBleedSize(boxes, bleedMm, target.label),
       verifyExtractedText(extractPdfText(pdfPath), expectedTexts, target.label),
+      /* 表紙も入稿データであり、本文と同じく透明効果を持てない。
+         背景 SVG の不透明度が発生源になる（docs/spec/cover.md） */
+      verifyNoTransparency(buffer, `${target.label}の PDF`),
     ],
     measured:
       boxes.trimBox.length === 1

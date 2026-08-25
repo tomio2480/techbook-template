@@ -25,6 +25,7 @@ import { fileURLToPath, pathToFileURL } from 'url';
 import { parse } from 'yaml';
 
 import { countPdfPagesFile } from './count-pdf-pages.mjs';
+import { verifyNoTransparencyFile } from './check-print-transparency.mjs';
 import {
   MEMO_FILE_PATTERN,
   PAGE_SEPARATOR,
@@ -69,7 +70,12 @@ const CHECK_SCRIPTS = [
   'check-isdn.mjs',
   'check-preface-errata.mjs',
   'check-index.mjs',
+  /* 紙用に焼いた枠アイコンが theme.css と食い違っていないか。
+     組版の前に見ておけば、4 分かかるビルドを走らせる前に気づける */
+  'check-icon-bake.mjs',
 ];
+/* 透明が見つかったときに並べる件数の上限。発生源は限られるため数件で足りる */
+const TRANSPARENCY_REPORT_LIMIT = 10;
 /* npx を介さず CLI のエントリポイントを node で直接起動する（tag-pdf.mjs と同じ方針） */
 const VIVLIOSTYLE_CLI = path.join('node_modules', '@vivliostyle', 'cli', 'dist', 'cli.js');
 const OPENDATALOADER_CLI = path.join('node_modules', '@opendataloader', 'pdf', 'dist', 'cli.js');
@@ -369,6 +375,20 @@ async function main() {
   const tagged = tagPdf(repoRoot, { pdfFileName: PRINT_PDF_NAME });
   if (!tagged.ok) {
     console.error(`タグ付き PDF 生成に失敗しました: ${tagged.message}`);
+    process.exit(1);
+  }
+
+  /* 透明効果の検査はタグ付けの後に行う。タグ付けは dist/ の PDF を
+     置き換えるため、先に測ると入稿へ渡らないファイルを見ることになる */
+  const transparency = verifyNoTransparencyFile(pdfPath);
+  if (!transparency.ok) {
+    for (const item of transparency.found.slice(0, TRANSPARENCY_REPORT_LIMIT)) {
+      console.error(`検出: ${item.kind} ${item.context}`);
+    }
+    if (transparency.found.length > TRANSPARENCY_REPORT_LIMIT) {
+      console.error(`ほか ${transparency.found.length - TRANSPARENCY_REPORT_LIMIT} 件`);
+    }
+    console.error(`検証失敗: ${transparency.message}`);
     process.exit(1);
   }
 

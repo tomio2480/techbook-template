@@ -7,20 +7,37 @@
     （#2f5b8c / #b0c4de / #f0f4f8）．パレットを差し替えた場合は
     本ファイルの配色も合わせて調整する．
     タイトル・著者名が重なる中央帯（y=80〜150 付近）は無地を保つ．
+
+    透明は使わない．入稿先が透明効果を再現できないことがあるためであり，
+    合成後の色を焼いて持つ（docs/spec/print-layout.md を参照）．
+    焼いた色は組版と同じ Chromium で実測した．単純な計算では 1 階調ずれる．
+    元の指定は次のとおりで，パレットを差し替えるときはここから焼き直す．
+
+      地色       #f0f4f8
+      天の帯     #b0c4de opacity 0.4  → #d6e0ee
+      天の罫線   #2f5b8c opacity 0.5  → #90a8c2
+      角落とし   #2f5b8c opacity 0.3  → #a3b7d0（天の帯の上に重なる）
+      円         #b0c4de opacity 0.25 → #e0e8f2
+      地の罫線   #b0c4de opacity 0.6  → #cad8e8
+      地の帯     #2f5b8c opacity 0.85 → #4c719c
+
+    円は地の罫線と帯の下へ回り込む．焼いた後はその重なりが消え，
+    罫線で 6 階調・帯で 3 階調（いずれも R）明るくなる．
+    肉眼で追える差ではないため，重なりを保つ分割は行わない．
   -->
   <rect width="182" height="257" fill="#f0f4f8"/>
 
-  <!-- 天側の帯と罫線 -->
-  <rect width="182" height="48" fill="#b0c4de" opacity="0.4"/>
-  <rect y="48" width="182" height="1.2" fill="#2f5b8c" opacity="0.5"/>
+  <!-- 天の帯と罫線 -->
+  <rect width="182" height="48" fill="#d6e0ee"/>
+  <rect y="48" width="182" height="1.2" fill="#90a8c2"/>
 
   <!-- 右上の角落とし（ドッグイヤー）モチーフ -->
-  <path d="M182 0 L182 30 L152 0 Z" fill="#2f5b8c" opacity="0.3"/>
+  <path d="M182 0 L182 30 L152 0 Z" fill="#a3b7d0"/>
 
   <!-- 右下の円モチーフ（文字帯を避けた位置） -->
-  <circle cx="150" cy="192" r="42" fill="#b0c4de" opacity="0.25"/>
+  <circle cx="150" cy="192" r="42" fill="#e0e8f2"/>
 
-  <!-- 地側の帯と罫線 -->
-  <rect y="219.8" width="182" height="1.2" fill="#b0c4de" opacity="0.6"/>
-  <rect y="221" width="182" height="36" fill="#2f5b8c" opacity="0.85"/>
+  <!-- 地の帯と罫線 -->
+  <rect y="219.8" width="182" height="1.2" fill="#cad8e8"/>
+  <rect y="221" width="182" height="36" fill="#4c719c"/>
 </svg>

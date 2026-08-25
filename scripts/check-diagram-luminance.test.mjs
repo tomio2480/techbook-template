@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import {
   DIAGRAM_TIER_COLORS,
+  DIAGRAM_WASH_COLORS,
   EXCLUDED_FILES,
   MIN_SEPARATION,
   ANNOTATION_TOKEN,
@@ -111,6 +112,31 @@ test('checkDiagramColors: 未登録の有彩色を違反として検出する', 
   assert.equal(violations[0].type, 'unregistered-chromatic');
   assert.equal(violations[0].file, 'a.svg');
   assert.equal(violations[0].color, '#cc6666');
+});
+
+test('checkDiagramColors: 淡い塗りに登録した色は違反にならない', () => {
+  const files = makeFiles({ 'base.svg': BASE_SVG, 'a.svg': '<svg><rect fill="#d4e1ee"/></svg>' });
+  assert.deepEqual(
+    checkDiagramColors(files, VALID_PALETTE_CSS, { washColors: ['#d4e1ee'] }),
+    []
+  );
+});
+
+test('checkDiagramColors: 淡い塗りが帯の中にあると違反になる', () => {
+  const violations = checkDiagramColors(makeFiles({ 'base.svg': BASE_SVG }), VALID_PALETTE_CSS, {
+    washColors: ['#5588bb'],
+  });
+  assert.equal(violations.length, 1);
+  assert.equal(violations[0].type, 'wash-not-light');
+  assert.equal(violations[0].color, '#5588bb');
+});
+
+test('checkDiagramColors: 淡い塗りの既定は空であり明度段だけを許可する', () => {
+  assert.deepEqual(DIAGRAM_WASH_COLORS, []);
+  const files = makeFiles({ 'base.svg': BASE_SVG, 'a.svg': '<svg><rect fill="#d4e1ee"/></svg>' });
+  const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+  assert.equal(violations.length, 1);
+  assert.equal(violations[0].type, 'unregistered-chromatic');
 });
 
 test('checkDiagramColors: グレー系は登録なしでも違反にならない', () => {
