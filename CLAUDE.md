@@ -10,7 +10,8 @@ Claude が作業する際の必須事項を定める．
 - ISDN（`config/isdn.yaml`・`back-cover.md`・奥付の `{{isdn}}`）は
   `docs/spec/isdn.md` が扱う．着手前に必ず読むこと．
 - 紙入稿用 PDF は `docs/spec/print-layout.md` が扱う．
-  `npm run build:print`・改丁・面付け・MEMO ページ・表紙の同梱可否が範囲である．
+  `npm run build:print`・改丁・面付け・MEMO ページ・表紙の同梱可否と，
+  入稿データからの透明効果の除去が範囲である．
   着手前に必ず読むこと．
 - 入稿先の要件（`docs/spec/print-submission.md`）は雛形である．
   入稿先を決めるとき，または入稿データを作るときに読むこと．

@@ -843,7 +843,12 @@ hr {
    （目視確認済み）．
    なお overflow の副作用として，枠幅を超える図表は切り取られる．
    枠内の図表は本文幅に収めること．
-   アイコン線画がアルファのみ使うため，stroke 色は任意の黒とする． */
+   アイコン線画がアルファのみ使うため，stroke 色は任意の黒とする．
+   ここが最終形ではない．紙入稿用ビルドでは print.css がこの ::after を
+   不透明な焼き線画へ置き換える．入稿データが透明効果を持てないためであり，
+   線画の形が食い違わないよう scripts/check-icon-bake.mjs が検査する．
+   線画を変えるときは print.css の --*-icon-baked も合わせて直すこと
+   （docs/spec/print-layout.md を参照）． */
 :root {
   --tips-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 9a6.5 6.5 0 0 0-4.2 11.4c.9.8 1.7 1.7 1.7 2.6h5c0-.9.8-1.8 1.7-2.6A6.5 6.5 0 0 0 16 9z'/%3E%3Cpath d='M13.5 26h5'/%3E%3Cpath d='M14.5 28.5h3'/%3E%3Cpath d='M16 2.5v3'/%3E%3Cpath d='M7 6l2.1 2.1'/%3E%3Cpath d='M25 6l-2.1 2.1'/%3E%3Cpath d='M3.5 14h3'/%3E%3Cpath d='M25.5 14h3'/%3E%3C/svg%3E");
   --note-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 4.5h9l5 5v18H10z'/%3E%3Cpath d='M19 4.5V9.5h5'/%3E%3Cpath d='M13 15h8'/%3E%3Cpath d='M13 19.5h8'/%3E%3Cpath d='M13 24h5'/%3E%3Cpath d='M3.5 8l2.6 1.3'/%3E%3Cpath d='M3 13.5h3'/%3E%3Cpath d='M3.5 19l2.6-1.3'/%3E%3C/svg%3E");
