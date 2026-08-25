@@ -30,7 +30,7 @@ Issue #22 で配色を 2 層トークン化したが，追従漏れが残って�
 | 要素 | 対応 |
 |---|---|
 | 章扉トピック枠 | `--chapter-topics-bg` と `--chapter-topics-accent` を新設 |
-| 表 | `--table-head-rule` ・ `--table-rule` ・ `--table-stripe-bg` を新設 |
+| 表 | `--table-head-rule`・`--table-rule`・`--table-stripe-bg` を新設 |
 | 柱（章名ヘッダー） | `--running-head-color` を新設 |
 | リンク | `--color-link` を `--palette-primary` 参照へ変更 |
 | 引用 | `--quote-bg` と `--quote-border` を新設 |

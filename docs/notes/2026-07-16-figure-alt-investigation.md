@@ -66,12 +66,12 @@ alt に依存しない形で図の内容を伝えるためである．
 
 次のいずれかが実現したら再検討する．
 
-- Vivliostyle CLI がタグ付き PDF を直接出力する
-  （[vivliostyle-cli#539](https://github.com/vivliostyle/vivliostyle-cli/issues/539)）．
+- Vivliostyle CLI がタグ付き PDF を直接出力する．
+  追跡先は [vivliostyle-cli#539](https://github.com/vivliostyle/vivliostyle-cli/issues/539) である．
   この場合，alt はビルド時にそのまま引き継がれる．
 - OpenDataLoader が外部からの alt 注入手段を提供する．
-  「image N」フォールバックの見直しは上流も TODO として認識している
-  （上流 [PR #537](https://github.com/opendataloader-project/opendataloader-pdf/pull/537) の記述）．
+  上流も「image N」フォールバックの見直しを TODO として認識している．
+  根拠は上流 [PR #537](https://github.com/opendataloader-project/opendataloader-pdf/pull/537) の記述である．
 - 原稿画像をラスター形式へ寄せる運用が許容され，picture ノードの
   検出を前提とした突合が試せるようになる．
 
