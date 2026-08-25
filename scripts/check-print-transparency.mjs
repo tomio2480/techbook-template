@@ -22,7 +22,7 @@
  * 走査は辞書の単位で行う．素のバイト列へ正規表現を当てると，
  * 誌面の文字列や読み上げ用の代替テキストに現れた `/ca 0.5` を
  * 指定と取り違える．鍵と値のあいだに置けるコメントも読み落とす．
- * 平文側は間接オブジェクトの辞書だけを見て，圧縮データを避ける．
+ * 平文側はファイルの本体を辿って辞書だけを読み，ストリームの中身を飛ばす．
  * 圧縮側はオブジェクトストリームを展開し，文字列とコメントを飛ばして辿る．
  * 辞書を読む部品は count-pdf-pages.mjs と共有する．
  *
@@ -41,10 +41,13 @@ import { pathToFileURL } from 'url';
 import {
   decodeObjectStreams,
   readDictionary,
+  resolveStreamEnds,
   skipComment,
   skipLiteralString,
   skipHexString,
   skipWhitespaceAndComments,
+  STREAM_KEYWORD_PATTERN,
+  STREAM_KEYWORD_LENGTH,
 } from './count-pdf-pages.mjs';
 
 // PDF の空白は NUL・水平タブ・改行・改ページ・復帰・空白の 6 種である
@@ -76,10 +79,6 @@ const SMASK_IN_DATA_PATTERN = new RegExp(
 
 /** 透明を働かせない合成モード．これ以外は，下の絵柄と混ぜて刷ることになる． */
 const OPAQUE_BLEND_MODES = ['Normal', 'Compatible'];
-
-/** オブジェクトの見出し（`12 0 obj`）は obj キーワードで捉える． */
-const OBJECT_KEYWORD_PATTERN = /\bobj\b/g;
-const OBJECT_KEYWORD_LENGTH = 'obj'.length;
 
 /** 報告へ添える前後の文字数．どの辞書で見つかったかの手掛かりにする． */
 const CONTEXT_RADIUS = 40;
@@ -130,27 +129,76 @@ export function collectDictionaries(text) {
 }
 
 /**
- * 平文の PDF から，間接オブジェクトの辞書を集める．
- * 圧縮データを走査の対象から外すため，オブジェクトの見出しを起点にする．
+ * 平文の PDF から辞書を集める．
+ *
+ * ファイルの本体を先頭から辿り，辞書を見つけたらその範囲だけを読む．
+ * 辞書の直後にストリームが続く場合は，圧縮データを丸ごと飛ばす．
+ * 飛ばさずに辿ると，データの中の `(` で同期を失って本物の指定を読み落とす．
+ *
+ * `obj` を語として探す形は採らない．誌面の文字列やストリームの中に
+ * `obj << /ca 0.5 >>` と書かれた並びを，本物の見出しと取り違えるためである．
+ * ストリームは必ず辞書の後ろに置かれるため，辞書から辿れば取り違えは起きない．
+ *
  * @param {string} text latin1 として読んだ PDF の中身
  * @returns {Array<string>} 辞書ごとの，外側の鍵だけを残した文字列
  */
-export function collectObjectDictionaries(text) {
+export function collectPlainDictionaries(text) {
   const dictionaries = [];
-  /* 同じ辞書へ複数の起点からたどり着くことがある．
-     見出しの後ろのコメントが obj で終わる形が例であり，位置で覚えて重複を避ける */
-  const seen = new Set();
+  let index = 0;
 
-  for (const keyword of text.matchAll(OBJECT_KEYWORD_PATTERN)) {
-    const start = skipWhitespaceAndComments(text, keyword.index + OBJECT_KEYWORD_LENGTH);
-    const dictionary = readDictionary(text, start);
-    if (dictionary === null || seen.has(start)) continue;
-    seen.add(start);
+  while (index < text.length) {
+    const character = text[index];
+    if (character === '%') {
+      index = skipComment(text, index);
+      continue;
+    }
+    if (character === '(') {
+      index = skipLiteralString(text, index);
+      continue;
+    }
+    if (character !== '<') {
+      index += 1;
+      continue;
+    }
+    if (text[index + 1] !== '<') {
+      index = skipHexString(text, index);
+      continue;
+    }
+
+    const dictionary = readDictionary(text, index);
+    if (dictionary === null) {
+      index += 2;
+      continue;
+    }
     /* 辞書の範囲だけを渡す．この中に圧縮データは無く，入れ子も拾える */
-    dictionaries.push(...collectDictionaries(text.slice(start, dictionary.end)));
+    dictionaries.push(...collectDictionaries(text.slice(index, dictionary.end)));
+    index = skipStreamData(text, dictionary);
   }
 
   return dictionaries;
+}
+
+/**
+ * 辞書の後ろにストリームが続くなら，その終わりまで飛ばした位置を返す．
+ * 続かないなら辞書の終わりをそのまま返す．
+ * @param {string} text latin1 として読んだ PDF の中身
+ * @param {{outer: string, end: number}} dictionary readDictionary の結果
+ * @returns {number} 次に読む位置
+ */
+function skipStreamData(text, dictionary) {
+  const keywordAt = skipWhitespaceAndComments(text, dictionary.end);
+  const keyword = STREAM_KEYWORD_PATTERN.exec(
+    text.slice(keywordAt, keywordAt + STREAM_KEYWORD_LENGTH)
+  );
+  if (keyword === null) return dictionary.end;
+
+  const dataStart = keywordAt + keyword[0].length;
+  const ends = resolveStreamEnds(text, dictionary.outer, dataStart);
+  /* 候補は確からしい順に並ぶ．展開が目的なら先頭を採るが，ここでは
+     読み飛ばす位置が要る．最後の候補（endstream の位置）まで飛ばせば，
+     区切りの改行をデータと数えても走査は狂わない．
+     終わりを読めない壊れたストリームは，末尾まで飛ばして走査を止める */
+  return ends.length > 0 ? ends[ends.length - 1] : text.length;
 }
 
 /**
@@ -207,9 +255,7 @@ export function findTransparency(buffer) {
   const decoded = decodeObjectStreams(raw, buffer);
 
   return [
-    ...collectObjectDictionaries(raw).flatMap(dictionary =>
-      findInDictionary(dictionary, 'plain')
-    ),
+    ...collectPlainDictionaries(raw).flatMap(dictionary => findInDictionary(dictionary, 'plain')),
     ...collectDictionaries(decoded).flatMap(dictionary =>
       findInDictionary(dictionary, 'objstm')
     ),

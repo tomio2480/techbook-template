@@ -43,8 +43,8 @@ const OBJECT_KEYWORD_LENGTH = 'obj'.length;
 
 // stream キーワードは辞書の直後（空白とコメントを挟んでよい）に置かれる。
 // 続く改行はキーワードの一部であり、データはその次のバイトから始まる
-const STREAM_KEYWORD_PATTERN = /^stream\r?\n/;
-const STREAM_KEYWORD_LENGTH = 'stream\r\n'.length;
+export const STREAM_KEYWORD_PATTERN = /^stream\r?\n/;
+export const STREAM_KEYWORD_LENGTH = 'stream\r\n'.length;
 
 // ページツリーのルート（/Parent を持たないノード）が宣言する総ページ数を集める
 function findRootPageCounts(text) {
@@ -63,9 +63,11 @@ function findRootPageCounts(text) {
   return counts;
 }
 
-/* ここから下の 5 つは PDF の構文を読み進める部品である。
-   本スクリプト以外に check-print-transparency.mjs も使うため export する。
-   バイト列を latin1 の文字列として受け、次に読む位置を返す約束で揃えてある */
+/* PDF の構文を読み進める部品には export を付けてある（上の STREAM_KEYWORD_* と、
+   下の skip* / readDictionary / resolveStreamEnds）。
+   本スクリプト以外に check-print-transparency.mjs も使うためである。
+   読み飛ばす部品はバイト列を latin1 の文字列として受け、
+   次に読む位置を返す約束で揃えてある */
 
 // PDF は % から行末までをコメントとし、空白と同じ扱いで書ける
 export function skipWhitespaceAndComments(text, from) {
@@ -188,7 +190,7 @@ export function readDictionary(text, from) {
 // 落とす方法は、圧縮データの最後のバイトが CR（0x0d）のとき CRLF と読み違え、
 // データを 1 バイト余分に削って展開に失敗する（Issue #145）。
 // /Length が間接参照（`12 0 R`）の場合はその場で値を引けないため endstream に頼る
-function resolveStreamEnds(text, dict, dataStart) {
+export function resolveStreamEnds(text, dict, dataStart) {
   const lengthMatch = dict.match(STREAM_LENGTH_PATTERN);
   if (lengthMatch && !lengthMatch[2]) {
     return [dataStart + Number(lengthMatch[1])];

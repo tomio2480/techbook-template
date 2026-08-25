@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import zlib from 'zlib';
 import {
   collectDictionaries,
-  collectObjectDictionaries,
+  collectPlainDictionaries,
   findTransparency,
   verifyNoTransparency,
   formatTransparencySummary,
@@ -31,8 +31,16 @@ test('collectDictionaries: 文字列の中の辞書は拾わない', () => {
   assert.deepEqual(collectDictionaries('(<< /ca 0.5 >>)'), []);
 });
 
-test('collectObjectDictionaries: 見出しを持たない辞書は拾わない', () => {
-  assert.deepEqual(collectObjectDictionaries('<< /ca 0.5 >>'), []);
+test('collectPlainDictionaries: ストリームの中身を辞書として読まない', () => {
+  const data = '<< /ca 0.5 >> (壊れた括弧';
+  const pdf =
+    `1 0 obj\n<< /Length ${data.length} >>\nstream\n${data}\nendstream\nendobj\n` +
+    pdfObject('<< /Type /ExtGState /BM /Normal >>', 2);
+  const dictionaries = collectPlainDictionaries(pdf);
+  assert.ok(!dictionaries.some(text => text.includes('/ca')));
+  /* ストリームを飛ばした後も走査が続くことを確かめる．
+     飛ばしすぎると，後ろの本物の指定を読み落とす */
+  assert.ok(dictionaries.some(text => text.includes('/BM')));
 });
 
 // --- findTransparency: ソフトマスク ---
@@ -128,6 +136,17 @@ test('findTransparency: /SMaskInData 0 はアルファを使わない指定な�
 
 test('findTransparency: 文字列の中に現れた指定を数えない', () => {
   assert.deepEqual(scan('<< /ActualText (CSS の /ca 0.5 について) >>'), []);
+});
+
+test('findTransparency: 文字列の中の見出しらしい並びを数えない', () => {
+  /* PDF の書き方そのものを解説する原稿は，この並びを誌面へ書きうる */
+  assert.deepEqual(scan('<< /ActualText (obj << /ca 0.5 >>) >>'), []);
+});
+
+test('findTransparency: ストリームの中の指定を数えない', () => {
+  const data = 'obj << /ca 0.5 >>';
+  const pdf = `1 0 obj\n<< /Length ${data.length} >>\nstream\n${data}\nendstream\nendobj\n`;
+  assert.deepEqual(findTransparency(toBuffer(pdf)), []);
 });
 
 test('findTransparency: 圧縮側でも文字列の中の指定を数えない', () => {
