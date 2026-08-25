@@ -14,12 +14,12 @@ Issue #14 対応（[PR #20](https://github.com/tomio2480/techbook-template/pull/
 
 ## 背景
 
-Issue #14 は，`dist/book.pdf` にアクセシビリティタグを付与する新規
-ツール（OpenDataLoader PDF）導入という，規模の大きい作業だった．
-`spec-dev`・`code-quality`・`github-dev` の各 Skill に従うよう指示
-した上で，実装をサブエージェントへ委譲した．エージェントは
+Issue #14 は，`dist/book.pdf` へアクセシビリティタグを付与する作業で
+ある．新規ツール OpenDataLoader PDF の導入を伴う，規模の大きい作業
+だった．`spec-dev`・`code-quality`・`github-dev` の各 Skill に従うよう
+指示した上で，実装をサブエージェントへ委譲した．エージェントは
 `docs/spec/pdf-tagging.md` の作成，TDD によるスクリプト実装，テスト
-57 件の作成までを完了し，push 前で作業を止めて報告した．
+57 件の作成までを完了した．push 前で作業を止めて報告した．
 
 この時点でテストは全件パスしていたが，CI（`npm run build`）は失敗
 した．
@@ -32,25 +32,30 @@ CI ログを確認したところ，`タグ付き PDF が生成されません�
 
 ### 出力ファイル名の想定違い
 
-実装は `opendataloader-pdf --output-dir <dir> book.pdf` の出力先に
-入力と同名の `book.pdf` が書き出されると想定していた．しかし実際に
-Java 環境で実行すると，出力ファイル名は `book_tagged.pdf`（拡張子を
-除いたベース名に `_tagged` を付与したもの）だった．Issue 本文の PoC
-記載にもこの命名規則への言及はなく，公式ドキュメントにも明記がない．
+実装は，出力先へ入力と同名の `book.pdf` が書き出されると想定していた．
+コマンドは `opendataloader-pdf --output-dir <dir> book.pdf` である．
+しかし Java 環境で実行すると，出力ファイル名は `book_tagged.pdf`
+だった．拡張子を除いたベース名へ `_tagged` を付与したものである．
+Issue 本文の PoC 記載にもこの命名規則への言及はなく，公式ドキュメント
+にも明記がない．
 
-実機で `npx opendataloader-pdf --format tagged-pdf --output-dir <dir>
-book.pdf` を直接実行し，生成された一時ディレクトリの中身を確認する
-ことで初めて判明した．
+この命名規則は，実機で実行して初めて判明した．
+次のコマンドを直接実行し，生成された一時ディレクトリの中身を確認した．
+
+```bash
+npx opendataloader-pdf --format tagged-pdf --output-dir <dir> book.pdf
+```
 
 ### Windows での `npx` 起動失敗
 
 `spawnSync('npx', ...)` は Windows 環境で `ENOENT` となり起動できな
-かった．`npx.cmd` に切り替えると今度は `EINVAL` になった．最終的に
-は gemini-code-assist のレビュー指摘を受け，`devDependencies` に導
-入済みの `node_modules/@opendataloader/pdf/dist/cli.js` を `node` で
-直接実行する方式に変更し，`npx`・`shell: true` のいずれも不要にし
-た．この方式は起動オーバーヘッドも小さく，Windows 依存の分岐も消え
-るため，実装としてもより単純になった．
+かった．`npx.cmd` に切り替えると今度は `EINVAL` になった．最終的には
+gemini-code-assist のレビュー指摘を受け，起動の方式を変えた．
+`devDependencies` に導入済みの CLI を `node` で直接実行する形である．
+実体は `node_modules/@opendataloader/pdf/dist/cli.js` である．
+`npx`・`shell: true` のいずれも不要になった．この方式は起動オーバー
+ヘッドも小さく，Windows 依存の分岐も消えるため，実装としてもより
+単純になった．
 
 表 1 に，実機検証で判明した問題と対応を示す．
 
