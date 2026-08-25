@@ -17,7 +17,7 @@ Claude が作業する際の必須事項を定める．
   本テンプレートでは数値を埋めない．実在する印刷所の要件は書籍側で書く．
 - 表紙・本扉・裏表紙（`cover.md`・`title-page.md`・`back-cover.md`）は
   `docs/spec/cover.md` が扱う．背景画像・テーマ CSS 変数と，
-  表紙単体の入稿データ生成も同じ spec の範囲である．
+  表紙単体の入稿データ生成（`npm run build:cover`）も同じ spec の範囲である．
   着手前に必ず読むこと．
 - 索引（`99-index.md`・`npm run gen:index`・`npm run check:index`）は
   `docs/spec/index-page.md` が扱う．着手前に必ず読むこと．
