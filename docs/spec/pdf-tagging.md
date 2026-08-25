@@ -2,9 +2,10 @@
 
 ## 概要
 
-`npm run build` の後処理として，生成した `dist/book.pdf` にアクセシビリ
-ティタグ（PDF/UA の下地となる Tagged PDF 構造）を自動付与する．対象は
-本テンプレートおよびこれを用いて作られる派生書籍リポジトリすべてである．
+`npm run build` の後処理として，生成した `dist/book.pdf` へアクセシビリ
+ティタグを自動付与する．PDF/UA の下地となる Tagged PDF 構造である．
+対象は本テンプレートおよびこれを用いて作られる派生書籍リポジトリ
+すべてである．
 
 ## 目次
 
@@ -18,10 +19,12 @@
 
 派生書籍リポジトリ
 [techbook-introduction-to-electronics-basic-led](https://github.com/tomio2480/techbook-introduction-to-electronics-basic-led)
-で，`dist/book.pdf` がタグ付き PDF になっていない不具合が判明した
-（[Issue #71](https://github.com/tomio2480/techbook-introduction-to-electronics-basic-led/issues/71)）．
-`/StructTreeRoot`・`/MarkInfo`・`/Marked true` のいずれも存在せず，
-スクリーンリーダー等の支援技術で読み上げ順序・構造が保証されない．
+で不具合が判明した．`dist/book.pdf` がタグ付き PDF になっていない．
+報告は
+[Issue #71](https://github.com/tomio2480/techbook-introduction-to-electronics-basic-led/issues/71)
+である．`/StructTreeRoot`・`/MarkInfo`・`/Marked true` のいずれも
+存在しない．スクリーンリーダー等の支援技術で，読み上げ順序・構造が
+保証されない．
 
 原因は Vivliostyle CLI の既知不具合
 （[vivliostyle-cli#539](https://github.com/vivliostyle/vivliostyle-cli/issues/539)）
@@ -71,8 +74,8 @@
 
 ## スコープ外
 
-- PDF/UA-1・PDF/UA-2 への正式準拠エクスポート（OpenDataLoader PDF の
-  Enterprise 限定機能であり，Apache 2.0 の無料範囲外）．
+- PDF/UA-1・PDF/UA-2 への正式準拠エクスポート．OpenDataLoader PDF の
+  Enterprise 限定機能であり，Apache 2.0 の無料範囲外である．
 - レイアウト解析ベースの見出し・表・読み順の自動検出精度の改善．
   ツール依存の挙動であり，書籍ごとの実際の読み上げ順検証は執筆者側
   の作業として README に手順を示すのみとする．

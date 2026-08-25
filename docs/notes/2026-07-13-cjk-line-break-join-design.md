@@ -1,7 +1,8 @@
 # 文中改行詰め処理（Issue #13）の設計とレビュー知見
 
 Issue #13 で対応した，全角文字間の文中改行を詰める rehype プラグイン
-の設計判断と，`gemini-code-assist` によるレビューで得た知見をまとめる．
+の設計判断をまとめる．`gemini-code-assist` によるレビューで得た知見も
+併せて記す．
 実装は [PR #18](https://github.com/tomio2480/techbook-template/pull/18)
 としてマージ済みである．
 
@@ -20,26 +21,28 @@ Issue #13 で対応した，全角文字間の文中改行を詰める rehype �
 として表示される．全角文字どうしに挟まれた改行の場合，これは意図
 しない半角スペースの混入となり，レンダリング結果の見た目を損なう．
 
-派生リポジトリ `tomio2480/techbook-introduction-to-electronics-basic-led`
-の PR #60 で，同種の問題に対する実装例が先行して存在した．
+同種の問題には，派生リポジトリの先行実装があった．
+`tomio2480/techbook-introduction-to-electronics-basic-led`
+の PR #60 である．
 `vivliostyle.config.js` に直接プラグインを書く形の実装であった．
 
 ## 設計判断
 
-派生リポジトリの実装ロジックを踏襲しつつ，本リポジトリの規約に合わ
-せて `scripts/join-cjk-line-breaks.mjs` という単体テスト可能なスク
-リプトへ切り出した．判定は次の 2 段階である．
+派生リポジトリの実装ロジックは踏襲した．ただし本リポジトリの規約へ
+合わせ，単体テスト可能な `scripts/join-cjk-line-breaks.mjs` として
+切り出した．判定は次の 2 段階である．
 
-1. `joinCjkLineBreaks(value)`: 文字列に対して，CJK 文字（ひらがな・
-   カタカナ・漢字・全角記号）どうしに挟まれた改行と前後の半角インデ
-   ント空白を lookbehind/lookahead で除去する純粋関数．
-2. `joinCjkLineBreaksPlugin()`: hast ツリーを再帰的に走査し，テキス
-   トノードの `value` に対して 1. を適用する rehype プラグイン．
+1. `joinCjkLineBreaks(value)`: CJK 文字どうしに挟まれた改行と，その
+   前後の半角インデント空白を除去する純粋関数．CJK 文字はひらがな・
+   カタカナ・漢字・全角記号を指す．除去は lookbehind/lookahead による．
+2. `joinCjkLineBreaksPlugin()`: hast ツリーを再帰的に走査する rehype
+   プラグイン．テキストノードの `value` へ 1. を適用する．
    `code`・`pre`・`script`・`style`・`class="math ..."` を持つ要素の
    中身は対象外とする．
 
-`vivliostyle.config.js` の `documentProcessor` では，`spectroscope`
-（シンタックスハイライト）より前に本プラグインを `.use()` で挟む．
+`vivliostyle.config.js` の `documentProcessor` では，本プラグインを
+`.use()` で挟む．挟む位置は，シンタックスハイライトの `spectroscope`
+より前である．
 ハイライト後の HTML 構造に対して改行判定を行うと，ハイライト用の
 `span` 要素境界でテキストノードが分割され，判定が崩れるためである．
 
@@ -57,10 +60,10 @@ Issue #13 で対応した，全角文字間の文中改行を詰める rehype �
 | medium | インライン要素境界をまたぐ改行が未対応 | 既知の制限として明記（下記） |
 | medium | `visit` 関数に null ガードが無い | ガード節を追加 |
 
-5 件中 4 件は当日中に修正した．残る 1 件（インライン要素境界の問題）
-は，テキストノードの結合判定に広範な AST 走査ロジックの変更が必要
-であり，Issue #13 のスコープを超えると判断し，実装ではなく既知の
-制限としてドキュメント化する対応にとどめた．
+5 件中 4 件は当日中に修正した．残る 1 件はインライン要素境界の問題で
+ある．テキストノードの結合判定には，広範な AST 走査ロジックの変更が
+要る．Issue #13 のスコープを超えると判断し，実装ではなく既知の制限と
+してドキュメント化する対応にとどめた．
 
 ## 既知の制限
 
@@ -77,12 +80,13 @@ Issue #13 で対応した，全角文字間の文中改行を詰める rehype �
 ## ビルド時の副作用に関する注意
 
 `npm run build` はビルド過程で `src/chapters/toc.html` を上書きする
-（PR #15 で実装したマージ保持ロジックの一部）．検証目的で
-`npm run build` を実行した後は，`git status` で `toc.html` が意図せ
-ず変更されていないか必ず確認し，変更があれば
-`git restore src/chapters/toc.html` で戻してからコミットする．
+（PR #15 で実装したマージ保持ロジックの一部）．
+検証で `npm run build` を実行した後は，`git status` を必ず見る．
+`toc.html` が意図せず変更されていないかを確かめるためである．
+変更があれば `git restore src/chapters/toc.html` で戻し，その後に
+コミットする．
 
-`rm -rf` 等で生成物を一括削除する際も，`src/chapters/*.html` のよう
-な広いグロブは `toc.html`（手動編集を許容する追跡ファイル）を巻き
-込む危険がある．生成物削除は `dist/` 配下に限定するか，個別ファイル
-名を指定する．
+`rm -rf` 等で生成物を一括削除する際も，広いグロブは危険である．
+`src/chapters/*.html` は `toc.html` を巻き込む．
+`toc.html` は手動編集を許容する追跡ファイルである．
+生成物削除は `dist/` 配下に限定するか，個別ファイル名を指定する．

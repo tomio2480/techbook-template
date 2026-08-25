@@ -22,8 +22,8 @@ PR を 2 本へ分けた．フェーズ 2 は選定後すぐ着手したかっ�
 
 ## 発生した事故
 
-`gh pr merge 23 --squash --delete-branch` による親マージの直後，
-base を失った子 PR #24 は main へ付け替わらずクローズされた．
+`gh pr merge 23 --squash --delete-branch` で親をマージした．
+その直後，base を失った子 PR #24 は main へ付け替わらずクローズされた．
 
 - GitHub はマージボタン経由なら子 PR の base を付け替えることがある．
   しかし今回の操作では付け替えられず，クローズが確定した．
