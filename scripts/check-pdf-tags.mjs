@@ -11,7 +11,8 @@
  * - マーク情報辞書（`/MarkInfo`）
  * - マーク情報辞書の `/Marked true`
  *
- * いずれも辞書の鍵として現れることを見る．値の中身までは検証しない
+ * `/StructTreeRoot` と `/MarkInfo` は Catalog 辞書の鍵として，
+ * `/Marked true` はいずれかの辞書の中で数える．値の指す先までは検証しない
  * （`/StructTreeRoot` が指す先の構造木の妥当性までは扱わない）．
  *
  * 走査は辞書の単位で行う．素のバイト列へ正規表現を当てると，
@@ -39,6 +40,14 @@ const PDF_WHITESPACE = '\\x00\\t\\n\\f\\r ';
    外すため，続く 1 文字が名前を作る文字でないことを見る */
 const NAME_CONTINUATION = '[^\\x00\\t\\n\\f\\r /\\[\\]<>(){}%]';
 
+/* /StructTreeRoot と /MarkInfo は Catalog 辞書の中でだけ数える．
+   構造ルートオブジェクト自身も /Type /StructTreeRoot という値を持つため，
+   出現だけを見ると，Catalog から参照が消えて支援技術の届かなくなった
+   孤児オブジェクトの残骸を合格させてしまう．Catalog の中であれば，
+   この 2 つの名前は鍵としてしか現れない */
+const CATALOG_PATTERN = new RegExp(
+  `/Type(?!${NAME_CONTINUATION})[${PDF_WHITESPACE}]*/Catalog(?!${NAME_CONTINUATION})`
+);
 const STRUCT_TREE_ROOT_PATTERN = new RegExp(`/StructTreeRoot(?!${NAME_CONTINUATION})`);
 const MARK_INFO_PATTERN = new RegExp(`/MarkInfo(?!${NAME_CONTINUATION})`);
 
@@ -69,12 +78,17 @@ export function findTagMarkers(buffer) {
   const markers = { structTreeRoot: false, markInfo: false, markedTrue: false };
 
   for (const dictionary of dictionaries) {
-    if (!markers.structTreeRoot && STRUCT_TREE_ROOT_PATTERN.test(dictionary)) {
-      markers.structTreeRoot = true;
+    if (CATALOG_PATTERN.test(dictionary)) {
+      if (STRUCT_TREE_ROOT_PATTERN.test(dictionary)) {
+        markers.structTreeRoot = true;
+      }
+      if (MARK_INFO_PATTERN.test(dictionary)) {
+        markers.markInfo = true;
+      }
     }
-    if (!markers.markInfo && MARK_INFO_PATTERN.test(dictionary)) {
-      markers.markInfo = true;
-    }
+    /* /Marked は MarkInfo 辞書の鍵である．MarkInfo 辞書は /Type を持たず
+       入れ子・間接参照の両形があるため，置き場所では絞らない．
+       /Marked を値に使う標準の名前は無く，誤検出の余地は残らない */
     if (!markers.markedTrue && MARKED_TRUE_PATTERN.test(dictionary)) {
       markers.markedTrue = true;
     }

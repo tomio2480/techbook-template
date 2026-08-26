@@ -34,14 +34,32 @@ test('findTagMarkers: マーカーが無ければ 3 つとも false になる', 
 });
 
 test('findTagMarkers: /Marked false のみでは markedTrue は false のまま', () => {
-  const markers = findTagMarkers(toBuffer(pdfObject('<< /MarkInfo << /Marked false >> >>')));
+  const markers = findTagMarkers(
+    toBuffer(pdfObject('<< /Type /Catalog /MarkInfo << /Marked false >> >>'))
+  );
   assert.equal(markers.markInfo, true);
   assert.equal(markers.markedTrue, false);
 });
 
 test('findTagMarkers: /StructTreeRootFoo という別名は数えない', () => {
-  const markers = findTagMarkers(toBuffer(pdfObject('<< /StructTreeRootFoo 1 0 R >>')));
+  const markers = findTagMarkers(toBuffer(pdfObject('<< /Type /Catalog /StructTreeRootFoo 1 0 R >>')));
   assert.equal(markers.structTreeRoot, false);
+});
+
+test('findTagMarkers: 構造ルート自身の /Type /StructTreeRoot は数えない', () => {
+  /* Catalog の参照が消え，届かない構造オブジェクトだけが残った退行を
+     合格させないため，Catalog の鍵としての出現だけを数える */
+  const pdf = toBuffer(
+    pdfObject('<< /Type /Catalog >>', 1) + pdfObject('<< /Type /StructTreeRoot /K [] >>', 2)
+  );
+  assert.equal(findTagMarkers(pdf).structTreeRoot, false);
+});
+
+test('findTagMarkers: Catalog でない辞書の /StructTreeRoot・/MarkInfo は数えない', () => {
+  const pdf = toBuffer(pdfObject('<< /Foo /Bar /StructTreeRoot 5 0 R /MarkInfo 6 0 R >>'));
+  const markers = findTagMarkers(pdf);
+  assert.equal(markers.structTreeRoot, false);
+  assert.equal(markers.markInfo, false);
 });
 
 test('findTagMarkers: 文字列リテラルの中の記述は数えない', () => {
