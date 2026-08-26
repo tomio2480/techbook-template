@@ -11,6 +11,7 @@
 - [判断](#判断)
 - [代替案と棄却理由](#代替案と棄却理由)
 - [再検討の条件](#再検討の条件)
+- [追記（2026-08-26）: トリガ点検の結果](#追記2026-08-26-トリガ点検の結果)
 - [参照](#参照)
 
 ## 背景
@@ -75,9 +76,29 @@ alt に依存しない形で図の内容を伝えるためである．
 - 原稿画像をラスター形式へ寄せる運用が許容され，picture ノードの
   検出を前提とした突合が試せるようになる．
 
+## 追記（2026-08-26）: トリガ点検の結果
+
+再検討トリガを点検した．結論は 1 つ目のトリガの発火である．
+対応は Issue #183 で行い，タグ付け後処理を廃止した．
+
+- **トリガ 1 は発火済み．** vivliostyle-cli#539 は
+  v8.16.1（2024-11-06）で修正されていた．導入済みの v8.20.0 の直接出力を，
+  オブジェクトストリームを展開して検査すると，`/StructTreeRoot` と
+  `/StructElem` が存在し，`Figure` の `/Alt` へ原稿の alt が
+  そのまま入っていた．
+- **表 1 の「中間 PDF はタグなし」は測定の落とし穴とみられる．**
+  素のバイト列の走査では `/StructTreeRoot` が 0 件になる．
+  Catalog ごと圧縮オブジェクトストリーム（`ObjStm`）へ入るため，
+  展開せずには見えない．圧縮オブジェクトの取り逃しは
+  ページ数検査でも起きた（Issue #145）．同根である．
+- **トリガ 2 は引かれていない．** `@opendataloader/pdf` v2.5.5 まで
+  外部からの alt 注入手段は無い．上流 PR #537 は JSON 出力側の
+  スキーマ統一であり，タグ付き PDF の `/Alt` は「image N」のままである．
+
 ## 参照
 
 - [Issue #26](https://github.com/tomio2480/techbook-template/issues/26)
+- [Issue #183](https://github.com/tomio2480/techbook-template/issues/183)
 - [タグ付き PDF 生成（アクセシビリティ対応）要求・要件](../spec/pdf-tagging.md)
 - [vivliostyle-cli#539](https://github.com/vivliostyle/vivliostyle-cli/issues/539)
 - [opendataloader-pdf#537](https://github.com/opendataloader-project/opendataloader-pdf/pull/537)

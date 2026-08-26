@@ -65,8 +65,8 @@ test('圧縮されたオブジェクトストリーム内のページも数え�
 });
 
 test('平文と圧縮側の両方にページ定義があっても二重に数えない', () => {
-  // タグ付け（scripts/tag-pdf.mjs）を通した PDF は，平文のページ定義に加えて
-  // 圧縮された写しを残すことがある
+  // 外部ツールで再書き出しした PDF は，平文のページ定義に加えて
+  // 圧縮された写しを残すことがある（かつてのタグ付け後処理で観測した挙動）
   const plain = fakePdf({ pageObjects: 3, rootCount: 3 });
   const compressed = fakePdfWithObjectStream({ pageObjects: 3, rootCount: 3 });
   assert.strictEqual(countPdfPages(Buffer.concat([plain, compressed])), 3);
