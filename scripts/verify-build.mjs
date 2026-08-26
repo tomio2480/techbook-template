@@ -6,6 +6,7 @@
  * (a) リポジトリルートに index.html が残っていないこと
  * (b) dist/book.pdf の mtime が dist/.build-marker の mtime より新しいこと
  * (c) vivliostyle.config.js の entry 配列が .md ファイルを参照していること
+ * (d) dist/book.pdf がタグ付き PDF の目印を持つこと（check-pdf-tags.mjs）
  */
 
 import fs from 'fs';

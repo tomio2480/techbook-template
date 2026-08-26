@@ -48,7 +48,7 @@ const MARKED_TRUE_PATTERN = new RegExp(
   `/Marked(?!${NAME_CONTINUATION})[${PDF_WHITESPACE}]*true(?![A-Za-z0-9])`
 );
 
-/** 検査項目ごとの、知らせに出す表示名 */
+/** 検査項目ごとの，知らせに出す表示名 */
 const MARKER_LABELS = {
   structTreeRoot: '/StructTreeRoot',
   markInfo: '/MarkInfo',
