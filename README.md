@@ -287,6 +287,7 @@ body:
 本文...
 ```
 
+<!-- markdownlint-disable-next-line MD036 -->
  **frontmatter の設定**
 
 | 章 | counter-set の値 |
@@ -474,6 +475,7 @@ def hello():
 ```
 ````
 
+<!-- markdownlint-disable-next-line MD036 -->
  **対応言語**
 
 ```text
@@ -539,12 +541,14 @@ markup（HTML）, css, markdown, c, cpp
 
 HTML ブロック内で数式を表示するには， `data-math-typeset="true"` 属性を付けて以下の形式で記述する．
 
+<!-- markdownlint-disable-next-line MD036 -->
  **インライン数式**
 
 ```html
 <span class="math inline" data-math-typeset="true">\(E = mc^2\)</span>
 ```
 
+<!-- markdownlint-disable-next-line MD036 -->
  **ブロック数式**
 
 ```html
@@ -565,6 +569,7 @@ HTML ブロック内で数式を表示するには， `data-math-typeset="true"`
 図3.2.-1: LED点滅回路
 ```
 
+<!-- markdownlint-disable-next-line MD036 -->
  **番号の形式**
 
 図の番号は所属するセクションに応じて変化する．
@@ -576,11 +581,13 @@ HTML ブロック内で数式を表示するには， `data-math-typeset="true"`
 | 項直下 | 図3.1.2.-1 |
 | 款直下 | 図3.1.2.1.-1 |
 
+<!-- markdownlint-disable-next-line MD036 -->
  **推奨フォーマット**
 
 - SVG: 回路図，ダイアグラム（拡大しても劣化しない）
 - PNG: スクリーンショット，写真
 
+<!-- markdownlint-disable-next-line MD036 -->
  **色地に置く記号図**
 
 白地を前提に描いた記号図は，コラムや Tips の色地の上へ置くと線が沈む．`img` タグへ `class="on-white"` を指定すると，画像の背景へ白を敷いて線を保てる．クラスを与えるため，Markdown の画像記法ではなく HTML で書く．
@@ -594,6 +601,7 @@ HTML ブロック内で数式を表示するには， `data-math-typeset="true"`
 
 図の SVG へ白い矩形を敷く手もあるが，内部余白を詰めた分だけ白帯が細く浮き上がり，かえって目立つ．
 
+<!-- markdownlint-disable-next-line MD036 -->
  **図を横に並べる**
 
 関連する図を左右に並べるには `figure-row` クラスの `div` で囲む．キャプションは 1 枚ずつ付ける．まとめて 1 つにすると，どちらの説明か読み取れない．番号も 1 枚ずつ付く．
@@ -613,6 +621,7 @@ HTML ブロック内で数式を表示するには， `data-math-typeset="true"`
 
 並べた図は下端でそろえる．高さの違う図を上でそろえると，キャプションの行が段違いになり読み取りにくいためである．
 
+<!-- markdownlint-disable-next-line MD036 -->
  **本文を回り込ませる**
 
 縦に細長い図を `figure-wrap` の `div` で囲むと，脇へ本文が回り込む．図には `figure-float` クラスを与える．回り込ませる本文も同じ枠へ入れる．
@@ -654,6 +663,7 @@ Arduino Uno を使った温度計の部品表
 表2.3.-1: Arduino Uno を使った温度計の部品表
 ```
 
+<!-- markdownlint-disable-next-line MD036 -->
  **注意点**
 
 - 表の直前の段落がキャプションとして扱われる
@@ -677,12 +687,14 @@ Arduino Uno を使った温度計の部品表
 
 数式は LaTeX 形式で記述する．
 
+<!-- markdownlint-disable-next-line MD036 -->
  **インライン数式**
 
 ```markdown
 エネルギーと質量の関係は $E = mc^2$ で表される．
 ```
 
+<!-- markdownlint-disable-next-line MD036 -->
  **ブロック数式**
 
 ```markdown
@@ -695,6 +707,7 @@ $$
 
 出力例：(3.1.-1)
 
+<!-- markdownlint-disable-next-line MD036 -->
  **開き括弧の直後にインライン数式を置かない**
 
 開き括弧の直後にインライン数式を置くと，Vivliostyle が数式の直前を改行位置に選ぶ．
@@ -723,6 +736,7 @@ $$
 
 ### リスト
 
+<!-- markdownlint-disable-next-line MD036 -->
  **順序なしリスト**
 
 ```markdown
@@ -732,6 +746,7 @@ $$
   - サブ項目2-2
 ```
 
+<!-- markdownlint-disable-next-line MD036 -->
  **順序ありリスト**
 
 ```markdown
@@ -748,6 +763,7 @@ $$
 これは `インラインコード` です．
 ```
 
+<!-- markdownlint-disable-next-line MD036 -->
  **太字の小見出し**
 
 見出しを立てるほどではない語の説明には，太字で始まる段落を小見出しとして使う．本文と同じく行頭が 1 字下がると見出しとして拾いにくいため，`div` タグへ `class="term"` を指定して字下げを外す．
@@ -761,6 +777,10 @@ $$
 ```
 
 `p:has(> strong:first-child)` による自動判定は使えない．Vivliostyle が `:has()` の中で `:first-child` を見ず，太字を含むだけの段落まで拾うためである．
+
+太字だけの 1 行は，見出し代わりの強調として `MD036` の検出対象となる．
+ラベルとして意図した行では，直前へ `<!-- markdownlint-disable-next-line MD036 -->` を置いて許容する．
+説明が同じ行へ続く上の形は検出されない．
 
 ### 文中改行
 
@@ -976,6 +996,7 @@ entry: [
 | 本文フォント | `--font-mincho` | Noto Serif CJK JP |
 | 見出しフォント | `--font-gothic` | Noto Sans CJK JP |
 
+<!-- markdownlint-disable-next-line MD036 -->
  **段落の字下げ**
 
 和文の慣行に合わせ，段落は原則としてすべて 1 字下げる．

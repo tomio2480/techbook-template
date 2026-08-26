@@ -81,6 +81,7 @@ Markdown を入力として，書籍ごとのカスタマイズ設定と共に P
 
 ### 採用技術: Vivliostyle
 
+<!-- markdownlint-disable-next-line MD036 -->
 **選定理由**
 
 1. Markdown からの変換が自然．
