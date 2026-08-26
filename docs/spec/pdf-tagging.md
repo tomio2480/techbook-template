@@ -2,8 +2,9 @@
 
 ## 概要
 
-`npm run build` の後処理として，生成した `dist/book.pdf` へアクセシビリ
-ティタグを自動付与する．PDF/UA の下地となる Tagged PDF 構造である．
+`npm run build` が生成する `dist/book.pdf` を，PDF/UA の下地となる
+Tagged PDF 構造で出力する．タグは Vivliostyle CLI の直接出力を
+そのまま成果物とし，タグ構造を書き換える後処理は置かない．
 対象は本テンプレートおよびこれを用いて作られる派生書籍リポジトリ
 すべてである．
 
@@ -19,75 +20,76 @@
 
 派生書籍リポジトリ
 [techbook-introduction-to-electronics-basic-led](https://github.com/tomio2480/techbook-introduction-to-electronics-basic-led)
-で不具合が判明した．`dist/book.pdf` がタグ付き PDF になっていない．
+で不具合が判明した．`dist/book.pdf` がタグ付き PDF にならない．
 報告は
 [Issue #71](https://github.com/tomio2480/techbook-introduction-to-electronics-basic-led/issues/71)
-である．`/StructTreeRoot`・`/MarkInfo`・`/Marked true` のいずれも
-存在しない．スクリーンリーダー等の支援技術で，読み上げ順序・構造が
-保証されない．
+である．当時は Vivliostyle CLI の既知不具合とみて，
+OpenDataLoader PDF による後処理でタグを付与した（Issue #14）．
+既知不具合の報告は
+[vivliostyle-cli#539](https://github.com/vivliostyle/vivliostyle-cli/issues/539)
+である．
 
-原因は Vivliostyle CLI の既知不具合
-（[vivliostyle-cli#539](https://github.com/vivliostyle/vivliostyle-cli/issues/539)）
-の可能性が高く，本テンプレートを使う書籍すべてに共通する．
-書籍リポジトリ側ではなくテンプレート側で対応することで，既存の派生
-リポジトリを含め横断的に解消する．
+2026-08-26 の再点検（Issue #183）で前提の変化を確認した．
+vivliostyle-cli#539 は v8.16.1（2024-11-06）で修正済みである．
+修正後の Vivliostyle CLI はタグ付き PDF を直接出力し，
+原稿の画像 alt 属性も Figure タグの `/Alt` へそのまま引き継ぐ．
+後処理はこの DOM 由来のタグ構造を，レイアウト解析による推測タグへ
+上書きし，alt を「image N」へ落としていた．このため後処理を廃止し，
+直接出力を成果物とする方針へ改めた．
 
 価値提案は次のとおりである．本テンプレートで作られた技術同人誌が，
-追加の手作業なしにタグ付き PDF として頒布可能な状態になる．これによ
-り，執筆者はアクセシビリティ対応の専門知識を持たなくても，最低限の
-構造タグ（見出し・読み順）を備えた PDF を出力できる．
+追加の手作業なしにタグ付き PDF として頒布可能な状態になる．
+執筆者が原稿に書いた代替テキストは，そのまま読み上げへ使われる．
 
 ## 用語集（ユビキタス言語）
 
 | 用語 | 意味 |
 |---|---|
 | タグ付き PDF（Tagged PDF） | `/StructTreeRoot`・`/MarkInfo`・`/Marked true` を持ち，見出し・段落等の論理構造をスクリーンリーダー等が解釈できる PDF． |
-| PDF/UA | ISO 14289 で定義されるタグ付き PDF のアクセシビリティ正式規格．本要件はその下地となる Tagged PDF 生成までを扱い，PDF/UA-1/UA-2 への正式準拠は範囲外とする（該当機能は OpenDataLoader PDF の Enterprise 限定）． |
-| OpenDataLoader PDF | PDF Association・veraPDF 開発元（Dual Lab）と協業する Apache License 2.0 のオートタグ付けツール．本要件の実装手段として採用する（`@opendataloader/pdf`）． |
-| タグ付け後処理 | `npm run build` が `dist/book.pdf` を生成した後に実行する，OpenDataLoader PDF によるタグ付与ステップ． |
+| PDF/UA | ISO 14289 で定義されるタグ付き PDF のアクセシビリティ正式規格．本要件はその下地となる Tagged PDF 生成までを扱い，PDF/UA-1/UA-2 への正式準拠は範囲外とする． |
+| 直接出力 | Vivliostyle CLI（内部の Chromium）がビルド時に生成するタグ付き PDF．タグは原稿の DOM 構造に由来する． |
 | veraPDF | PDF/A・PDF/UA の適合性検証を行うオープンソースツール．タグ付き PDF の構造が妥当かを検証する手段として本要件が参照する． |
 
 ## 要件（what）
 
 ### 機能要件
 
-- `@opendataloader/pdf` を `devDependencies` に追加する．
-- `npm run build` の最終ステップとして，`dist/book.pdf` にタグ付け後
-  処理を実行し，同ファイルをタグ付き PDF で上書きする．
-- タグ付け後処理が失敗した場合（コマンドの異常終了，出力ファイル未
-  生成等），`npm run build` 全体を非 0 で終了させ，タグなしの
-  `dist/book.pdf` を検証済みとして誤って配布しない．
-- OpenDataLoader PDF は Java 11 以上を要求するランタイム依存である．
-  CI（GitHub Actions）のビルド・リリース双方のジョブで Java 実行環境
-  を明示的にセットアップする．
-- README に，タグ付き PDF 対応状況・Java 前提条件・veraPDF による
-  手動検証手順を明記する．
+- `npm run build` が生成する `dist/book.pdf` はタグ付き PDF である．
+  Vivliostyle CLI（v8.16.1 以降）の直接出力をそのまま成果物とし，
+  タグ構造を書き換える後処理を置かない．
+- 原稿の画像 alt 属性は，Figure タグの `/Alt` へそのまま反映される．
+- `npm run build:print` が生成する `dist/book-print.pdf` も，
+  直接出力のタグ構造を保つ．
+- README に，タグ付き PDF 対応状況と veraPDF による手動検証手順を
+  明記する．
 
 ### 受け入れ条件
 
 - `npm run build` 実行後，`dist/book.pdf` の PDF 構造に
   `/StructTreeRoot`・`/MarkInfo`・`/Marked true` が存在する．
-- `npm test` で，タグ付け後処理スクリプトの単体テスト（正常系・
-  異常系）が通過する．
-- CI（`build-pdf.yml`）が Java 環境込みで `npm run build` を成功させる．
-- README に Java 前提条件と veraPDF 検証手順が記載されている．
+- 原稿の代表的な画像 alt が，`dist/book.pdf` の Figure タグの
+  `/Alt` と一致する．
+- README に veraPDF 検証手順が記載されている．
+
+### 関連する依存の扱い
+
+`@opendataloader/pdf` はタグ付けには使わない．紙入稿・表紙の検査での
+テキスト抽出に引き続き使う．その要件は
+[紙入稿用 PDF](print-layout.md) と [表紙](cover.md) の spec が扱う．
 
 ## スコープ外
 
-- PDF/UA-1・PDF/UA-2 への正式準拠エクスポート．OpenDataLoader PDF の
-  Enterprise 限定機能であり，Apache 2.0 の無料範囲外である．
-- レイアウト解析ベースの見出し・表・読み順の自動検出精度の改善．
-  ツール依存の挙動であり，書籍ごとの実際の読み上げ順検証は執筆者側
-  の作業として README に手順を示すのみとする．
+- PDF/UA-1・PDF/UA-2 への正式準拠エクスポート．
+- タグ構造の意味的な妥当性（見出しレベル・読み順・表の関係）の
+  自動検証．書籍ごとの実際の読み上げ順検証は執筆者側の作業として
+  README に手順を示すのみとする．
 - veraPDF 検証の CI 自動化．本要件は手動検証手順の明記までとする．
-- 原稿側 alt 属性から `Figure` タグ `/Alt` への反映．現行構成に伝搬
-  経路がなく，機械的な対応付けも成立しない（Issue #26 で調査済み）．
-  解決は上流の変更が前提である．再検討の条件は
-  [Figure タグ /Alt 調査と現状追認の判断](../notes/2026-07-16-figure-alt-investigation.md)
-  を参照する．
 
 ## 変更記録
 
 - 2026-07-13: 初版作成．Issue #14 の内容に基づく（要求変更・要件変更）．
 - 2026-07-16: Issue #26 の調査を受け，原稿 alt が `/Alt` へ反映されない
   制約をスコープ外として明記（要件変更なし）．
+- 2026-08-26: Issue #183．要件変更．OpenDataLoader 後処理を廃止し，
+  Vivliostyle CLI の直接出力を成果物とする．原稿 alt の `/Alt` 反映を
+  スコープ外から受け入れ条件へ移す．

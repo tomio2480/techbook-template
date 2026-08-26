@@ -37,7 +37,7 @@ Vivliostyle を使用した技術書執筆のためのテンプレートリポ�
 - 図の横並び・本文の回り込み用クラス（`figure-row`・`figure-wrap`）
 - 2 パスビルド中断時の検証（フェイルセーフ）
 - 全角文字間の文中改行を自動で詰める処理（意図しない半角スペースの防止）
-- ビルド後処理によるタグ付き PDF（Tagged PDF）の自動生成
+- タグ付き PDF（Tagged PDF）の生成（原稿の画像 `alt` を `/Alt` へ引き継ぐ）
 - 索引（ページ番号は `target-counter` で解決．骨組みの生成と参照の検査つき）
 - 紙入稿用 PDF の別出力（改丁・面付け・MEMO ページ・章名入りの小口のつめ・塗り足し・透明効果の除去）
 - 表紙単体の入稿データの書き出し（表 1・表 4 を別ファイルへ．塗り足しと `TrimBox` つき）
@@ -48,7 +48,8 @@ Vivliostyle を使用した技術書執筆のためのテンプレートリポ�
 
 - Node.js 18.0.0 以上
 - npm
-- Java 11 以上（タグ付き PDF 生成に使う `@opendataloader/pdf` の実行に必要）
+- Java 11 以上（紙入稿・表紙の検査に使う `@opendataloader/pdf` の実行に必要）
+  - `npm run build` だけなら Java は不要
 
 ## 🚀 セットアップ
 
@@ -120,7 +121,7 @@ npm run build:print
 
 内部では 3 パスでビルドする．1 パス目で HTML を生成し，2 パス目（測定パス）で
 各区分のページ数を実測し，3 パス目で MEMO ページとつめを入れて組み直す．
-最後にページ数を検査し，タグ付き PDF へ変換する．
+最後にページ数と透明効果を検査する．
 要求・要件の詳細は `docs/spec/print-layout.md` を参照．
 
 面の指定と綴じの単位は `config/book.yaml` の `print` で変える．
@@ -810,40 +811,32 @@ $$
 
 ### 対応状況
 
-Vivliostyle CLI が生成する PDF は，タグ付き PDF（Tagged PDF）にならない．
-既知の不具合である
-（[vivliostyle-cli#539](https://github.com/vivliostyle/vivliostyle-cli/issues/539)）．
-本テンプレートでは，`npm run build` の後処理として
+`npm run build` が生成する `dist/book.pdf` は，タグ付き PDF
+（Tagged PDF）である．`/StructTreeRoot`・`/MarkInfo`・
+`/Marked true` 等のタグ構造は，Vivliostyle CLI が直接出力する．
+対応は v8.16.1 以降である．タグは原稿の DOM 構造に由来する．
+
+原稿へ書いた画像の `alt` 属性は，`Figure` タグの `/Alt` へそのまま
+引き継がれる．図の説明は原稿の `alt` へ書くこと．
+
+かつては
 [OpenDataLoader PDF](https://github.com/opendataloader-project/opendataloader-pdf)
-を実行する．依存は `@opendataloader/pdf`（Apache License 2.0）である．
-その結果 `dist/book.pdf` へ `/StructTreeRoot`・`/MarkInfo`・`/Marked true` 等の
-タグ構造が付く．
-
-無料範囲は Tagged PDF の生成までである．PDF/UA-1・PDF/UA-2 への正式
-準拠エクスポートは OpenDataLoader PDF の Enterprise 限定機能である．
-また，レイアウト解析による見出し・表・読み順の自動検出が完全でない
-可能性もある．書籍ごとに，実際の読み上げ順を後述の手順で検証すること．
-
-図版の代替テキストは PDF へ引き継がれない．原稿側 `alt` 属性から
-`Figure` タグ `/Alt` へ反映する経路が現行構成に存在しないためである．
-`/Alt` は空か，図内の文字列を拾った値になりうる．解決には上流ツール
-（Vivliostyle CLI または OpenDataLoader）の変更が必要である．当面は
-図の説明を本文またはキャプションへ書いて補うこと．経緯・再検討の条件は
+による後処理でタグを付与していた．
+[vivliostyle-cli#539](https://github.com/vivliostyle/vivliostyle-cli/issues/539)
+の修正（v8.16.1）で直接出力が可能になった．後処理は推測タグの
+上書きで `alt` を失わせるだけになったため，廃止した（Issue #183）．
+経緯は
 [Issue #26](https://github.com/tomio2480/techbook-template/issues/26)
 および
 [Figure タグ /Alt 調査と現状追認の判断](docs/notes/2026-07-16-figure-alt-investigation.md)
 を参照する．
 
+PDF/UA-1・PDF/UA-2 への正式準拠はスコープ外である．見出しレベルや
+読み順が原稿の意図と一致するかは，書籍ごとに後述の手順で検証すること．
+
 要求・要件の詳細は
 [タグ付き PDF 生成（アクセシビリティ対応）要求・要件](docs/spec/pdf-tagging.md)
 を参照．
-
-### 前提環境
-
-タグ付け処理には Java 11 以上が必要である．`java -version` で確認し，
-未導入の場合は [Adoptium](https://adoptium.net/) 等から JDK を導入する．
-GitHub Actions（`ubuntu-latest`）では `actions/setup-java@v5` で
-Java 11 を導入している．
 
 ### veraPDF による手動検証手順
 
@@ -864,9 +857,9 @@ Java 11 を導入している．
 4. 検証レポートで `/StructTreeRoot`・`/MarkInfo`・`/Marked true` の
    有無を確かめる．見出し・段落の読み上げ順が原稿の意図と一致するかも
    確認する．
-5. 自動検出精度に起因する誤りが見つかった場合の対処を検討する．
-   候補は OpenDataLoader PDF Enterprise 版の視覚エディタである．
-   他の PDF 編集ツールでの手動修正も選べる．いずれも本テンプレートの
+5. 誤りが見つかった場合は，まず原稿側を見直す．タグは原稿の DOM
+   構造に由来するため，見出しの階層・図の `alt`・要素の並びを整えれば
+   出力へ反映される．PDF 編集ツールでの直接修正は本テンプレートの
    対応範囲外となる．
 
 ## 📂 ディレクトリ構造
@@ -912,7 +905,6 @@ techbook-template/
 ├── scripts/                   # 全数を掲載．前半は単体実行，後半は部品
 │   ├── add-line-numbers.mjs   # 行番号追加・目次マージスクリプト
 │   ├── verify-build.mjs       # ビルド中断検知（フェイルセーフ）
-│   ├── tag-pdf.mjs            # タグ付き PDF 生成（ビルド後処理）
 │   ├── build-print.mjs        # 紙入稿用 PDF のビルド（改丁・面付け）
 │   ├── build-cover.mjs        # 表紙単体の入稿データのビルド（表 1・表 4）
 │   ├── gen-index.mjs          # 索引の骨組みの生成（標準出力）
@@ -1223,17 +1215,13 @@ npm run build
 `vivliostyle build` を単体で実行した後など，`npm run build` を経由せずに
 ビルドした場合にも発生する．必ず `npm run build` を使うこと．
 
-### `タグ付き PDF 生成に失敗しました: ...` と表示されビルドが失敗する
+### `node_modules/@opendataloader/pdf/... が失敗しました` と表示され紙入稿用ビルドが失敗する
 
-`npm run build` の最終ステップ（`scripts/tag-pdf.mjs`）が失敗した状態．
-主な原因は次のとおり．
-
-- Java 11 以上が導入されていない，または `PATH` から見えない．
-  `java -version` で確認し，未導入なら [Adoptium](https://adoptium.net/)
-  等から JDK を導入する．詳細は
-  [アクセシビリティ（タグ付き PDF）](#-アクセシビリティタグ付き-pdf) を参照．
-- `dist/book.pdf` が存在しない．`vivliostyle build` や
-  `scripts/verify-build.mjs` が先に失敗していないか確認する．
+紙入稿・表紙のビルドの検査が使うテキスト抽出
+（`@opendataloader/pdf`）が失敗した状態．主な原因は Java の不足である．
+Java 11 以上を `java -version` で確認し，未導入なら
+[Adoptium](https://adoptium.net/) 等から JDK を導入する．
+`npm run build` は Java を使わない．
 
 ### `検証失敗: 総ページ数が想定と異なります` と表示され紙入稿用ビルドが失敗する
 
