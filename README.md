@@ -843,11 +843,26 @@ PDF/UA-1・PDF/UA-2 への正式準拠はスコープ外である．見出しレ
 [タグ付き PDF 生成（アクセシビリティ対応）要求・要件](docs/spec/pdf-tagging.md)
 を参照．
 
-### veraPDF による手動検証手順
+### veraPDF による検証
 
 タグ付き PDF の構造が妥当かは，PDF/UA 検証ツールである
-[veraPDF](https://verapdf.org/) で確認できる．CI への自動組み込みは
-スコープ外とし，以下の手動手順を用いる．
+[veraPDF](https://verapdf.org/) で確認できる．
+CI の自動レポートとローカルの手動検証を併用する．
+
+#### CI の自動レポート
+
+PDF を生成する CI は，`dist/book.pdf` へ veraPDF の PDF/UA-1 検証を
+実行する．対象は `build-pdf` ラベル付き PR・`workflow_dispatch`・
+タグ push の各実行である．結果は次の 2 か所で確認できる．
+
+- ワークフロー実行の job summary（準拠フラグと失敗ルールの件数）．
+- artifact `verapdf-report`（JSON 形式の詳細レポート）．
+
+検証の合否はビルドの成否に影響しない．PDF/UA-1 への正式準拠は
+スコープ外である．失敗ルールは参考情報として扱う．
+veraPDF 自体が実行できない場合に限り，ビルドは失敗する．
+
+#### ローカルでの手動検証手順
 
 1. [veraPDF のインストーラ](https://verapdf.org/software/) を入手し，
    ローカル環境にインストールする．
@@ -923,6 +938,7 @@ techbook-template/
 │   ├── check-icon-bake.mjs    # 焼いた枠アイコンと theme.css の一致の検査
 │   ├── check-print-transparency.mjs # 入稿データの透明効果の検査
 │   ├── check-pdf-tags.mjs     # タグ付き PDF の目印の検査
+│   ├── summarize-verapdf.mjs  # veraPDF レポートの job summary 要約
 │   ├── print-layout.mjs       # 改丁・面付けの計算と MEMO ページ生成
 │   ├── count-pdf-pages.mjs    # PDF のページ数の読み取り
 │   ├── inject-book-meta.mjs   # 書名・著者名の流し込み

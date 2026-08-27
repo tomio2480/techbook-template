@@ -89,6 +89,33 @@ jobs:
           path: dist/*.pdf
           retention-days: 7
 
+      # veraPDF による PDF/UA-1 検証（Issue #189）．
+      # 合否ではビルドを止めない（正式準拠はスコープ外）．
+      # 終了コード 0=準拠・1=非準拠は成功，2 以上は実行エラーとして失敗させる．
+      # イメージはダイジェストでピン留めする（v1.30.2 相当）．更新は手動で行う．
+      - name: Run veraPDF validation
+        run: |
+          exit_code=0
+          docker run --rm -v "${PWD}/dist:/data" \
+            verapdf/cli@sha256:d5ee329657cf9bc4b2400392dd54c7d0a0ce9980ff6fa2da5590eebeec007cdb \
+            --flavour ua1 --format json /data/book.pdf \
+            > verapdf-report.json || exit_code=$?
+          if [ "${exit_code}" -ge 2 ]; then
+            echo "::error::veraPDF failed to run (exit code ${exit_code})." >&2
+            exit "${exit_code}"
+          fi
+
+      # レポートは要約より先に保存する．要約の失敗時も調査材料を残すためである．
+      - name: Upload veraPDF report
+        uses: actions/upload-artifact@v7
+        with:
+          name: verapdf-report
+          path: verapdf-report.json
+          retention-days: 7
+
+      - name: Write veraPDF summary
+        run: node scripts/summarize-verapdf.mjs verapdf-report.json >> "${GITHUB_STEP_SUMMARY}"
+
   # Release は v* タグを push したときだけ作成する．
   # workflow_dispatch をタグの ref で実行しても走らないよう push に限定する．
   # Release アセットは Actions のストレージ枠を消費しない．
@@ -145,6 +172,30 @@ jobs:
 
       - name: Build PDF
         run: npm run build
+
+      # veraPDF による PDF/UA-1 検証（Issue #189）．build-pdf ジョブと同じ扱い．
+      - name: Run veraPDF validation
+        run: |
+          exit_code=0
+          docker run --rm -v "${PWD}/dist:/data" \
+            verapdf/cli@sha256:d5ee329657cf9bc4b2400392dd54c7d0a0ce9980ff6fa2da5590eebeec007cdb \
+            --flavour ua1 --format json /data/book.pdf \
+            > verapdf-report.json || exit_code=$?
+          if [ "${exit_code}" -ge 2 ]; then
+            echo "::error::veraPDF failed to run (exit code ${exit_code})." >&2
+            exit "${exit_code}"
+          fi
+
+      # レポートは要約より先に保存する．要約の失敗時も調査材料を残すためである．
+      - name: Upload veraPDF report
+        uses: actions/upload-artifact@v7
+        with:
+          name: verapdf-report
+          path: verapdf-report.json
+          retention-days: 7
+
+      - name: Write veraPDF summary
+        run: node scripts/summarize-verapdf.mjs verapdf-report.json >> "${GITHUB_STEP_SUMMARY}"
 
       - name: Create Release
         uses: softprops/action-gh-release@v3
