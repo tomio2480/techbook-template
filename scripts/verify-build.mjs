@@ -7,12 +7,14 @@
  * (b) dist/book.pdf の mtime が dist/.build-marker の mtime より新しいこと
  * (c) vivliostyle.config.js の entry 配列が .md ファイルを参照していること
  * (d) dist/book.pdf がタグ付き PDF の目印を持つこと（check-pdf-tags.mjs）
+ * (e) dist/book.pdf が XMP メタデータを持つこと（add-pdf-metadata.mjs）
  */
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { verifyTaggedPdfFile } from './check-pdf-tags.mjs';
+import { verifyPdfMetadataFile } from './add-pdf-metadata.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -102,12 +104,24 @@ export function verifyPdfIsTagged(repoRoot) {
   return verifyTaggedPdfFile(pdfPath, 'dist/book.pdf');
 }
 
+export function verifyPdfHasMetadata(repoRoot) {
+  const pdfPath = path.join(repoRoot, 'dist', 'book.pdf');
+  if (!fs.existsSync(pdfPath)) {
+    return {
+      ok: false,
+      message: 'dist/book.pdf が見つかりません。ビルドが正しく完了していない可能性があります。',
+    };
+  }
+  return verifyPdfMetadataFile(pdfPath, 'dist/book.pdf');
+}
+
 export function runVerifications(repoRoot) {
   return [
     verifyNoIndexHtml(repoRoot),
     verifyPdfNewerThanMarker(repoRoot),
     verifyConfigUsesMarkdown(repoRoot),
     verifyPdfIsTagged(repoRoot),
+    verifyPdfHasMetadata(repoRoot),
   ];
 }
 

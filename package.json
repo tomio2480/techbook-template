@@ -5,7 +5,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/check-errata.mjs && node scripts/check-isdn.mjs && node scripts/check-preface-errata.mjs && node scripts/check-index.mjs && vivliostyle build && node scripts/add-line-numbers.mjs && vivliostyle build && node scripts/add-line-numbers.mjs --restore && node scripts/verify-build.mjs",
+    "build": "node scripts/check-errata.mjs && node scripts/check-isdn.mjs && node scripts/check-preface-errata.mjs && node scripts/check-index.mjs && vivliostyle build && node scripts/add-line-numbers.mjs && vivliostyle build && node scripts/add-line-numbers.mjs --restore && node scripts/add-pdf-metadata.mjs && node scripts/verify-build.mjs",
     "build:print": "node scripts/build-print.mjs",
     "build:cover": "node scripts/build-cover.mjs",
     "check:errata": "node scripts/check-errata.mjs",
@@ -26,6 +26,7 @@
     "@opendataloader/pdf": "^2.4.7",
     "@u1f992/rehype-spectroscope": "github:u1f992/rehype-spectroscope#v0.1.0",
     "@vivliostyle/cli": "^8.16.1",
+    "pdf-lib": "^1.17.1",
     "rimraf": "^5.0.0",
     "yaml": "^2.9.0"
   },
