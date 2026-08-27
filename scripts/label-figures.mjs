@@ -77,7 +77,11 @@ export function labelFiguresPlugin(options = {}) {
       }
       if (isElement(node, 'figure')) {
         node.properties ??= {};
-        if (node.properties.ariaLabel === undefined) {
+        /* 空白だけの aria-label は読み上げ名にならないため，明示と見なさない */
+        const existing = node.properties.ariaLabel;
+        const hasExplicitLabel =
+          existing !== undefined && !(typeof existing === 'string' && existing.trim() === '');
+        if (!hasExplicitLabel) {
           const label = resolveFigureLabel(node);
           if (label !== undefined) {
             node.properties.ariaLabel = label;

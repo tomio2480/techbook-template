@@ -74,7 +74,7 @@ export default {
           circle: isdnYaml.application?.circle,
         },
       })
-      /* 注入済みの画像も含めて読み上げ名を補うため，注入系の後に置く */
+      /* 注入された画像も alt 欠落の警告対象へ含めるため，注入系の後に置く */
       .use(labelFiguresPlugin)
       .use(spectroscope, {
         languages: [

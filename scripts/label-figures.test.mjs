@@ -79,6 +79,17 @@ describe('labelFiguresPlugin', () => {
     assert.equal(find(tree, 'figure').properties.ariaLabel, '手書きのラベル');
   });
 
+  it('空白だけの aria-label は明示と見なさず補う', () => {
+    const tree = {
+      type: 'root',
+      children: [
+        el('figure', [img({ src: 'a.svg', alt: '回路図の説明' })], { ariaLabel: '  ' }),
+      ],
+    };
+    labelFiguresPlugin({ warn: () => {} })(tree);
+    assert.equal(find(tree, 'figure').properties.ariaLabel, '回路図の説明');
+  });
+
   it('ラベルの出所が無い figure は変更せず警告する', () => {
     const warnings = [];
     const tree = {
