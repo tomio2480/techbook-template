@@ -92,6 +92,11 @@ test('detectBoxTypes: var() 参照の集約変数は種別に数えない', () =
   assert.deepEqual(detectBoxTypes(theme), TYPES);
 });
 
+test('detectBoxTypes: 引用符の流儀に依らず種別を導く', () => {
+  const theme = ":root { --tips-icon: url('data:image/svg+xml,%3Csvg%3E%3C/svg%3E'); }";
+  assert.deepEqual(detectBoxTypes(theme), ['tips']);
+});
+
 test('detectBoxTypes: 実ファイルは tips・note・caution を導く', () => {
   assert.deepEqual(detectBoxTypes(THEME_CSS), TYPES);
 });
@@ -104,6 +109,11 @@ test('decodeIconSvg: データ URI を SVG へ戻す', () => {
 
 test('decodeIconSvg: データ URI でない値はエラーになる', () => {
   assert.throws(() => decodeIconSvg('none'), /データ URI/);
+});
+
+test('decodeIconSvg: 単一引用符や引用符なしのデータ URI も読める', () => {
+  assert.match(decodeIconSvg("url('data:image/svg+xml,%3Csvg%3E%3C/svg%3E')"), /^<svg>/);
+  assert.match(decodeIconSvg('url(data:image/svg+xml,%3Csvg%3E%3C/svg%3E)'), /^<svg>/);
 });
 
 test('stripColors: 色だけが伏せられ形は残る', () => {
@@ -150,6 +160,20 @@ test('checkIconBake: theme.css に無い種別の焼き済み変数が残れば�
     minimalTheme('0.12', ['tips', 'caution']),
     minimalPrint(),
     palette()
+  );
+  assert.deepEqual(
+    violations.map(v => [v.type, v.box]),
+    [['missing-source', 'note']]
+  );
+});
+
+test('checkIconBake: 引用符の流儀が違う焼き済み変数の残りも違反になる', () => {
+  const types = ['tips', 'caution'];
+  const orphan = "\n:root { --note-icon-baked: url('data:image/svg+xml,%3Csvg%3E%3C/svg%3E'); }";
+  const violations = checkIconBake(
+    minimalTheme('0.12', types),
+    minimalPrint('%23e6ebf1', types) + orphan,
+    palette(types)
   );
   assert.deepEqual(
     violations.map(v => [v.type, v.box]),

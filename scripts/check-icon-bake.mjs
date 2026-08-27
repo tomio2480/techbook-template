@@ -48,7 +48,9 @@ export const BOX_BACKGROUND = '#ffffff';
 
 const OPACITY_PATTERN = /opacity:\s*([\d.]+)/;
 
-const DATA_URI_PATTERN = /url\(\s*"data:image\/svg\+xml,([^"]*)"\s*\)/;
+/** データ URI の線画．CSS の url() は二重引用符・単一引用符・引用符なしを許す */
+const DATA_URI_PATTERN =
+  /url\(\s*(?:"data:image\/svg\+xml,([^"]*)"|'data:image\/svg\+xml,([^']*)'|data:image\/svg\+xml,([^)'"\s]*))\s*\)/;
 const HEX_COLOR_PATTERN = /#[0-9a-f]{3}(?:[0-9a-f]{3})?/gi;
 
 /**
@@ -164,7 +166,7 @@ export function decodeIconSvg(value) {
   if (!match) {
     throw new Error(`データ URI の SVG として読めない値: ${value.slice(0, 40)}`);
   }
-  return decodeURIComponent(match[1]);
+  return decodeURIComponent(match[1] ?? match[2] ?? match[3]);
 }
 
 /**
