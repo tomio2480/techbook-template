@@ -3,6 +3,7 @@ import { parse } from 'yaml';
 import { VFM } from '@vivliostyle/vfm';
 import { spectroscope } from '@u1f992/rehype-spectroscope';
 import { joinCjkLineBreaksPlugin } from './scripts/join-cjk-line-breaks.mjs';
+import { labelFiguresPlugin } from './scripts/label-figures.mjs';
 import { injectBookMetaPlugin } from './scripts/inject-book-meta.mjs';
 import { injectColophonPlugin } from './scripts/inject-colophon.mjs';
 import { injectIsdnPlugin } from './scripts/inject-isdn.mjs';
@@ -73,6 +74,8 @@ export default {
           circle: isdnYaml.application?.circle,
         },
       })
+      /* 注入済みの画像も含めて読み上げ名を補うため，注入系の後に置く */
+      .use(labelFiguresPlugin)
       .use(spectroscope, {
         languages: [
           'javascript', 'typescript', 'python', 'rust', 'go', 'bash',

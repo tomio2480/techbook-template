@@ -58,6 +58,11 @@ vivliostyle-cli#539 は v8.16.1（2024-11-06）で修正済みである．
   Vivliostyle CLI（v8.16.1 以降）の直接出力をそのまま成果物とし，
   タグ構造を書き換える後処理を置かない．
 - 原稿の画像 alt 属性は，Figure タグの `/Alt` へそのまま反映される．
+- ビルドの前処理（rehype プラグイン）は，HTML の段階で読み上げ名を補う
+  （Issue #197）．`figure` には `figcaption`（無ければ子孫画像の非空 alt）の
+  文字列を `aria-label` として与える．空 alt の画像には
+  `role="presentation"` を与え，読み上げ名の無い Figure タグを残さない．
+  alt 属性そのものが無い画像はビルド時に警告する．
 - `npm run build:print` が生成する `dist/book-print.pdf` も，
   直接出力のタグ構造を保つ．
 - README に，タグ付き PDF 対応状況と veraPDF による手動検証手順を
@@ -80,6 +85,9 @@ vivliostyle-cli#539 は v8.16.1（2024-11-06）で修正済みである．
   `/StructTreeRoot`・`/MarkInfo`・`/Marked true` が存在する．
 - 原稿の代表的な画像 alt が，`dist/book.pdf` の Figure タグの
   `/Alt` と一致する．
+- `figure` を含む原稿のビルドで，対応する Figure タグが `/Alt` を持つ．
+- 空 alt の画像が，Figure タグとして構造ツリーへ残らない．
+- 前処理ロジックの単体テスト（正常系・異常系）が `npm test` で通る．
 - README に veraPDF 検証手順が記載されている．
 - タグ構造の無い PDF を検査へ与えると，非 0 で終了し理由を示す．
 - 検査ロジックの単体テスト（正常系・異常系）が `npm test` で通る．
@@ -120,3 +128,6 @@ vivliostyle-cli#539 は v8.16.1（2024-11-06）で修正済みである．
 - 2026-08-27: Issue #189．要件変更．veraPDF 検証の CI 自動化を
   スコープ外から要件へ移す（非ブロッキングのレポート提供）．
   合否によるビルドのブロックはスコープ外へ残す．
+- 2026-08-28: Issue #197．要件追加．HTML 前処理で figure の読み上げ名と
+  装飾画像の役割を補い，veraPDF の Figure alt 指摘（条項 7.3 テスト 1）を
+  解消する．タグ構造を書き換える後処理は引き続き置かない．

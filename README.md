@@ -818,6 +818,12 @@ $$
 原稿へ書いた画像の `alt` 属性は，`Figure` タグの `/Alt` へそのまま
 引き継がれる．図の説明は原稿の `alt` へ書くこと．
 
+`figure` 要素には，ビルドの前処理が読み上げ名を補う（Issue #197）．
+`figcaption` の文字列（無ければ図の `alt`）を `aria-label` として与える．
+これにより外側の `Figure` タグにも `/Alt` が付く．
+空の `alt` を書いた画像は装飾と扱い，読み上げの対象から外す．
+`alt` 属性そのものが無い画像は，書き漏らしとしてビルド時に警告する．
+
 タグの有無はビルドが機械検査する．`npm run build`・
 `npm run build:print` の検証段階で 3 つの目印を確かめる
 （Issue #185）．欠けていればビルドが失敗し，上流の退行や
@@ -945,6 +951,7 @@ techbook-template/
 │   ├── inject-colophon.mjs    # 奥付の流し込み
 │   ├── inject-isdn.mjs        # ISDN 発行情報の流し込み
 │   ├── join-cjk-line-breaks.mjs # 全角文字間の文中改行の詰め
+│   ├── label-figures.mjs      # figure の読み上げ名と装飾画像の役割の補完
 │   └── *.test.mjs             # 各スクリプトの単体テスト
 ├── dist/                      # 出力先（.gitignore 済）
 ├── .textlintrc.json           # 日本語文章検査の設定（原稿の文体宣言を含む）
