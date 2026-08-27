@@ -36,11 +36,16 @@ spec の契約と照らして線を引く．採らない判断は根拠を返信
 PR #187 の作成直後，GitHub ホステッドランナーの割り当て障害に当たった．
 症状と対処を記す．
 
-- 症状: annotation に「The job was not acquired by Runner of type hosted
-  even after multiple attempts」が出て失敗する．CodeQL は `startup_failure`
-  になる．run がジョブ 0 件のまま queued 表示で数時間滞留する．
-- ゾンビ run: cancel は「completed だから不可」，rerun は「running だから不可」と
-  矛盾した応答を返し，どちらの API も通らない．
+- 症状: ランナー割り当ての失敗を示す annotation が出る（文言は下記）．
+  CodeQL は `startup_failure` になる．run がジョブ 0 件のまま
+  queued 表示で数時間滞留する．
+
+  ```text
+  The job was not acquired by Runner of type hosted even after multiple attempts
+  ```
+
+- ゾンビ run: cancel は「completed だから不可」，rerun は「running だから不可」と返る．
+  応答が矛盾し，どちらの API も通らない．
 - 復旧: PR の close/reopen で `pull_request` イベントを再発火させるのが確実だった．
 - CodeQL（default setup）は rerun API を受け付けない．push（synchronize）で
   再発火する．コミットを積む予定があるなら，それを待つだけでよい．
@@ -50,7 +55,7 @@ lint の fail を見たら，指摘件数を数える前に annotation を読む
 
 ## イベント反映の遅延
 
-障害からの回復期は `gh run list --branch` に新しい run が現れないことがある．
+障害からの回復期は，新しい run が `gh run list --branch` に現れない場合もある．
 `head_sha` を指定した API 直引きでは同じ run が見えた．
 run が無いと断定する前に，SHA 直引きで確かめる．
 
@@ -60,6 +65,6 @@ gh api "repos/OWNER/REPO/actions/runs?head_sha=SHA" --jq '.workflow_runs[].name'
 
 ## 参照
 
-- Issue #185 ／ PR #187（タグ付き PDF の機械検査）
+- Issue #185／PR #187（タグ付き PDF の機械検査）
 - [check-pdf-tags.mjs](../../scripts/check-pdf-tags.mjs) のヘッダコメント（不採用判断の記録）
 - [タグ付き PDF 生成（アクセシビリティ対応）要求・要件](../spec/pdf-tagging.md)
