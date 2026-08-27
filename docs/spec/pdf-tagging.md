@@ -64,9 +64,9 @@ vivliostyle-cli#539 は v8.16.1（2024-11-06）で修正済みである．
   明記する．
 - `npm run build`・`npm run build:print` は，出力 PDF の目印を
   検証段階で機械検査する．対象は `/StructTreeRoot`・`/MarkInfo`・
-  `/Marked true` の 3 つである．欠けていればビルドは失敗する
-  （Issue #185）．検査は目印の存在に限り，構造の意味的な妥当性を
-  扱わない．
+  `/Marked true` の 3 つである．
+  欠けていればビルドは失敗する（Issue #185）．
+  検査は目印の存在に限り，構造の意味的な妥当性を扱わない．
 
 ### 受け入れ条件
 
