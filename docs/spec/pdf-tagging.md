@@ -83,11 +83,12 @@ vivliostyle-cli#539 は v8.16.1（2024-11-06）で修正済みである．
 - README に veraPDF 検証手順が記載されている．
 - タグ構造の無い PDF を検査へ与えると，非 0 で終了し理由を示す．
 - 検査ロジックの単体テスト（正常系・異常系）が `npm test` で通る．
-- `build-pdf` ラベル付き PR・`workflow_dispatch`・タグ push の各実行で，
-  veraPDF の検証レポートが artifact として保存される．
+- veraPDF の検証レポートは，PDF を生成する各実行で artifact として
+  保存される．対象は `build-pdf` ラベル付き PR・`workflow_dispatch`・
+  タグ push である．
 - job summary に準拠フラグと失敗ルールの件数が表示される．
-- veraPDF が非準拠を報告してもビルドは成功する．実行エラー
-  （終了コード 2 以上）ではビルドが失敗する．
+- veraPDF が非準拠を報告してもビルドは成功する．終了コード 2 以上の
+  実行エラーではビルドが失敗する．
 - レポート要約ロジックの単体テスト（正常系・異常系）が
   `npm test` で通る．
 
