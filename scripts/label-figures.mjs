@@ -77,11 +77,17 @@ export function labelFiguresPlugin(options = {}) {
       }
       if (isElement(node, 'figure')) {
         node.properties ??= {};
+        /* 役割を明示した figure には踏み込まない．presentation 等へ
+           aria-label（グローバル ARIA 属性）を足すと，役割競合の解決で
+           明示した役割が無効になり figure として露出し直すためである．
+           暗黙の役割と同じ role="figure" だけは補完の対象へ残す */
+        const role = node.properties.role;
+        const keepsFigureRole = role === undefined || role === 'figure';
         /* 空白だけの aria-label は読み上げ名にならないため，明示と見なさない */
         const existing = node.properties.ariaLabel;
         const hasExplicitLabel =
           existing !== undefined && !(typeof existing === 'string' && existing.trim() === '');
-        if (!hasExplicitLabel) {
+        if (keepsFigureRole && !hasExplicitLabel) {
           const label = resolveFigureLabel(node);
           if (label !== undefined) {
             node.properties.ariaLabel = label;

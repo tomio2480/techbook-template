@@ -79,6 +79,50 @@ describe('labelFiguresPlugin', () => {
     assert.equal(find(tree, 'figure').properties.ariaLabel, '手書きのラベル');
   });
 
+  it('role="presentation" の figure はラベルを付けず警告もしない', () => {
+    const warnings = [];
+    const tree = {
+      type: 'root',
+      children: [
+        el(
+          'figure',
+          [img({ src: 'a.svg', alt: '説明' }), figcaption([textNode('キャプション')])],
+          { role: 'presentation' }
+        ),
+      ],
+    };
+    labelFiguresPlugin({ warn: (m) => warnings.push(m) })(tree);
+    assert.equal(find(tree, 'figure').properties.ariaLabel, undefined);
+    assert.equal(warnings.length, 0);
+  });
+
+  it('role="none" の figure もラベルを付けない', () => {
+    const tree = {
+      type: 'root',
+      children: [el('figure', [img({ src: 'a.svg', alt: '説明' })], { role: 'none' })],
+    };
+    labelFiguresPlugin({ warn: () => {} })(tree);
+    assert.equal(find(tree, 'figure').properties.ariaLabel, undefined);
+  });
+
+  it('figure 以外の役割（group 等）を明示した figure はラベルを付けない', () => {
+    const tree = {
+      type: 'root',
+      children: [el('figure', [img({ src: 'a.svg', alt: '説明' })], { role: 'group' })],
+    };
+    labelFiguresPlugin({ warn: () => {} })(tree);
+    assert.equal(find(tree, 'figure').properties.ariaLabel, undefined);
+  });
+
+  it('role="figure" の明示は暗黙の役割と同じでありラベルを補う', () => {
+    const tree = {
+      type: 'root',
+      children: [el('figure', [img({ src: 'a.svg', alt: '説明' })], { role: 'figure' })],
+    };
+    labelFiguresPlugin({ warn: () => {} })(tree);
+    assert.equal(find(tree, 'figure').properties.ariaLabel, '説明');
+  });
+
   it('空白だけの aria-label は明示と見なさず補う', () => {
     const tree = {
       type: 'root',
