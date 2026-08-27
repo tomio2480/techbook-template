@@ -922,6 +922,7 @@ techbook-template/
 │   ├── check-gradient-hardstops.mjs # ハードストップ透過の検査
 │   ├── check-icon-bake.mjs    # 焼いた枠アイコンと theme.css の一致の検査
 │   ├── check-print-transparency.mjs # 入稿データの透明効果の検査
+│   ├── check-pdf-tags.mjs     # タグ付き PDF の目印の検査
 │   ├── print-layout.mjs       # 改丁・面付けの計算と MEMO ページ生成
 │   ├── count-pdf-pages.mjs    # PDF のページ数の読み取り
 │   ├── inject-book-meta.mjs   # 書名・著者名の流し込み
