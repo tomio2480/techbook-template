@@ -8,12 +8,17 @@ import {
   verifyPdfNewerThanMarker,
   verifyConfigUsesMarkdown,
   verifyPdfIsTagged,
+  verifyPdfHasMetadata,
   runVerifications,
 } from './verify-build.mjs';
 
 // タグ付けの目印を 3 つとも備えた最小の PDF．タグ検査を通す fixture として使う
 const TAGGED_PDF_CONTENT =
   '1 0 obj\n<< /Type /Catalog /StructTreeRoot 2 0 R /MarkInfo << /Marked true >> >>\nendobj\n';
+
+// タグ付けの目印に加え XMP メタデータの鍵も備えた fixture．全検査を通す
+const COMPLETE_PDF_CONTENT =
+  '1 0 obj\n<< /Type /Catalog /StructTreeRoot 2 0 R /MarkInfo << /Marked true >> /Metadata 3 0 R >>\nendobj\n';
 
 function makeTempRepo() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'verify-build-test-'));
@@ -177,6 +182,30 @@ test('verifyPdfIsTagged: タグ付けの目印が揃っていれば成功する'
   assert.equal(result.ok, true);
 });
 
+// --- verifyPdfHasMetadata ---
+
+test('verifyPdfHasMetadata: book.pdf が無ければ失敗する', () => {
+  const dir = makeTempRepo();
+  const result = verifyPdfHasMetadata(dir);
+  assert.equal(result.ok, false);
+  assert.match(result.message, /book\.pdf/);
+});
+
+test('verifyPdfHasMetadata: Metadata 鍵が無ければ失敗する', () => {
+  const dir = makeTempRepo();
+  fs.writeFileSync(path.join(dir, 'dist', 'book.pdf'), TAGGED_PDF_CONTENT, 'latin1');
+  const result = verifyPdfHasMetadata(dir);
+  assert.equal(result.ok, false);
+  assert.match(result.message, /Metadata/);
+});
+
+test('verifyPdfHasMetadata: Metadata 鍵があれば成功する', () => {
+  const dir = makeTempRepo();
+  fs.writeFileSync(path.join(dir, 'dist', 'book.pdf'), COMPLETE_PDF_CONTENT, 'latin1');
+  const result = verifyPdfHasMetadata(dir);
+  assert.equal(result.ok, true);
+});
+
 // --- runVerifications ---
 
 test('runVerifications: すべて成功する場合は全件 ok になる', () => {
@@ -185,7 +214,7 @@ test('runVerifications: すべて成功する場合は全件 ok になる', () =
   const markerPath = path.join(dir, 'dist', '.build-marker');
   const pdfPath = path.join(dir, 'dist', 'book.pdf');
   fs.writeFileSync(markerPath, new Date().toISOString(), 'utf-8');
-  fs.writeFileSync(pdfPath, TAGGED_PDF_CONTENT, 'latin1');
+  fs.writeFileSync(pdfPath, COMPLETE_PDF_CONTENT, 'latin1');
   const now = Date.now();
   setMtime(markerPath, new Date(now - 10000));
   setMtime(pdfPath, new Date(now));

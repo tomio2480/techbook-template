@@ -67,6 +67,13 @@ vivliostyle-cli#539 は v8.16.1（2024-11-06）で修正済みである．
   `/Marked true` の 3 つである．
   欠けていればビルドは失敗する（Issue #185）．
   検査は目印の存在に限り，構造の意味的な妥当性を扱わない．
+- `npm run build` は最終段で，`config/book.yaml` の書誌情報から組んだ
+  XMP メタデータを `dist/book.pdf` の Catalog `/Metadata` へ埋め込む
+  （Issue #198）．文書情報（DocInfo）の書名・著者名も同じ出所から書く．
+  埋め込みはタグ構造に触れない．検証段階は `/Metadata` の存在を
+  機械検査し，欠けていればビルドは失敗する．
+- XMP へ PDF/UA-1 の適合宣言（pdfuaid:part）は書かない．上流由来の
+  非準拠が残る現状で宣言すると，事実と異なる適合表明になるためである．
 - PDF を生成する CI は，`dist/book.pdf` へ veraPDF の PDF/UA-1 検証を
   実行する（Issue #189）．対象は `build-pdf` ラベル付き PR・
   `workflow_dispatch`・タグ push の各実行である．
@@ -90,6 +97,11 @@ vivliostyle-cli#539 は v8.16.1（2024-11-06）で修正済みである．
 - veraPDF が非準拠を報告してもビルドは成功する．終了コード 2 以上の
   実行エラーではビルドが失敗する．
 - レポート要約ロジックの単体テスト（正常系・異常系）が
+  `npm test` で通る．
+- `npm run build` 実行後，`dist/book.pdf` の Catalog に `/Metadata` が
+  存在し，XMP の書名・著者が `config/book.yaml` と一致する．
+- `/Metadata` の無い PDF を検証段階へ与えると，非 0 で終了し理由を示す．
+- メタデータ埋め込み・検査ロジックの単体テスト（正常系・異常系）が
   `npm test` で通る．
 
 ### 関連する依存の扱い
@@ -120,3 +132,6 @@ vivliostyle-cli#539 は v8.16.1（2024-11-06）で修正済みである．
 - 2026-08-27: Issue #189．要件変更．veraPDF 検証の CI 自動化を
   スコープ外から要件へ移す（非ブロッキングのレポート提供）．
   合否によるビルドのブロックはスコープ外へ残す．
+- 2026-08-28: Issue #198．要件追加．XMP メタデータの埋め込みと
+  `/Metadata` の機械検査をビルドへ加える．PDF/UA-1 の適合宣言
+  （pdfuaid:part）は書かない判断も明記する．

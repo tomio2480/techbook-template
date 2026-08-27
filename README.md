@@ -824,6 +824,12 @@ $$
 依存解決の差によるタグの消失を黙って通さない．単体の検査は
 `npm run check:pdf-tags` で実行できる．
 
+書誌メタデータもビルドが埋め込む（Issue #198）．文書情報（DocInfo）の
+書名・著者名は `config/book.yaml` を単一の出所として書かれる．
+Catalog の `/Metadata` には，同じ出所から組んだ XMP を埋め込む．
+PDF/UA-1 の適合宣言（`pdfuaid:part`）は書かない．上流由来の非準拠が
+残る現状で宣言すると，事実と異なる適合表明になるためである．
+
 かつては
 [OpenDataLoader PDF](https://github.com/opendataloader-project/opendataloader-pdf)
 による後処理でタグを付与していた．
@@ -924,6 +930,7 @@ techbook-template/
 │   └── errata.yml             # 正誤表の原本（版一覧・正誤情報）
 ├── scripts/                   # 全数を掲載．前半は単体実行，後半は部品
 │   ├── add-line-numbers.mjs   # 行番号追加・目次マージスクリプト
+│   ├── add-pdf-metadata.mjs   # XMP メタデータの埋め込み（build の最終段）
 │   ├── verify-build.mjs       # ビルド中断検知（フェイルセーフ）
 │   ├── build-print.mjs        # 紙入稿用 PDF のビルド（改丁・面付け）
 │   ├── build-cover.mjs        # 表紙単体の入稿データのビルド（表 1・表 4）
