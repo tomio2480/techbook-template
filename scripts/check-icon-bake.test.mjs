@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import {
-  BOX_TYPES,
   BOX_BACKGROUND,
   bakeColor,
+  detectBoxTypes,
   extractIconOpacity,
   decodeIconSvg,
   stripColors,
@@ -24,17 +24,20 @@ const PRINT_CSS = fs.readFileSync(themeDir('print.css'), 'utf-8');
 const PALETTE_CSS = fs.readFileSync(themeDir('palette.css'), 'utf-8');
 
 /* 検査の骨格だけを持つ最小の CSS．実ファイルに引きずられず境界を試す */
+const TYPES = ['tips', 'note', 'caution'];
+
 const icon = color =>
   `url("data:image/svg+xml,%3Csvg%3E%3Cpath stroke='${color}' d='M0 0h4'/%3E%3C/svg%3E")`;
 
-const minimalTheme = (opacity = '0.12') =>
-  BOX_TYPES.map(type => `:root { --${type}-icon: ${icon('%23000')}; }`).join('\n') +
-  `\n.tips::after,\n.note::after {\n  opacity: ${opacity};\n}\n`;
+const minimalTheme = (opacity = '0.12', types = TYPES) =>
+  types.map(type => `:root { --${type}-icon: ${icon('%23000')}; }`).join('\n') +
+  `\n${types.map(type => `.${type}::after`).join(',\n')} {\n  opacity: ${opacity};\n}\n`;
 
-const minimalPrint = (color = '%23e6ebf1') =>
-  BOX_TYPES.map(type => `:root { --${type}-icon-baked: ${icon(color)}; }`).join('\n');
+const minimalPrint = (color = '%23e6ebf1', types = TYPES) =>
+  types.map(type => `:root { --${type}-icon-baked: ${icon(color)}; }`).join('\n');
 
-const minimalPalette = BOX_TYPES.map(type => `--${type}-accent: #2f5b8c;`).join('\n  ');
+const palette = (types = TYPES) =>
+  `:root { ${types.map(type => `--${type}-accent: #2f5b8c;`).join('\n  ')} }`;
 
 // --- bakeColor ---
 
@@ -64,9 +67,38 @@ test('extractIconOpacity: 規則が無ければエラーになる', () => {
   assert.throws(() => extractIconOpacity(':root { --tips-icon: none; }'), /::after/);
 });
 
+test('extractIconOpacity: tips 枠が無い本でも検出した種別の規則から読む', () => {
+  assert.equal(extractIconOpacity(minimalTheme('0.15', ['note', 'caution'])), 0.15);
+});
+
 test('extractIconOpacity: 実ファイルの不透明度は 0 より大きく 1 未満である', () => {
   const opacity = extractIconOpacity(THEME_CSS);
   assert.ok(opacity > 0 && opacity < 1, `expected 0 < opacity < 1, got ${opacity}`);
+});
+
+// --- detectBoxTypes ---
+
+test('detectBoxTypes: theme.css の --<種別>-icon 宣言から種別を導く', () => {
+  assert.deepEqual(detectBoxTypes(minimalTheme()), TYPES);
+});
+
+test('detectBoxTypes: 線画を持たない種別は導かない', () => {
+  const theme = minimalTheme('0.12', ['tips', 'caution']);
+  assert.deepEqual(detectBoxTypes(theme), ['tips', 'caution']);
+});
+
+test('detectBoxTypes: var() 参照の集約変数は種別に数えない', () => {
+  const theme = minimalTheme() + '\n.tips { --box-icon: var(--tips-icon); }\n';
+  assert.deepEqual(detectBoxTypes(theme), TYPES);
+});
+
+test('detectBoxTypes: 引用符の流儀に依らず種別を導く', () => {
+  const theme = ":root { --tips-icon: url('data:image/svg+xml,%3Csvg%3E%3C/svg%3E'); }";
+  assert.deepEqual(detectBoxTypes(theme), ['tips']);
+});
+
+test('detectBoxTypes: 実ファイルは tips・note・caution を導く', () => {
+  assert.deepEqual(detectBoxTypes(THEME_CSS), TYPES);
 });
 
 // --- decodeIconSvg・stripColors・extractColors ---
@@ -77,6 +109,11 @@ test('decodeIconSvg: データ URI を SVG へ戻す', () => {
 
 test('decodeIconSvg: データ URI でない値はエラーになる', () => {
   assert.throws(() => decodeIconSvg('none'), /データ URI/);
+});
+
+test('decodeIconSvg: 単一引用符や引用符なしのデータ URI も読める', () => {
+  assert.match(decodeIconSvg("url('data:image/svg+xml,%3Csvg%3E%3C/svg%3E')"), /^<svg>/);
+  assert.match(decodeIconSvg('url(data:image/svg+xml,%3Csvg%3E%3C/svg%3E)'), /^<svg>/);
 });
 
 test('stripColors: 色だけが伏せられ形は残る', () => {
@@ -99,18 +136,61 @@ test('extractColors: 使われている色を小文字 6 桁で返す', () => {
 // --- checkIconBake ---
 
 test('checkIconBake: 形と色が揃っていれば違反は無い', () => {
-  assert.deepEqual(checkIconBake(minimalTheme(), minimalPrint(), `:root { ${minimalPalette} }`), []);
+  assert.deepEqual(checkIconBake(minimalTheme(), minimalPrint(), palette()), []);
 });
 
 test('checkIconBake: 紙用の置き換えが無ければ違反になる', () => {
-  const violations = checkIconBake(minimalTheme(), '', `:root { ${minimalPalette} }`);
-  assert.equal(violations.length, BOX_TYPES.length);
+  const violations = checkIconBake(minimalTheme(), '', palette());
+  assert.equal(violations.length, TYPES.length);
   assert.ok(violations.every(v => v.type === 'missing-baked'));
+});
+
+test('checkIconBake: theme.css に無い種別は検査しない', () => {
+  const types = ['tips', 'caution'];
+  const violations = checkIconBake(
+    minimalTheme('0.12', types),
+    minimalPrint('%23e6ebf1', types),
+    palette(types)
+  );
+  assert.deepEqual(violations, []);
+});
+
+test('checkIconBake: theme.css に無い種別の焼き済み変数が残れば違反になる', () => {
+  const violations = checkIconBake(
+    minimalTheme('0.12', ['tips', 'caution']),
+    minimalPrint(),
+    palette()
+  );
+  assert.deepEqual(
+    violations.map(v => [v.type, v.box]),
+    [['missing-source', 'note']]
+  );
+});
+
+test('checkIconBake: 引用符の流儀が違う焼き済み変数の残りも違反になる', () => {
+  const types = ['tips', 'caution'];
+  const orphan = "\n:root { --note-icon-baked: url('data:image/svg+xml,%3Csvg%3E%3C/svg%3E'); }";
+  const violations = checkIconBake(
+    minimalTheme('0.12', types),
+    minimalPrint('%23e6ebf1', types) + orphan,
+    palette(types)
+  );
+  assert.deepEqual(
+    violations.map(v => [v.type, v.box]),
+    [['missing-source', 'note']]
+  );
+});
+
+test('checkIconBake: --<種別>-icon が 1 つも無ければエラーになる', () => {
+  assert.throws(
+    () => checkIconBake(':root { --box-icon: none; }', minimalPrint(), palette()),
+    /--<種別>-icon/
+  );
 });
 
 test('checkIconBake: 線画の形が食い違えば違反になる', () => {
   const changed = minimalPrint().replace("M0 0h4", "M0 0h8");
-  const violations = checkIconBake(minimalTheme(), changed, `:root { ${minimalPalette} }`);
+  const violations = checkIconBake(minimalTheme(), changed, palette());
   assert.ok(violations.some(v => v.type === 'shape-mismatch'));
 });
 
@@ -124,7 +204,7 @@ test('checkIconBake: 実測で 1 階調ずれた色は違反にしない', () =>
   const violations = checkIconBake(
     minimalTheme(),
     minimalPrint('%23e7ecf2'),
-    `:root { ${minimalPalette} }`
+    palette()
   );
   assert.deepEqual(violations, []);
 });
@@ -133,7 +213,7 @@ test('checkIconBake: 許容を超えて離れた色は違反になる', () => {
   const violations = checkIconBake(
     minimalTheme(),
     minimalPrint('%23e6ebf5'),
-    `:root { ${minimalPalette} }`
+    palette()
   );
   assert.ok(violations.some(v => v.type === 'color-mismatch'));
   assert.ok(COLOR_TOLERANCE < 4, '許容は 4 階調未満であること');
@@ -143,7 +223,7 @@ test('checkIconBake: 焼いた色が計算値と違えば違反になる', () =>
   const violations = checkIconBake(
     minimalTheme(),
     minimalPrint('%23ff0000'),
-    `:root { ${minimalPalette} }`
+    palette()
   );
   assert.ok(violations.some(v => v.type === 'color-mismatch'));
 });
