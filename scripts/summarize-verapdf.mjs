@@ -54,7 +54,12 @@ function readCount(details, key) {
  * @returns {string} 整えた文字列
  */
 function toTableCell(text) {
-  const singleLine = String(text).replace(/\r\n|[\r\n]/g, ' ').replace(/\|/g, '\\|');
+  /* 「\」を「|」より先に畳む．順序が逆だと，元の「\」と挿入した
+     エスケープが合成され，Markdown で素の「|」へ戻ってしまう */
+  const singleLine = String(text)
+    .replace(/\r\n|[\r\n]/g, ' ')
+    .replace(/\\/g, '\\\\')
+    .replace(/\|/g, '\\|');
   if (singleLine.length <= MAX_DESCRIPTION_LENGTH) {
     return singleLine;
   }

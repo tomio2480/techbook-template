@@ -92,6 +92,15 @@ test('summarizeVerapdfReport: description の改行とパイプは表を壊さ�
   assert.match(markdown, /first line second \\\| third/);
 });
 
+test('summarizeVerapdfReport: description のバックスラッシュはエスケープを崩さない', () => {
+  /* 「\」を先に畳まないと，元の「\」と挿入した「\|」が合成され
+     「\\|」となり，Markdown で素の「|」へ戻って表が崩れる */
+  const markdown = summarizeVerapdfReport(
+    buildReport({ ruleSummaries: [buildRule({ description: 'back\\slash | pipe' })] })
+  );
+  assert.match(markdown, /back\\\\slash \\\| pipe/);
+});
+
 test('summarizeVerapdfReport: 長い description は切り詰める', () => {
   const markdown = summarizeVerapdfReport(
     buildReport({ ruleSummaries: [buildRule({ description: 'a'.repeat(200) })] })
