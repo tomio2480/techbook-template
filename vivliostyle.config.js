@@ -31,6 +31,10 @@ const isdnBarcode = {
 };
 
 export default {
+  /* DocInfo（PDF の文書情報）へ書名・著者名を書くため，book.yaml を
+     単一の出所として渡す．未指定だとタイトルがリポジトリ名になる */
+  title: bookYaml.title,
+  author: bookYaml.author,
   language: 'ja',
   size: 'JIS-B5',
   theme: ['./config/themes/techbook/theme.css'],
