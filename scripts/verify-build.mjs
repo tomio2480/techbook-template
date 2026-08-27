@@ -6,11 +6,13 @@
  * (a) リポジトリルートに index.html が残っていないこと
  * (b) dist/book.pdf の mtime が dist/.build-marker の mtime より新しいこと
  * (c) vivliostyle.config.js の entry 配列が .md ファイルを参照していること
+ * (d) dist/book.pdf がタグ付き PDF の目印を持つこと（check-pdf-tags.mjs）
  */
 
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { verifyTaggedPdfFile } from './check-pdf-tags.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -89,11 +91,23 @@ export function verifyConfigUsesMarkdown(repoRoot) {
   return { ok: true };
 }
 
+export function verifyPdfIsTagged(repoRoot) {
+  const pdfPath = path.join(repoRoot, 'dist', 'book.pdf');
+  if (!fs.existsSync(pdfPath)) {
+    return {
+      ok: false,
+      message: 'dist/book.pdf が見つかりません。ビルドが正しく完了していない可能性があります。',
+    };
+  }
+  return verifyTaggedPdfFile(pdfPath, 'dist/book.pdf');
+}
+
 export function runVerifications(repoRoot) {
   return [
     verifyNoIndexHtml(repoRoot),
     verifyPdfNewerThanMarker(repoRoot),
     verifyConfigUsesMarkdown(repoRoot),
+    verifyPdfIsTagged(repoRoot),
   ];
 }
 

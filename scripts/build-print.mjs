@@ -26,6 +26,7 @@ import { parse } from 'yaml';
 
 import { countPdfPagesFile } from './count-pdf-pages.mjs';
 import { verifyNoTransparencyFile } from './check-print-transparency.mjs';
+import { verifyTaggedPdfFile } from './check-pdf-tags.mjs';
 import {
   MEMO_FILE_PATTERN,
   PAGE_SEPARATOR,
@@ -361,6 +362,7 @@ async function main() {
     verifyPdfNewerThanMarker(repoRoot, PRINT_PDF_NAME),
     verifyPlannedPageCount(pageCount, plan.totalPages),
     verifyPageMultiple(pageCount, pageMultiple),
+    verifyTaggedPdfFile(pdfPath, '紙入稿用 PDF'),
   ].filter(result => !result.ok);
 
   if (failures.length > 0) {

@@ -818,6 +818,12 @@ $$
 原稿へ書いた画像の `alt` 属性は，`Figure` タグの `/Alt` へそのまま
 引き継がれる．図の説明は原稿の `alt` へ書くこと．
 
+タグの有無はビルドが機械検査する．`npm run build`・
+`npm run build:print` の検証段階で 3 つの目印を確かめる
+（Issue #185）．欠けていればビルドが失敗し，上流の退行や
+依存解決の差によるタグの消失を黙って通さない．単体の検査は
+`npm run check:pdf-tags` で実行できる．
+
 かつては
 [OpenDataLoader PDF](https://github.com/opendataloader-project/opendataloader-pdf)
 による後処理でタグを付与していた．

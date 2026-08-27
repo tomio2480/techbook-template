@@ -7,8 +7,13 @@ import {
   verifyNoIndexHtml,
   verifyPdfNewerThanMarker,
   verifyConfigUsesMarkdown,
+  verifyPdfIsTagged,
   runVerifications,
 } from './verify-build.mjs';
+
+// タグ付けの目印を 3 つとも備えた最小の PDF．タグ検査を通す fixture として使う
+const TAGGED_PDF_CONTENT =
+  '1 0 obj\n<< /Type /Catalog /StructTreeRoot 2 0 R /MarkInfo << /Marked true >> >>\nendobj\n';
 
 function makeTempRepo() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'verify-build-test-'));
@@ -148,6 +153,30 @@ test('verifyConfigUsesMarkdown: entry 配列内のコメントアウトされた
   assert.equal(result.ok, true);
 });
 
+// --- verifyPdfIsTagged ---
+
+test('verifyPdfIsTagged: book.pdf が無ければ失敗する', () => {
+  const dir = makeTempRepo();
+  const result = verifyPdfIsTagged(dir);
+  assert.equal(result.ok, false);
+  assert.match(result.message, /book\.pdf/);
+});
+
+test('verifyPdfIsTagged: タグ付けの目印が欠けていれば失敗する', () => {
+  const dir = makeTempRepo();
+  fs.writeFileSync(path.join(dir, 'dist', 'book.pdf'), 'dummy', 'utf-8');
+  const result = verifyPdfIsTagged(dir);
+  assert.equal(result.ok, false);
+  assert.match(result.message, /StructTreeRoot/);
+});
+
+test('verifyPdfIsTagged: タグ付けの目印が揃っていれば成功する', () => {
+  const dir = makeTempRepo();
+  fs.writeFileSync(path.join(dir, 'dist', 'book.pdf'), TAGGED_PDF_CONTENT, 'latin1');
+  const result = verifyPdfIsTagged(dir);
+  assert.equal(result.ok, true);
+});
+
 // --- runVerifications ---
 
 test('runVerifications: すべて成功する場合は全件 ok になる', () => {
@@ -156,7 +185,7 @@ test('runVerifications: すべて成功する場合は全件 ok になる', () =
   const markerPath = path.join(dir, 'dist', '.build-marker');
   const pdfPath = path.join(dir, 'dist', 'book.pdf');
   fs.writeFileSync(markerPath, new Date().toISOString(), 'utf-8');
-  fs.writeFileSync(pdfPath, 'dummy', 'utf-8');
+  fs.writeFileSync(pdfPath, TAGGED_PDF_CONTENT, 'latin1');
   const now = Date.now();
   setMtime(markerPath, new Date(now - 10000));
   setMtime(pdfPath, new Date(now));
@@ -167,6 +196,20 @@ test('runVerifications: すべて成功する場合は全件 ok になる', () =
 test('runVerifications: いずれかが失敗する場合は失敗を含む', () => {
   const dir = makeTempRepo();
   writeConfig(dir, ['src/chapters/cover.html']);
+  const results = runVerifications(dir);
+  assert.equal(results.some(r => !r.ok), true);
+});
+
+test('runVerifications: タグ付けの目印が無ければ失敗を含む', () => {
+  const dir = makeTempRepo();
+  writeConfig(dir, ['src/chapters/cover.md', 'src/chapters/toc.html']);
+  const markerPath = path.join(dir, 'dist', '.build-marker');
+  const pdfPath = path.join(dir, 'dist', 'book.pdf');
+  fs.writeFileSync(markerPath, new Date().toISOString(), 'utf-8');
+  fs.writeFileSync(pdfPath, 'dummy', 'utf-8');
+  const now = Date.now();
+  setMtime(markerPath, new Date(now - 10000));
+  setMtime(pdfPath, new Date(now));
   const results = runVerifications(dir);
   assert.equal(results.some(r => !r.ok), true);
 });
