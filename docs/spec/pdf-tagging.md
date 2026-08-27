@@ -67,9 +67,10 @@ vivliostyle-cli#539 は v8.16.1（2024-11-06）で修正済みである．
   `/Marked true` の 3 つである．
   欠けていればビルドは失敗する（Issue #185）．
   検査は目印の存在に限り，構造の意味的な妥当性を扱わない．
-- `npm run build` は最終段で，`config/book.yaml` の書誌情報から組んだ
-  XMP メタデータを `dist/book.pdf` の Catalog `/Metadata` へ埋め込む
-  （Issue #198）．文書情報（DocInfo）の書名・著者名も同じ出所から書く．
+- `npm run build` は最終段で XMP メタデータを埋め込む（Issue #198）．
+  出所は `config/book.yaml` の書誌情報である．埋め込み先は
+  `dist/book.pdf` の Catalog `/Metadata` である．
+  文書情報（DocInfo）の書名・著者名も同じ出所から書く．
   埋め込みはタグ構造に触れない．検証段階は `/Metadata` の存在を
   機械検査し，欠けていればビルドは失敗する．
 - XMP へ PDF/UA-1 の適合宣言（pdfuaid:part）は書かない．上流由来の
@@ -99,7 +100,7 @@ vivliostyle-cli#539 は v8.16.1（2024-11-06）で修正済みである．
 - レポート要約ロジックの単体テスト（正常系・異常系）が
   `npm test` で通る．
 - `npm run build` 実行後，`dist/book.pdf` の Catalog に `/Metadata` が
-  存在し，XMP の書名・著者が `config/book.yaml` と一致する．
+  存在する．XMP の書名・著者は `config/book.yaml` と一致する．
 - `/Metadata` の無い PDF を検証段階へ与えると，非 0 で終了し理由を示す．
 - メタデータ埋め込み・検査ロジックの単体テスト（正常系・異常系）が
   `npm test` で通る．

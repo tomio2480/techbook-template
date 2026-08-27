@@ -47,12 +47,15 @@ const CATALOG_PATTERN = new RegExp(
 );
 const METADATA_PATTERN = new RegExp(`/Metadata(?!${NAME_CONTINUATION})`);
 
-/** XML の内容として安全な形へエスケープする */
+/* 要素内容と属性値の両方で使うため，引用符までまとめてエスケープする．
+   属性値で「"」を素通しすると，値が属性の外へ抜けて要素を注入できる */
 function escapeXml(value) {
   return String(value)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 }
 
 function isNonEmptyString(value) {

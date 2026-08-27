@@ -32,6 +32,12 @@ describe('buildXmpPacket', () => {
     assert.ok(!xmp.includes('A < B'));
   });
 
+  it('属性値に使う言語の引用符もエスケープする', () => {
+    const xmp = buildXmpPacket({ title: 't', author: 'a', language: 'ja"><evil x="y' });
+    assert.ok(!xmp.includes('<evil'));
+    assert.ok(xmp.includes('&quot;'));
+  });
+
   it('PDF/UA の適合宣言（pdfuaid）を書かない', () => {
     const xmp = buildXmpPacket({ title: 't', author: 'a', language: 'ja' });
     assert.ok(!xmp.includes('pdfuaid'));
