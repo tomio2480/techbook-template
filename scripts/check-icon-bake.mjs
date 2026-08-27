@@ -25,8 +25,12 @@ import fs from 'fs';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { parseCssVariables, resolveVar } from './check-contrast.mjs';
 
-/** 検査する枠の種別．theme.css の --<種別>-icon と対応する． */
-export const BOX_TYPES = ['tips', 'note', 'caution'];
+/**
+ * 種別つきアイコン変数の名前．線画のデータ URI を直接持つ宣言だけを
+ * 種別として数え，--box-icon のような var() 参照の集約変数は除く．
+ */
+const SOURCE_ICON_PATTERN = /^--([a-z0-9-]+)-icon$/;
+const BAKED_ICON_PATTERN = /^--([a-z0-9-]+)-icon-baked$/;
 
 /**
  * 焼いた色と計算値のあいだで許すチャンネルごとの差（階調）．
@@ -42,12 +46,45 @@ export const COLOR_TOLERANCE = 2;
  */
 export const BOX_BACKGROUND = '#ffffff';
 
-/** アイコンの不透明度を書いてある規則の目印． */
-const ICON_RULE_PATTERN = /\.tips::after[^{]*\{([^}]*)\}/;
 const OPACITY_PATTERN = /opacity:\s*([\d.]+)/;
 
 const DATA_URI_PATTERN = /url\(\s*"data:image\/svg\+xml,([^"]*)"\s*\)/;
 const HEX_COLOR_PATTERN = /#[0-9a-f]{3}(?:[0-9a-f]{3})?/gi;
+
+/**
+ * CSS 変数の Map から，名前が pattern に合い線画を直接持つ種別を集める．
+ * @param {Map<string, string>} vars parseCssVariables の結果
+ * @param {RegExp} pattern 種別を 1 つ捕捉する名前のパターン
+ * @returns {Array<string>} 種別の一覧
+ */
+function iconTypes(vars, pattern) {
+  const types = [];
+  for (const [name, value] of vars) {
+    const match = name.match(pattern);
+    if (match && DATA_URI_PATTERN.test(value)) {
+      types.push(match[1]);
+    }
+  }
+  return types;
+}
+
+/**
+ * theme.css の --<種別>-icon 宣言から検査対象の枠種別を導く．
+ * 枠の構成が違う本（注釈枠を脚注化した派生書籍など）でも，
+ * 定数の書き換えなしに実態どおりの種別だけを検査する（Issue #190）．
+ *
+ * 前提は，種別ごとの線画を --<種別>-icon の名前でデータ URI として
+ * 宣言する組み方である．派生書籍が焼いた線画のデータ URI を
+ * --box-icon-baked のような 1 つの名前で規則ごとにスコープして持つ場合，
+ * parseCssVariables の Map は宣言を取り違える．その組み方では，
+ * 規則単位で読む形へ本関数と焼き済み変数の参照を差し替えること
+ * （例: tomio2480/techbook-introduction-to-electronics-basic-led#283）．
+ * @param {string} themeCss theme.css の中身
+ * @returns {Array<string>} 枠種別の一覧
+ */
+export function detectBoxTypes(themeCss) {
+  return iconTypes(parseCssVariables(themeCss), SOURCE_ICON_PATTERN);
+}
 
 /**
  * hex 色を小文字 6 桁へ正規化する．
@@ -100,10 +137,13 @@ export function channelGap(left, right) {
 /**
  * theme.css からアイコンの不透明度を読む．
  * @param {string} themeCss theme.css の中身
+ * @param {Array<string>} boxTypes 検査対象の枠種別
  * @returns {number} 0〜1 の不透明度
  */
-export function extractIconOpacity(themeCss) {
-  const rule = themeCss.match(ICON_RULE_PATTERN);
+export function extractIconOpacity(themeCss, boxTypes = detectBoxTypes(themeCss)) {
+  const rulePattern =
+    boxTypes.length > 0 && new RegExp(`\\.(?:${boxTypes.join('|')})::after[^{]*\\{([^}]*)\\}`);
+  const rule = rulePattern && themeCss.match(rulePattern);
   if (!rule) {
     throw new Error('theme.css に枠アイコンの ::after 規則が見つからない');
   }
@@ -154,20 +194,32 @@ export function extractColors(svg) {
  */
 export function checkIconBake(themeCss, printCss, paletteCss) {
   const violations = [];
-  const opacity = extractIconOpacity(themeCss);
   const themeVars = parseCssVariables(themeCss);
   const printVars = parseCssVariables(printCss);
   const paletteVars = parseCssVariables(paletteCss);
 
-  for (const type of BOX_TYPES) {
+  const sourceTypes = iconTypes(themeVars, SOURCE_ICON_PATTERN);
+  if (sourceTypes.length === 0) {
+    throw new Error(
+      'theme.css に --<種別>-icon の宣言が 1 つも見つからない（線画のデータ URI を持つ宣言が要る）'
+    );
+  }
+  const opacity = extractIconOpacity(themeCss, sourceTypes);
+
+  /* 線画を失った種別の焼き済み変数が print.css へ残ると，紙面だけ古い絵柄が出る */
+  const orphanTypes = iconTypes(printVars, BAKED_ICON_PATTERN).filter(
+    type => !sourceTypes.includes(type)
+  );
+
+  for (const type of [...sourceTypes, ...orphanTypes]) {
     const sourceName = `--${type}-icon`;
     const bakedName = `--${type}-icon-baked`;
 
-    if (!themeVars.has(sourceName)) {
+    if (!sourceTypes.includes(type)) {
       violations.push({
         type: 'missing-source',
         box: type,
-        message: `theme.css に ${sourceName} が無い`,
+        message: `theme.css に ${sourceName} が無いのに print.css へ ${bakedName} が残っている`,
       });
       continue;
     }
@@ -219,7 +271,8 @@ const isMainModule = process.argv[1] && import.meta.url === pathToFileURL(proces
 if (isMainModule) {
   const read = name =>
     fs.readFileSync(fileURLToPath(new URL(`../config/themes/techbook/${name}`, import.meta.url)), 'utf-8');
-  const violations = checkIconBake(read('theme.css'), read('print.css'), read('palette.css'));
+  const themeCss = read('theme.css');
+  const violations = checkIconBake(themeCss, read('print.css'), read('palette.css'));
   if (violations.length > 0) {
     for (const violation of violations) {
       console.error(`NG ${violation.message}`);
@@ -227,5 +280,5 @@ if (isMainModule) {
     console.error(`枠アイコンの焼き込みに ${violations.length} 件の食い違いがある`);
     process.exit(1);
   }
-  console.log(`ok 枠アイコン ${BOX_TYPES.length} 種の焼き込みが theme.css と一致している`);
+  console.log(`ok 枠アイコン ${detectBoxTypes(themeCss).length} 種の焼き込みが theme.css と一致している`);
 }

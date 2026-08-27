@@ -264,3 +264,9 @@
   焼く色は実測で決めた．表紙背景では計算値と 1 階調ずれる箇所があった．
   Issue #163 と `techbook-introduction-to-electronics-basic-led` の
   PR #278 を参照．
+- 2026-08-28: 要件明確化．枠アイコン検査の対象種別を `theme.css` の
+  `--<種別>-icon` 宣言から導く形にした．枠の構成が違う派生書籍でも，
+  スクリプトの定数を書き換えずに検査が通る．線画を失った種別の
+  焼き済み変数が `print.css` へ残る取りこぼしも違反として捉える．
+  Issue #190 と `techbook-introduction-to-electronics-basic-led` の
+  PR #283 を参照．
