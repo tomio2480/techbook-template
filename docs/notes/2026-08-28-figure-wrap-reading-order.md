@@ -58,9 +58,8 @@ Issue #203 で，VFM 生成 figcaption（`aria-hidden="true"`）の描画が
 この重複を抑える意図であり，尊重する．
 
 - 読み上げは #197 の前処理が figure の `/Alt` へ写して確保済み．
-- 残る未マーク 34 件は，Chromium が aria-hidden の描画を
-  Artifact にしない上流挙動によるもので，分類ノートの
-  上流由来群と同じ機序である．
+- 残る未マーク 34 件は，aria-hidden の描画を Artifact にしない
+  Chromium の挙動による．分類ノートの上流由来群と同じ機序である．
 
 ## 派生書籍への案内
 
