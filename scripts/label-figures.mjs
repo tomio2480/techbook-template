@@ -80,9 +80,24 @@ export function labelFiguresPlugin(options = {}) {
         /* 役割を明示した figure には踏み込まない．presentation 等へ
            aria-label（グローバル ARIA 属性）を足すと，役割競合の解決で
            明示した役割が無効になり figure として露出し直すためである．
-           暗黙の役割と同じ role="figure" だけは補完の対象へ残す */
+           暗黙の役割と同じ role="figure" だけは補完の対象へ残す．
+
+           role の値は空白区切りのフォールバックリストであり，認識できる
+           最初のトークンが効く．正確な解決には認識可能なロールの全一覧が
+           要り，Chromium の実装との不一致を抱え込むため持たない．
+           figure を含む複数トークンは「解釈できない並び」として補完を
+           見送り，警告で知らせる．黙って素通しはしない */
         const role = node.properties.role;
-        const keepsFigureRole = role === undefined || role === 'figure';
+        const roleTokens =
+          typeof role === 'string' ? role.trim().split(/\s+/).filter(Boolean) : [];
+        const keepsFigureRole =
+          role === undefined || roleTokens.every((token) => token === 'figure');
+        if (role !== undefined && !keepsFigureRole && roleTokens.includes('figure')) {
+          warn(
+            `figure の role（"${role}"）は複数トークンの並びで解釈できないため，` +
+              '読み上げ名を補わない．単一の role="figure" にするか役割を見直すこと'
+          );
+        }
         /* 空白だけの aria-label は読み上げ名にならないため，明示と見なさない */
         const existing = node.properties.ariaLabel;
         const hasExplicitLabel =

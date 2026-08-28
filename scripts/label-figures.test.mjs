@@ -123,6 +123,42 @@ describe('labelFiguresPlugin', () => {
     assert.equal(find(tree, 'figure').properties.ariaLabel, '説明');
   });
 
+  it('前後に空白のある role="figure" もラベルを補う', () => {
+    const tree = {
+      type: 'root',
+      children: [el('figure', [img({ src: 'a.svg', alt: '説明' })], { role: '  figure  ' })],
+    };
+    labelFiguresPlugin({ warn: () => {} })(tree);
+    assert.equal(find(tree, 'figure').properties.ariaLabel, '説明');
+  });
+
+  it('figure を含む複数トークンの role は補完を見送り警告する', () => {
+    const warnings = [];
+    const tree = {
+      type: 'root',
+      children: [
+        el('figure', [img({ src: 'a.svg', alt: '説明' })], { role: 'unknown-role figure' }),
+      ],
+    };
+    labelFiguresPlugin({ warn: (m) => warnings.push(m) })(tree);
+    assert.equal(find(tree, 'figure').properties.ariaLabel, undefined);
+    assert.equal(warnings.length, 1);
+    assert.ok(warnings[0].includes('unknown-role figure'));
+  });
+
+  it('figure を含まない複数トークンの role は警告せず見送る', () => {
+    const warnings = [];
+    const tree = {
+      type: 'root',
+      children: [
+        el('figure', [img({ src: 'a.svg', alt: '説明' })], { role: 'doc-cover group' }),
+      ],
+    };
+    labelFiguresPlugin({ warn: (m) => warnings.push(m) })(tree);
+    assert.equal(find(tree, 'figure').properties.ariaLabel, undefined);
+    assert.equal(warnings.length, 0);
+  });
+
   it('空白だけの aria-label は明示と見なさず補う', () => {
     const tree = {
       type: 'root',
