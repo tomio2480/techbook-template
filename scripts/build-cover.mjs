@@ -29,9 +29,12 @@ const __dirname = path.dirname(__filename);
 const repoRoot = path.join(__dirname, '..');
 
 const COVER_CONFIG = 'vivliostyle.cover.config.js';
-/* 塗り足しの寸法は紙入稿用のスタイルが単一の出所である。表紙のためだけに
-   同じ値を書き写さず、組むときも検査するときもこのファイルから取る */
+/* 塗り足しは紙入稿用のスタイルで与える。組むときはこのファイルを --style で渡す */
 const COVER_STYLE = path.join('config', 'themes', 'techbook', 'print.css');
+/* 塗り足しの寸法はテーマ本体の --bleed が単一の出所である。表紙・裏表紙の
+   絵柄の寸法と紙入稿用の @page の bleed が共有する。表紙のためだけに
+   同じ値を書き写さず、検査するときもこのファイルから取る */
+const BLEED_SOURCE = path.join('config', 'themes', 'techbook', 'theme.css');
 const VIVLIOSTYLE_CLI = path.join('node_modules', '@vivliostyle', 'cli', 'dist', 'cli.js');
 const OPENDATALOADER_CLI = path.join('node_modules', '@opendataloader', 'pdf', 'dist', 'cli.js');
 /* 裏表紙はバーコードを載せるため、入稿前に ISDN の設定を検査する */
@@ -80,17 +83,17 @@ export function resolveCoverTarget(key) {
   );
 }
 
-/* 紙入稿用のスタイルから塗り足しの量を読む。値を書き写すと、入稿先に合わせて
+/* テーマ本体のスタイルから塗り足しの量を読む。値を書き写すと、入稿先に合わせて
    --bleed を変えた本で検査だけが古い値のまま残る */
 export function resolveBleedMm(cssText) {
   const match = cssText.match(BLEED_PATTERN);
   if (!match) {
-    throw new Error(`${COVER_STYLE} から --bleed（ミリメートル）を読み取れませんでした。`);
+    throw new Error(`${BLEED_SOURCE} から --bleed（ミリメートル）を読み取れませんでした。`);
   }
 
   const bleed = Number(match[1]);
   if (!Number.isFinite(bleed) || bleed <= 0) {
-    throw new Error(`${COVER_STYLE} の --bleed は 0 より大きい値で指定してください（現在 ${match[1]}mm）。`);
+    throw new Error(`${BLEED_SOURCE} の --bleed は 0 より大きい値で指定してください（現在 ${match[1]}mm）。`);
   }
   return bleed;
 }
@@ -346,7 +349,7 @@ function inspectCoverPdf(target, bleedMm, expectedTexts) {
 }
 
 async function main() {
-  const bleedMm = resolveBleedMm(fs.readFileSync(path.join(repoRoot, COVER_STYLE), 'utf-8'));
+  const bleedMm = resolveBleedMm(fs.readFileSync(path.join(repoRoot, BLEED_SOURCE), 'utf-8'));
   const bookYaml =
     parse(fs.readFileSync(path.join(repoRoot, 'config', 'book.yaml'), 'utf-8')) ?? {};
   /* ISDN は取らない本もある。設定ファイルが無い状態を正常として扱う */

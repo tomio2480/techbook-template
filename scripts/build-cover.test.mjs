@@ -51,7 +51,7 @@ test('resolveCoverTarget: 知らない名前は選べる名前を添えて失敗
 
 // --- resolveBleedMm ---
 
-test('resolveBleedMm: 紙入稿用のスタイルから塗り足しの量を読む', () => {
+test('resolveBleedMm: テーマ本体のスタイルから塗り足しの量を読む', () => {
   assert.equal(resolveBleedMm(':root {\n  --bleed: 3mm;\n}'), 3);
   assert.equal(resolveBleedMm('--bleed:5mm;'), 5);
   assert.equal(resolveBleedMm('--bleed: 2.5mm;'), 2.5);

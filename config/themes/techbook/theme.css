@@ -106,23 +106,40 @@ h1::before {
   }
 }
 
+/* 表紙・裏表紙の絵柄．cover.md・back-cover.md の img として敷く．
+   絵柄は塗り足し込みの寸法（仕上がり＋各辺 --bleed）で作る．
+   ページの左上から塗り足しの分だけ外へずらして置き，電子書籍用では
+   body の overflow で仕上がりの外を切り落とす．紙入稿用では print.css が
+   切り落としを解除し，塗り足しごと出す．拡大で塗り足しを賄わない
+   （docs/spec/cover.md）．
+   CSS 背景ではなく img を使うのは，ページを仕上がりより大きく組むと
+   Chromium が背景の SVG を 72 dpi のビットマップへ平坦化するためである */
 .cover-art {
   /* 差し替えは :root の --cover-background-image で行う．
      cover.md の src は既定値であり，変数の指定が優先される */
   content: var(--cover-background-image);
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 182mm;
-  height: 257mm;
+  top: calc(-1 * var(--bleed));
+  left: calc(-1 * var(--bleed));
+  width: calc(182mm + var(--bleed) * 2);
+  height: calc(257mm + var(--bleed) * 2);
   object-fit: cover;
   z-index: -1;
 }
 
-/* 表紙・裏表紙の調整点．背景画像は @page から参照するため :root に置く．
-   文字配置の変数も併置し，書籍側テーマの上書き先を 1 箇所に集約する．
+/* 裏表紙の img は裏表紙用の変数で差し替える */
+.back-cover .cover-art,
+body.back-cover .cover-art {
+  content: var(--back-cover-background-image);
+}
+
+/* 表紙・裏表紙の調整点．書籍側テーマの上書き先を 1 箇所に集約する．
    文字色は palette.css の意味トークン（--cover-title-color 等）を使う */
 :root {
+  /* 塗り足し（タチキリ）の幅．絵柄の寸法と，紙入稿用の @page の bleed が
+     共有する単一の出所．入稿先の要件に合わせて変える．
+     電子書籍用の PDF にはページの塗り足しを入れない */
+  --bleed: 3mm;
   --cover-background-image: url('../../../src/assets/images/cover-background.svg');
   --cover-padding: 30mm 20mm;
   --cover-text-align: center;
@@ -147,6 +164,18 @@ body.cover {
 body.cover {
   box-sizing: border-box;
   padding: var(--cover-padding);
+}
+
+/* 絵柄の配置基準と切り落としの枠．仕上がり寸法（@page の size: jis-b5）と
+   同じ大きさにし，z-index: 0 で重なりの文脈を閉じて絵柄を最背面に置く．
+   判型を変えたときは width・height も追従させること */
+body.cover,
+body.back-cover {
+  position: relative;
+  z-index: 0;
+  width: 182mm;
+  height: 257mm;
+  overflow: hidden;
 }
 
 /* 表紙（タイトルページ）の h1 には番号を付けない */
@@ -1387,10 +1416,8 @@ body.colophon .colophon-copyright-notice {
    余白 0 により，バーコード位置を仕上がり端からの距離で指定できる */
 @page back-cover {
   margin: 0;
-  /* 背景はページ全面に敷く．:root の --back-cover-background-image で差し替える */
-  background-image: var(--back-cover-background-image);
-  background-size: cover;
-  background-position: center;
+  /* 背景の絵柄は back-cover.md の img（.cover-art）として敷く．
+     差し替えは :root の --back-cover-background-image で行う */
 
   @top-center {
     content: none;
@@ -1404,8 +1431,8 @@ body.colophon .colophon-copyright-notice {
 .back-cover,
 body.back-cover {
   page: back-cover;
-  /* バーコードの absolute 配置の基準を明示する（余白 0 のページ全面） */
-  position: relative;
+  /* バーコードと絵柄の absolute 配置の基準（余白 0 のページ全面）は
+     表紙と共通の body.cover, body.back-cover の規則が与える */
   /* ISDN バーコードの規定位置．ISDN 公式に配置規定は無いため，
      左綴じ本の裏表紙（表 4）右上を本テンプレートの規定位置とする．
      入稿先の指定があればこの変数で調整する */

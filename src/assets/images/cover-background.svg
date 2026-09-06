@@ -1,8 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 182 257" width="182mm" height="257mm">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 188 263" width="188mm" height="263mm">
   <!--
     表紙（表 1）のプレースホルダー背景．執筆者が差し替える前提で置く．
     差し替えは本ファイルの置換，またはテーマ CSS にある表紙の
     背景画像変数の上書きで行う（docs/spec/cover.md を参照）．
+    寸法は塗り足し込み（仕上がり JIS-B5 182mm×257mm に各辺 3mm を足した
+    188mm×263mm）で，1 ユーザー単位を 1mm とする．
+    図形は仕上がり基準の座標で書き，<g> の translate(3 3) で内側へ寄せる．
+    紙面の端に接する図形だけ，塗り足しの分（−3〜185，−3〜260）まで伸ばす．
+    差し替える素材も同じ寸法で作る（350 dpi なら 2591×3624 px）．
     配色は palette.css 第 1 層の既定値に対応させている
     （#2f5b8c / #b0c4de / #f0f4f8）．パレットを差し替えた場合は
     本ファイルの配色も合わせて調整する．
@@ -25,19 +30,21 @@
     罫線で 6 階調・帯で 3 階調（いずれも R）明るくなる．
     肉眼で追える差ではないため，重なりを保つ分割は行わない．
   -->
-  <rect width="182" height="257" fill="#f0f4f8"/>
+  <g transform="translate(3 3)">
+  <rect x="-3" y="-3" width="188" height="263" fill="#f0f4f8"/>
 
-  <!-- 天の帯と罫線 -->
-  <rect width="182" height="48" fill="#d6e0ee"/>
-  <rect y="48" width="182" height="1.2" fill="#90a8c2"/>
+  <!-- 天の帯と罫線（天と左右の塗り足しまで伸ばす） -->
+  <rect x="-3" y="-3" width="188" height="51" fill="#d6e0ee"/>
+  <rect x="-3" y="48" width="188" height="1.2" fill="#90a8c2"/>
 
-  <!-- 右上の角落とし（ドッグイヤー）モチーフ -->
-  <path d="M182 0 L182 30 L152 0 Z" fill="#a3b7d0"/>
+  <!-- 右上の角落とし（ドッグイヤー）モチーフ．斜辺を保ったまま塗り足しへ延長 -->
+  <path d="M185 -3 L185 33 L149 -3 Z" fill="#a3b7d0"/>
 
   <!-- 右下の円モチーフ（文字帯を避けた位置） -->
   <circle cx="150" cy="192" r="42" fill="#e0e8f2"/>
 
-  <!-- 地の帯と罫線 -->
-  <rect y="219.8" width="182" height="1.2" fill="#cad8e8"/>
-  <rect y="221" width="182" height="36" fill="#4c719c"/>
+  <!-- 地の帯と罫線（地と左右の塗り足しまで伸ばす） -->
+  <rect x="-3" y="219.8" width="188" height="1.2" fill="#cad8e8"/>
+  <rect x="-3" y="221" width="188" height="39" fill="#4c719c"/>
+  </g>
 </svg>
