@@ -174,6 +174,25 @@ function findRootSvgTag(svgText) {
   return match ? match[0] : null;
 }
 
+/**
+ * <style> 要素を取り除く．入れ子や破損した境界（例: `<style><style>…</style>`）では
+ * 1 回の置換で取り残しが生じ得るため，変化がなくなるまで繰り返す．
+ * CodeQL js/incomplete-multi-character-sanitization への対応で，
+ * check-diagram-luminance.mjs の stripXmlComments と同じ形にしている．
+ * @param {string} text
+ * @returns {string}
+ */
+function stripStyleElements(text) {
+  let current = text;
+  for (;;) {
+    const next = current.replace(STYLE_ELEMENT, '');
+    if (next === current) {
+      return next;
+    }
+    current = next;
+  }
+}
+
 /** 宣言の優先指定（!important）は値ではないため，比較の前に切り離す． */
 function stripImportant(value) {
   return value.replace(/\s*!\s*important\s*$/i, '').trim();
@@ -222,7 +241,7 @@ export function extractOtherFontFamilies(svgText) {
   /* <style> の中身は属性の走査から外す．CSS コメントで無効化したセレクタ
      （text[font-family="serif"] など）を属性と誤認しないためである */
   const styleContents = [...body.matchAll(STYLE_ELEMENT)].map(match => match[1]);
-  const markup = body.replace(STYLE_ELEMENT, '');
+  const markup = stripStyleElements(body);
   const found = [];
   for (const match of markup.matchAll(FONT_FAMILY_ATTRIBUTE)) {
     found.push({ value: decodeXmlEntities(match[1] ?? match[2]).trim(), source: 'attribute' });
