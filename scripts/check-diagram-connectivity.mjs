@@ -200,10 +200,12 @@ export function parsePathSubpaths(d) {
     startX = x;
     startY = y;
   };
+  /* Z の後に M を挟まず描画命令が続くと，閉じたサブパスの始点から
+     新しい開いたサブパスが始まる（SVG の仕様どおり） */
   const lineTo = (x, y) => {
     if (!current) {
-      moveTo(x, y);
-      return;
+      current = { points: [[cx, cy]], closed: false };
+      subpaths.push(current);
     }
     current.points.push([x, y]);
     cx = x;
@@ -217,10 +219,10 @@ export function parsePathSubpaths(d) {
       if (cmd === 'Z' || cmd === 'z') {
         if (current) {
           current.closed = true;
-          cx = startX;
-          cy = startY;
-          current = null;
         }
+        cx = startX;
+        cy = startY;
+        current = null;
         continue;
       }
     }
@@ -280,10 +282,15 @@ export function parsePathSubpaths(d) {
   return subpaths;
 }
 
+/** 回路図であることを root の <svg> に示すクラス名．配線の印が無ければ違反にする． */
+export const CIRCUIT_CLASS = 'circuit';
+
 /**
  * SVG テキストを図形の一覧へ解釈する．
+ * <defs> と <symbol> の中の図形は定義であり，表示位置を持たないため集めない．
+ * <use> は参照先を配置後の座標へ展開できないため，対応外として返す．
  * @param {string} svgText
- * @returns {{ shapes: Array<object>, unsupported: string[] }}
+ * @returns {{ shapes: Array<object>, unsupported: Array<{ label: string, reason: 'transform' | 'use', isWire: boolean }>, isCircuit: boolean }}
  */
 export function parseShapes(svgText) {
   const text = stripXmlComments(svgText);
@@ -292,6 +299,8 @@ export function parseShapes(svgText) {
   const stack = [];
   const counters = new Map();
   const tagPattern = /<(\/?)([a-zA-Z][\w:-]*)\b([^>]*?)(\/?)>/g;
+  let isCircuit = false;
+  let rootSeen = false;
 
   for (const match of text.matchAll(tagPattern)) {
     const closing = match[1] === '/';
@@ -315,29 +324,40 @@ export function parseShapes(svgText) {
     for (const name of (attrs.get('class') ?? '').split(/\s+/)) {
       if (name) classes.add(name);
     }
+    if (tag === 'svg' && !rootSeen) {
+      rootSeen = true;
+      isCircuit = classes.has(CIRCUIT_CLASS);
+    }
     /* 祖先のどこかに対応外の transform があれば offset は null のまま伝わり，
        その配下の図形は判定できないものとして報告する */
     const parentOffset = parent ? parent.offset : { x: 0, y: 0 };
     const offset =
       translate && parentOffset ? { x: parentOffset.x + translate.x, y: parentOffset.y + translate.y } : null;
+    const stroke = attrs.has('stroke') ? attrs.get('stroke') : parent?.stroke;
+    const strokeLuma = luminanceOf(stroke);
     const frame = {
       tag,
       classes,
-      stroke: attrs.has('stroke') ? attrs.get('stroke') : parent?.stroke,
+      stroke,
+      strokeDark: strokeLuma !== null && strokeLuma <= DARK_LUMINANCE_MAX,
       fill: attrs.has('fill') ? attrs.get('fill') : parent?.fill,
       free: attrs.get('data-connectivity') === 'free' || (parent?.free ?? false),
       marker: attrs.has('marker-start') || attrs.has('marker-end') || attrs.has('marker-mid') || (parent?.marker ?? false),
       offset,
       transformOk: offset !== null,
+      inDefs: tag === 'defs' || tag === 'symbol' || (parent?.inDefs ?? false),
     };
 
     const isShape = ['line', 'polyline', 'polygon', 'path', 'rect', 'circle', 'ellipse'].includes(tag);
-    if (isShape) {
+    if ((isShape || tag === 'use') && !frame.inDefs) {
       const index = (counters.get(tag) ?? 0) + 1;
       counters.set(tag, index);
       const label = attrs.has('id') ? `${tag}#${attrs.get('id')}` : `${tag}[${index}]`;
-      if (!frame.transformOk) {
-        unsupported.push(label);
+      const isWire = classes.has(WIRE_CLASS) && frame.strokeDark;
+      if (tag === 'use') {
+        unsupported.push({ label, reason: 'use', isWire: classes.has(WIRE_CLASS) });
+      } else if (!frame.transformOk) {
+        unsupported.push({ label, reason: 'transform', isWire });
       } else {
         const shape = buildShape(tag, attrs, frame, label);
         if (shape) shapes.push(shape);
@@ -348,7 +368,7 @@ export function parseShapes(svgText) {
       stack.push(frame);
     }
   }
-  return { shapes, unsupported };
+  return { shapes, unsupported, isCircuit };
 }
 
 /**
@@ -360,9 +380,8 @@ function buildShape(tag, attrs, frame, label) {
   const ox = frame.offset.x;
   const oy = frame.offset.y;
   const shift = ([x, y]) => [x + ox, y + oy];
-  const strokeLuma = luminanceOf(frame.stroke);
   const fillLuma = luminanceOf(frame.fill);
-  const strokeDark = strokeLuma !== null && strokeLuma <= DARK_LUMINANCE_MAX;
+  const strokeDark = frame.strokeDark;
   const base = {
     label,
     /* 配線は回路本体の色（暗い色）で描く規約のため，補助記載の色の線は
@@ -424,29 +443,38 @@ function distanceToSegment([px, py], [ax, ay], [bx, by]) {
 }
 
 /**
- * 図形の線分（多角形は閉じる辺を含む）を列挙する．
+ * 図形の線分（多角形は閉じる辺を含む）を，サブパスと線分の番号付きで列挙する．
  */
 function* segmentsOf(shape) {
-  for (const sp of shape.subpaths ?? []) {
+  for (const [subpath, sp] of (shape.subpaths ?? []).entries()) {
     const pts = sp.points;
     for (let k = 0; k + 1 < pts.length; k += 1) {
-      yield [pts[k], pts[k + 1]];
+      yield { a: pts[k], b: pts[k + 1], subpath, segment: k };
     }
     if (sp.closed && pts.length > 2) {
-      yield [pts[pts.length - 1], pts[0]];
+      yield { a: pts[pts.length - 1], b: pts[0], subpath, segment: pts.length - 1 };
     }
   }
 }
 
 /**
  * 点が図形へ許容差の中で触れているか．
+ * 円は，暗い塗りを持つ接続点なら内側全体を，中空なら円周だけを相手にする．
+ * 中空の円の内側まで許すと，円周を突き抜けた端点を見逃す．
+ * @param {[number, number]} point
+ * @param {object} shape
+ * @param {number} tolerance
+ * @param {{ subpath: number, segment: number } | null} skip 自分自身を相手にするとき除く線分
  */
-function touches(point, shape, tolerance) {
+function touches(point, shape, tolerance, skip = null) {
   if (shape.kind === 'circle') {
     const d = Math.hypot(point[0] - shape.center[0], point[1] - shape.center[1]);
-    return d <= shape.r + tolerance;
+    return shape.fillDark ? d <= shape.r + tolerance : Math.abs(d - shape.r) <= tolerance;
   }
-  for (const [a, b] of segmentsOf(shape)) {
+  for (const { a, b, subpath, segment } of segmentsOf(shape)) {
+    if (skip && skip.subpath === subpath && skip.segment === segment) {
+      continue;
+    }
     if (distanceToSegment(point, a, b) <= tolerance) {
       return true;
     }
@@ -455,15 +483,17 @@ function touches(point, shape, tolerance) {
 }
 
 /**
- * 配線の端点（開いたサブパスの両端）を列挙する．
+ * 配線の端点（開いたサブパスの両端）を，端点を持つ線分の番号付きで列挙する．
+ * 同じ要素の別のサブパスや隣接しない線分は接続の相手になるため，
+ * 除外は端点を持つ線分だけにする．
  */
 function* wireEndpoints(shape) {
-  for (const sp of shape.subpaths ?? []) {
+  for (const [subpath, sp] of (shape.subpaths ?? []).entries()) {
     if (sp.closed || sp.points.length < 2) {
       continue;
     }
-    yield sp.points[0];
-    yield sp.points[sp.points.length - 1];
+    yield { point: sp.points[0], own: { subpath, segment: 0 } };
+    yield { point: sp.points[sp.points.length - 1], own: { subpath, segment: sp.points.length - 2 } };
   }
 }
 
@@ -494,27 +524,48 @@ export function checkDiagramConnectivity(svgFiles, options = {}) {
     if (excludedFiles.includes(file)) {
       continue;
     }
-    const { shapes, unsupported } = parseShapes(svgText);
+    const { shapes, unsupported, isCircuit } = parseShapes(svgText);
     const wires = shapes.filter(s => s.isWire);
-    if (wires.length === 0) {
-      unmarkedFiles.push(file);
+    /* 配線の印が対応外の要素にしか無い図も，印の無い図として捨てずに検査へ進める．
+       進めた先で対応外の要素を報告する */
+    if (wires.length === 0 && !unsupported.some(u => u.isWire)) {
+      if (isCircuit) {
+        violations.push({
+          type: 'no-wires-marked',
+          file,
+          message: `${file} は root に class="${CIRCUIT_CLASS}" があるのに，配線に class="${WIRE_CLASS}" が 1 つも無い`,
+        });
+      } else {
+        unmarkedFiles.push(file);
+      }
       continue;
     }
-    for (const label of unsupported) {
-      violations.push({
-        type: 'unsupported-transform',
-        file,
-        element: label,
-        message: `${file} の ${label} は translate 以外の transform を持ち，接続を判定できない`,
-      });
+    for (const { label, reason } of unsupported) {
+      violations.push(
+        reason === 'use'
+          ? {
+              type: 'unsupported-element',
+              file,
+              element: label,
+              message: `${file} の ${label} は参照先を配置後の座標へ展開できず，接続を判定できない（図形を直接描く）`,
+            }
+          : {
+              type: 'unsupported-transform',
+              file,
+              element: label,
+              message: `${file} の ${label} は translate 以外の transform を持ち，接続を判定できない`,
+            }
+      );
     }
     const targets = shapes.filter(s => s.strokeDark || (s.kind === 'circle' && s.fillDark) || (s.kind === 'closed' && s.fillDark));
     for (const wire of wires) {
       if (wire.free) {
         continue;
       }
-      for (const point of wireEndpoints(wire)) {
-        const connected = targets.some(target => target !== wire && touches(point, target, tolerance));
+      for (const { point, own } of wireEndpoints(wire)) {
+        const connected = targets.some(target =>
+          touches(point, target, tolerance, target === wire ? own : null)
+        );
         if (!connected) {
           violations.push({
             type: 'dangling-endpoint',

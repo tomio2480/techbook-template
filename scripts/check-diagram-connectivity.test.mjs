@@ -78,6 +78,14 @@ test('parsePathSubpaths: 曲線は端点だけを取る', () => {
   assert.deepEqual(sp.points, [[0, 0], [10, 0], [20, 0], [30, 0]]);
 });
 
+test('parsePathSubpaths: Z の後に M を挟まず続く描画命令は，始点から新しい開いたサブパスになる', () => {
+  const subpaths = parsePathSubpaths('M0 0 L10 0 Z l5 0');
+  assert.equal(subpaths.length, 2);
+  assert.equal(subpaths[0].closed, true);
+  assert.deepEqual(subpaths[1].points, [[0, 0], [5, 0]]);
+  assert.equal(subpaths[1].closed, false);
+});
+
 test('parsePathSubpaths: M の後の座標の繰り返しは L として読む', () => {
   const [sp] = parsePathSubpaths('M 0 0 10 0 10 10');
   assert.deepEqual(sp.points, [[0, 0], [10, 0], [10, 10]]);
@@ -96,18 +104,38 @@ test('parseShapes: 祖先 <g> の class・stroke・translate を継承する', (
 });
 
 test('parseShapes: translate 以外の transform を持つ図形は unsupported に入る', () => {
-  const { shapes, unsupported } = parseShapes(svg('<line id="a" x1="0" y1="0" x2="1" y2="1" transform="rotate(45)"/>'));
+  const { shapes, unsupported } = parseShapes(
+    svg('<line id="a" class="wire" stroke="black" x1="0" y1="0" x2="1" y2="1" transform="rotate(45)"/>')
+  );
   assert.deepEqual(shapes, []);
-  assert.deepEqual(unsupported, ['line#a']);
+  assert.deepEqual(unsupported, [{ label: 'line#a', reason: 'transform', isWire: true }]);
 });
 
 test('parseShapes: 祖先 <g> の transform が対応外なら配下の図形も unsupported に入る', () => {
   const { shapes, unsupported } = parseShapes(
     svg('<g transform="rotate(10)"><g transform="translate(1 1)"><line x1="0" y1="0" x2="1" y2="1"/></g></g><line x1="0" y1="0" x2="2" y2="2"/>')
   );
-  assert.deepEqual(unsupported, ['line[1]']);
+  assert.deepEqual(unsupported.map(u => u.label), ['line[1]']);
   assert.equal(shapes.length, 1);
   assert.equal(shapes[0].label, 'line[2]');
+});
+
+test('parseShapes: <defs> と <symbol> の中の図形は集めず，<use> は対応外に入る', () => {
+  const { shapes, unsupported } = parseShapes(
+    svg(
+      '<defs><line class="wire" stroke="black" x1="0" y1="0" x2="9" y2="9"/></defs>' +
+        '<symbol id="s"><rect x="0" y="0" width="5" height="5" stroke="black"/></symbol>' +
+        '<use href="#s" x="10" y="10" class="wire"/>' +
+        '<line x1="0" y1="0" x2="2" y2="2" stroke="black"/>'
+    )
+  );
+  assert.deepEqual(shapes.map(s => s.label), ['line[1]']);
+  assert.deepEqual(unsupported, [{ label: 'use[1]', reason: 'use', isWire: true }]);
+});
+
+test('parseShapes: root の class="circuit" を読み取る', () => {
+  assert.equal(parseShapes('<svg class="circuit diagram"></svg>').isCircuit, true);
+  assert.equal(parseShapes('<svg></svg>').isCircuit, false);
 });
 
 test('parseShapes: コメント内の図形は読まない', () => {
@@ -198,6 +226,56 @@ test('checkDiagramConnectivity: marker を持つ配線と data-connectivity="fre
   const { violations } = checkDiagramConnectivity(makeFiles({ 'a.svg': free }));
   assert.equal(violations.length, 2);
   assert.ok(violations.every(v => v.element === 'line[3]'));
+});
+
+test('checkDiagramConnectivity: 中空の円は円周だけを相手にし，中心で止まる配線を検出する', () => {
+  const hollow = svg(
+    '<circle cx="50" cy="50" r="20" fill="none" stroke="black"/>' +
+      '<line class="wire" x1="0" y1="50" x2="30" y2="50" stroke="black"/>' +
+      '<line class="wire" x1="100" y1="50" x2="50" y2="50" stroke="black"/>' +
+      '<circle cx="0" cy="50" r="2" fill="black"/><circle cx="100" cy="50" r="2" fill="black"/>'
+  );
+  const { violations } = checkDiagramConnectivity(makeFiles({ 'a.svg': hollow }));
+  assert.equal(violations.length, 1);
+  assert.deepEqual(violations[0].point, [50, 50]);
+});
+
+test('checkDiagramConnectivity: 同じ path の別のサブパスへ触れる端点は接続とみなす', () => {
+  const merged = svg(
+    '<path class="wire" d="M0 0 L10 0 M5 0 L5 10" fill="none" stroke="black"/>' +
+      '<circle cx="0" cy="0" r="1" fill="black"/><circle cx="10" cy="0" r="1" fill="black"/>' +
+      '<circle cx="5" cy="10" r="1" fill="black"/>'
+  );
+  assert.deepEqual(checkDiagramConnectivity(makeFiles({ 'a.svg': merged })).violations, []);
+});
+
+test('checkDiagramConnectivity: 配線がすべて対応外の transform を持つ図は，未対応にせず報告する', () => {
+  const rotatedWires = svg(
+    '<g transform="rotate(5)"><line class="wire" x1="0" y1="0" x2="10" y2="0" stroke="black"/></g>'
+  );
+  const result = checkDiagramConnectivity(makeFiles({ 'a.svg': rotatedWires }));
+  assert.deepEqual(result.unmarkedFiles, []);
+  assert.equal(result.violations.length, 1);
+  assert.equal(result.violations[0].type, 'unsupported-transform');
+});
+
+test('checkDiagramConnectivity: <use> で置いた配線や部品は対応外として報告する', () => {
+  const used = svg(
+    '<defs><symbol id="r"><rect x="0" y="0" width="10" height="4" stroke="black" fill="none"/></symbol></defs>' +
+      '<use href="#r" x="60" y="48"/>' +
+      '<line class="wire" x1="20" y1="50" x2="60" y2="50" stroke="black"/>' +
+      '<circle cx="20" cy="50" r="2" fill="black"/>'
+  );
+  const types = checkDiagramConnectivity(makeFiles({ 'a.svg': used })).violations.map(v => v.type);
+  assert.ok(types.includes('unsupported-element'));
+});
+
+test('checkDiagramConnectivity: root に class="circuit" があるのに配線の印が無ければ違反にする', () => {
+  const circuit = '<svg class="circuit" viewBox="0 0 10 10"><line x1="0" y1="0" x2="10" y2="0" stroke="black"/></svg>';
+  const result = checkDiagramConnectivity(makeFiles({ 'a.svg': circuit }));
+  assert.deepEqual(result.unmarkedFiles, []);
+  assert.equal(result.violations.length, 1);
+  assert.equal(result.violations[0].type, 'no-wires-marked');
 });
 
 test('checkDiagramConnectivity: 配線の印が無い図は未対応として返し，違反にしない', () => {

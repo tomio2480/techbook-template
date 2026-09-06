@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200">
+<!-- 回路図は root に class="circuit" を付ける．配線の印（class="wire"）が
+     1 つも無ければ scripts/check-diagram-connectivity.mjs が違反として報告する -->
+<svg xmlns="http://www.w3.org/2000/svg" class="circuit" viewBox="0 0 400 200" width="400" height="200">
   <!-- 背景 -->
   <rect width="400" height="200" fill="#ffffff"/>
 
