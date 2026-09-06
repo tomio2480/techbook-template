@@ -949,6 +949,7 @@ techbook-template/
 │   ├── check-index.mjs        # 索引の参照と本文のアンカーの突合
 │   ├── check-contrast.mjs     # 配色のコントラスト比の検査
 │   ├── check-diagram-luminance.mjs # 図版 SVG の明度段パレットの検査
+│   ├── check-diagram-connectivity.mjs # 回路図 SVG の配線の接続の検査
 │   ├── check-gradient-hardstops.mjs # ハードストップ透過の検査
 │   ├── check-icon-bake.mjs    # 焼いた枠アイコンと theme.css の一致の検査
 │   ├── check-print-transparency.mjs # 入稿データの透明効果の検査
@@ -1083,6 +1084,16 @@ Rec.601 輝度で 15 ポイント以上の差を機械検査する．実体配�
 既定は空であり，本ごとに足す．塗りを透明で薄める形は使わない．
 指定した色だけを読む検査が，実際に刷られる色を見逃すためである．
 合成後の色を焼いて登録する．
+
+回路図の配線には `class="wire"` を付ける（要素または祖先の `<g>`）．
+`scripts/check-diagram-connectivity.mjs` が `npm test` で検査する．
+見る点は，配線の端点が部品の外形・接続点・他の配線へ許容差の中で触れていることである．
+許容差は `TOLERANCE`（既定 0.5 ユーザー単位）で変える．
+触れていない端点（空隙・突き抜け）を候補として報告し，最終判断は目視で行う．触れる相手は暗い色（Rec.601 輝度 35 % 以下）の線・
+多角形・矩形・円であり，中明度で描く補助記載は色で除外される．
+矢印（`marker` 付き）と `data-connectivity="free"` を付けた要素は検査しない．
+配線に印が無い図は未対応として表示するだけで，違反にしない．
+`translate` 以外の `transform` を持つ図形は判定できないため報告する．
 
 ### 表紙・裏表紙の変更
 
