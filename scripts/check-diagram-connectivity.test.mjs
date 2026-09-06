@@ -240,6 +240,27 @@ test('checkDiagramConnectivity: 中空の円は円周だけを相手にし，中
   assert.deepEqual(violations[0].point, [50, 50]);
 });
 
+test('checkDiagramConnectivity: fill を省略した円は黒塗りの接続点として内側も相手にする', () => {
+  const omitted = svg(
+    '<circle cx="50" cy="50" r="6"/>' +
+      '<line class="wire" x1="0" y1="50" x2="50" y2="50" stroke="black"/>' +
+      '<circle cx="0" cy="50" r="2" fill="black"/>'
+  );
+  assert.deepEqual(checkDiagramConnectivity(makeFiles({ 'a.svg': omitted })).violations, []);
+});
+
+test('checkDiagramConnectivity: 中空の楕円は輪郭で判定し，平均半径の円として扱わない', () => {
+  const ellipse = svg(
+    '<ellipse cx="50" cy="50" rx="40" ry="10" fill="none" stroke="black"/>' +
+      '<line class="wire" x1="0" y1="50" x2="75" y2="50" stroke="black"/>' +
+      '<line class="wire" x1="100" y1="50" x2="90" y2="50" stroke="black"/>' +
+      '<circle cx="0" cy="50" r="2" fill="black"/><circle cx="100" cy="50" r="2" fill="black"/>'
+  );
+  const { violations } = checkDiagramConnectivity(makeFiles({ 'a.svg': ellipse }));
+  assert.equal(violations.length, 1);
+  assert.deepEqual(violations[0].point, [75, 50]);
+});
+
 test('checkDiagramConnectivity: 同じ path の別のサブパスへ触れる端点は接続とみなす', () => {
   const merged = svg(
     '<path class="wire" d="M0 0 L10 0 M5 0 L5 10" fill="none" stroke="black"/>' +

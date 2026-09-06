@@ -14,8 +14,11 @@
  * marker を持つ要素（矢印）と data-connectivity="free" を付けた要素は，
  * 端点が浮いてよいものとして検査しない．
  *
- * 配線に class="wire" が 1 つも無い図は「未対応」として報告だけし，違反にしない．
+ * 回路図は root の <svg> に class="circuit" を付ける．circuit があるのに
+ * 配線の印が 1 つも無い図は no-wires-marked として違反にする．
+ * どちらの印も無い図（グラフなど）は「未対応」として報告だけし，違反にしない．
  * 既存の図へ段階的に印を付けられるようにするためである．
+ * <defs>・<symbol> の中の図形は集めない．<use> は対応外として報告する．
  *
  * 座標変換は translate（と平行移動だけの matrix）に対応する．
  * それ以外の transform を持つ図形は unsupported-transform として報告する．
@@ -380,7 +383,8 @@ function buildShape(tag, attrs, frame, label) {
   const ox = frame.offset.x;
   const oy = frame.offset.y;
   const shift = ([x, y]) => [x + ox, y + oy];
-  const fillLuma = luminanceOf(frame.fill);
+  /* fill を省略した図形は SVG の初期値で黒く塗られる．暗い塗りとして扱う */
+  const fillLuma = luminanceOf(frame.fill ?? 'black');
   const strokeDark = frame.strokeDark;
   const base = {
     label,
@@ -419,7 +423,7 @@ function buildShape(tag, attrs, frame, label) {
     case 'circle':
       return { ...base, kind: 'circle', center: shift([num('cx'), num('cy')]), r: num('r') };
     case 'ellipse':
-      return { ...base, kind: 'circle', center: shift([num('cx'), num('cy')]), r: (num('rx') + num('ry')) / 2 };
+      return { ...base, kind: 'ellipse', center: shift([num('cx'), num('cy')]), rx: num('rx'), ry: num('ry') };
     default:
       return null;
   }
@@ -440,6 +444,29 @@ function distanceToSegment([px, py], [ax, ay], [bx, by]) {
   const qx = ax + t * dx;
   const qy = ay + t * dy;
   return Math.hypot(px - qx, py - qy);
+}
+
+/**
+ * 点が楕円へ触れているか．輪郭との距離は，輪郭を許容差の半分以下の間隔で
+ * 標本化して最小距離を取る．暗い塗りなら内側も触れているとみなす．
+ */
+function touchesEllipse(point, shape, tolerance) {
+  const dx = point[0] - shape.center[0];
+  const dy = point[1] - shape.center[1];
+  if (shape.fillDark && shape.rx > 0 && shape.ry > 0) {
+    if ((dx * dx) / (shape.rx * shape.rx) + (dy * dy) / (shape.ry * shape.ry) <= 1) {
+      return true;
+    }
+  }
+  const perimeter = Math.PI * (3 * (shape.rx + shape.ry) - Math.sqrt((3 * shape.rx + shape.ry) * (shape.rx + 3 * shape.ry)));
+  const samples = Math.max(64, Math.ceil(perimeter / (tolerance / 2)));
+  let best = Infinity;
+  for (let k = 0; k < samples; k += 1) {
+    const t = (2 * Math.PI * k) / samples;
+    const d = Math.hypot(dx - shape.rx * Math.cos(t), dy - shape.ry * Math.sin(t));
+    if (d < best) best = d;
+  }
+  return best <= tolerance;
 }
 
 /**
@@ -470,6 +497,9 @@ function touches(point, shape, tolerance, skip = null) {
   if (shape.kind === 'circle') {
     const d = Math.hypot(point[0] - shape.center[0], point[1] - shape.center[1]);
     return shape.fillDark ? d <= shape.r + tolerance : Math.abs(d - shape.r) <= tolerance;
+  }
+  if (shape.kind === 'ellipse') {
+    return touchesEllipse(point, shape, tolerance);
   }
   for (const { a, b, subpath, segment } of segmentsOf(shape)) {
     if (skip && skip.subpath === subpath && skip.segment === segment) {
@@ -557,7 +587,9 @@ export function checkDiagramConnectivity(svgFiles, options = {}) {
             }
       );
     }
-    const targets = shapes.filter(s => s.strokeDark || (s.kind === 'circle' && s.fillDark) || (s.kind === 'closed' && s.fillDark));
+    const targets = shapes.filter(
+      s => s.strokeDark || ((s.kind === 'circle' || s.kind === 'ellipse' || s.kind === 'closed') && s.fillDark)
+    );
     for (const wire of wires) {
       if (wire.free) {
         continue;
