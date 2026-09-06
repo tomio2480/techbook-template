@@ -18,27 +18,23 @@
  * TrimBox に仕上がり寸法が記録される．
  * ページ box（版面の基準）は仕上がりのままであり，本文の組版は変わらない．
  * 電子書籍用の PDF には入れない．読者に余分な余白を見せないためである．
- * 量は入稿先の要件に合わせて --bleed で変える．
+ * 量は入稿先の要件に合わせて theme.css の --bleed で変える．
+ * 表紙・裏表紙の絵柄の寸法と共有する単一の出所である．
  * 要求・要件は docs/spec/print-layout.md を参照．
  */
-:root {
-  --bleed: 3mm;
-}
-
 @page {
   bleed: var(--bleed);
 }
 
-/* 表紙の絵柄を塗り足しの端まで広げる．
- * 絵柄は cover.md の img であり，theme.css が仕上がり寸法で敷いている．
- * 紙入稿用では塗り足しの分だけ大きくし，左上へずらして紙面全体を覆う．
+/* 表紙・裏表紙の絵柄を塗り足しの端まで出す．
+ * 絵柄は塗り足し込みの寸法で作ってあり，theme.css がページの左上から
+ * 塗り足しの分だけ外へずらして敷いたうえで，仕上がりの外を切り落としている．
+ * 紙入稿用では切り落としだけを解除する．寸法も位置も変えない．
  * CSS 背景ではなく img を使う理由は theme.css の .cover-art に書いてある．
  */
-.cover-art {
-  top: calc(-1 * var(--bleed));
-  left: calc(-1 * var(--bleed));
-  width: calc(182mm + var(--bleed) * 2);
-  height: calc(257mm + var(--bleed) * 2);
+body.cover,
+body.back-cover {
+  overflow: visible;
 }
 
 /* ── 枠アイコンの透明を外す ──────────────────────────────

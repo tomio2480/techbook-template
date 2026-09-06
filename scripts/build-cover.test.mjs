@@ -5,6 +5,7 @@ import zlib from 'zlib';
 import {
   BOX_TOLERANCE_MM,
   COVER_TARGETS,
+  assertSingleBleedSource,
   boxSizeMm,
   normalizeExtractedText,
   readPdfBoxes,
@@ -51,7 +52,7 @@ test('resolveCoverTarget: 知らない名前は選べる名前を添えて失敗
 
 // --- resolveBleedMm ---
 
-test('resolveBleedMm: 紙入稿用のスタイルから塗り足しの量を読む', () => {
+test('resolveBleedMm: テーマ本体のスタイルから塗り足しの量を読む', () => {
   assert.equal(resolveBleedMm(':root {\n  --bleed: 3mm;\n}'), 3);
   assert.equal(resolveBleedMm('--bleed:5mm;'), 5);
   assert.equal(resolveBleedMm('--bleed: 2.5mm;'), 2.5);
@@ -67,6 +68,32 @@ test('resolveBleedMm: ミリメートル以外の単位は読み取らない', (
 
 test('resolveBleedMm: 0 以下の量は塗り足しとして扱わない', () => {
   assert.throws(() => resolveBleedMm('--bleed: 0mm;'), /0 より大きい/);
+});
+
+// --- assertSingleBleedSource ---
+
+test('assertSingleBleedSource: 紙入稿用のスタイルに --bleed が無ければ通る', () => {
+  assert.doesNotThrow(() => assertSingleBleedSource('@page { bleed: var(--bleed); }'));
+});
+
+test('assertSingleBleedSource: コメント中の言及は宣言とみなさない', () => {
+  assert.doesNotThrow(() => assertSingleBleedSource('/* 旧: --bleed: 3mm; */ @page { bleed: var(--bleed); }'));
+});
+
+test('assertSingleBleedSource: 移行し忘れた --bleed の宣言は直し方を添えて止める', () => {
+  assert.throws(
+    () => assertSingleBleedSource(':root {\n  --bleed: 5mm;\n}'),
+    /print\.css に --bleed の宣言（--bleed: 5mm）.+theme\.css の --bleed だけで宣言/s
+  );
+});
+
+test('assertSingleBleedSource: 値の構文が違う宣言（calc・大文字の単位）も検出する', () => {
+  assert.throws(() => assertSingleBleedSource(':root { --bleed: calc(5mm); }'), /--bleed の宣言/);
+  assert.throws(() => assertSingleBleedSource(':root { --BLEED:5MM; }'), /--bleed の宣言/);
+});
+
+test('assertSingleBleedSource: 似た名前の別のプロパティは宣言とみなさない', () => {
+  assert.doesNotThrow(() => assertSingleBleedSource(':root { --bleed-x: 3mm; }'));
 });
 
 // --- verifySinglePage ---

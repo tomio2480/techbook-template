@@ -29,9 +29,12 @@ const __dirname = path.dirname(__filename);
 const repoRoot = path.join(__dirname, '..');
 
 const COVER_CONFIG = 'vivliostyle.cover.config.js';
-/* 塗り足しの寸法は紙入稿用のスタイルが単一の出所である。表紙のためだけに
-   同じ値を書き写さず、組むときも検査するときもこのファイルから取る */
+/* 塗り足しは紙入稿用のスタイルで与える。組むときはこのファイルを --style で渡す */
 const COVER_STYLE = path.join('config', 'themes', 'techbook', 'print.css');
+/* 塗り足しの寸法はテーマ本体の --bleed が単一の出所である。表紙・裏表紙の
+   絵柄の寸法と紙入稿用の @page の bleed が共有する。表紙のためだけに
+   同じ値を書き写さず、検査するときもこのファイルから取る */
+const BLEED_SOURCE = path.join('config', 'themes', 'techbook', 'theme.css');
 const VIVLIOSTYLE_CLI = path.join('node_modules', '@vivliostyle', 'cli', 'dist', 'cli.js');
 const OPENDATALOADER_CLI = path.join('node_modules', '@opendataloader', 'pdf', 'dist', 'cli.js');
 /* 裏表紙はバーコードを載せるため、入稿前に ISDN の設定を検査する */
@@ -64,6 +67,9 @@ const MM_PER_INCH = 25.4;
 /* 塗り足しの量の宣言。単位はミリメートルに限る。紙入稿用のスタイルが
    ミリメートルで書いており、他の単位を許すと入稿の指定と突き合わせにくい */
 const BLEED_PATTERN = /--bleed:\s*([0-9]*\.?[0-9]+)mm/;
+/* --bleed の宣言そのもの。重複宣言の検出に使う。カスタムプロパティ名は
+   大文字小文字を区別するが，移行し忘れの取りこぼしを避けるため i を付ける */
+const BLEED_DECLARATION = /--bleed\s*:\s*[^;}]*/i;
 
 /* PDF の空白は NUL・水平タブ・改行・改ページ・復帰・空白の 6 種である。
    count-pdf-pages.mjs と同じ定義を使う */
@@ -80,19 +86,35 @@ export function resolveCoverTarget(key) {
   );
 }
 
-/* 紙入稿用のスタイルから塗り足しの量を読む。値を書き写すと、入稿先に合わせて
+/* テーマ本体のスタイルから塗り足しの量を読む。値を書き写すと、入稿先に合わせて
    --bleed を変えた本で検査だけが古い値のまま残る */
 export function resolveBleedMm(cssText) {
   const match = cssText.match(BLEED_PATTERN);
   if (!match) {
-    throw new Error(`${COVER_STYLE} から --bleed（ミリメートル）を読み取れませんでした。`);
+    throw new Error(`${BLEED_SOURCE} から --bleed（ミリメートル）を読み取れませんでした。`);
   }
 
   const bleed = Number(match[1]);
   if (!Number.isFinite(bleed) || bleed <= 0) {
-    throw new Error(`${COVER_STYLE} の --bleed は 0 より大きい値で指定してください（現在 ${match[1]}mm）。`);
+    throw new Error(`${BLEED_SOURCE} の --bleed は 0 より大きい値で指定してください（現在 ${match[1]}mm）。`);
   }
   return bleed;
+}
+
+/* 紙入稿用のスタイルに --bleed の宣言が残っていないことを確かめる。
+   --bleed は theme.css へ移した。print.css 側に残ると，組むときはそちらの値が
+   カスケードで勝ち，検査だけが theme.css の値で行われて食い違う。
+   派生本が移行し忘れた状態を黙って通さず，直し方を添えて止める */
+export function assertSingleBleedSource(printCssText) {
+  /* 値の構文（calc()・大文字の単位）に依らず，宣言名だけで検出する。
+     カスケードでは値の書き方に関係なく print.css 側が勝つためである */
+  const match = printCssText.replace(/\/\*[\s\S]*?\*\//g, '').match(BLEED_DECLARATION);
+  if (match) {
+    throw new Error(
+      `${COVER_STYLE} に --bleed の宣言（${match[0].trim()}）が残っています。` +
+        `塗り足しの幅は ${BLEED_SOURCE} の --bleed だけで宣言してください（${COVER_STYLE} 側の宣言を消す）。`
+    );
+  }
 }
 
 /* 誌面へ必ず現れる文字を，対象ごとに設定から引く。
@@ -346,7 +368,8 @@ function inspectCoverPdf(target, bleedMm, expectedTexts) {
 }
 
 async function main() {
-  const bleedMm = resolveBleedMm(fs.readFileSync(path.join(repoRoot, COVER_STYLE), 'utf-8'));
+  assertSingleBleedSource(fs.readFileSync(path.join(repoRoot, COVER_STYLE), 'utf-8'));
+  const bleedMm = resolveBleedMm(fs.readFileSync(path.join(repoRoot, BLEED_SOURCE), 'utf-8'));
   const bookYaml =
     parse(fs.readFileSync(path.join(repoRoot, 'config', 'book.yaml'), 'utf-8')) ?? {};
   /* ISDN は取らない本もある。設定ファイルが無い状態を正常として扱う */

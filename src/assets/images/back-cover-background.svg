@@ -1,8 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 182 257" width="182mm" height="257mm">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 188 263" width="188mm" height="263mm">
   <!--
     裏表紙（表 4）のプレースホルダー背景．執筆者が差し替える前提で置く．
     差し替えは本ファイルの置換，またはテーマ CSS にある裏表紙の
     背景画像変数の上書きで行う（docs/spec/cover.md を参照）．
+    寸法と座標の取り方は cover-background.svg と同じ（塗り足し込み
+    188mm×263mm．図形は仕上がり基準で書き，translate(3 3) で寄せる）．
     配色は palette.css 第 1 層の既定値に対応させている
     （#2f5b8c / #b0c4de / #f0f4f8）．
     右上は ISDN バーコードの規定位置（docs/spec/isdn.md）のため，
@@ -16,12 +18,15 @@
       地の帯     #b0c4de opacity 0.35 → #dae4ef
       角落とし   #2f5b8c opacity 0.3  → #a6bad1（地の帯の上に重なる）
   -->
-  <rect width="182" height="257" fill="#f0f4f8"/>
+  <g transform="translate(3 3)">
+  <rect x="-3" y="-3" width="188" height="263" fill="#f0f4f8"/>
 
-  <!-- 地の帯と罫線（文字情報の背面．可読性を保つ淡色にとどめる） -->
-  <rect y="205.8" width="182" height="1.2" fill="#90a8c2"/>
-  <rect y="207" width="182" height="50" fill="#dae4ef"/>
+  <!-- 地の帯と罫線（文字情報の背面．可読性を保つ淡色にとどめる．
+       地と左右の塗り足しまで伸ばす） -->
+  <rect x="-3" y="205.8" width="188" height="1.2" fill="#90a8c2"/>
+  <rect x="-3" y="207" width="188" height="53" fill="#dae4ef"/>
 
-  <!-- 右下の角落とし（ドッグイヤー）モチーフ -->
-  <path d="M182 257 L182 227 L152 257 Z" fill="#a6bad1"/>
+  <!-- 右下の角落とし（ドッグイヤー）モチーフ．斜辺を保ったまま塗り足しへ延長 -->
+  <path d="M185 260 L185 224 L149 260 Z" fill="#a6bad1"/>
+  </g>
 </svg>
