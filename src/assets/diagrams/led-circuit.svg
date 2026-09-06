@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- 回路図は root に class="circuit" を付ける．配線の印（class="wire"）が
-     1 つも無ければ scripts/check-diagram-connectivity.mjs が違反として報告する -->
-<svg xmlns="http://www.w3.org/2000/svg" class="circuit" viewBox="0 0 400 200" width="400" height="200">
+     1 つも無ければ scripts/check-diagram-connectivity.mjs が違反として報告する．
+     図中のフォントは root の font-family で本文と同じゴシック体スタック（theme.css の
+     --font-gothic）を指定する．子要素には書かず継承させる．scripts/check-diagram-fonts.mjs が検査する -->
+<svg xmlns="http://www.w3.org/2000/svg" class="circuit" viewBox="0 0 400 200" width="400" height="200"
+  font-family="'Noto Sans CJK JP', 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif">
   <!-- 背景 -->
   <rect width="400" height="200" fill="#ffffff"/>
 
   <!-- マイコン -->
   <rect x="20" y="60" width="80" height="80" fill="#e8e8e8" stroke="#333" stroke-width="2" rx="4"/>
-  <text x="60" y="105" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#333">MCU</text>
-  <text x="60" y="120" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#666">GPIO</text>
+  <text x="60" y="105" text-anchor="middle" font-size="12" fill="#333">MCU</text>
+  <text x="60" y="120" text-anchor="middle" font-size="10" fill="#666">GPIO</text>
 
   <!-- 出力ピン．配線は class="wire" を付け，端点が部品・接続点・他の配線へ
        触れていることを scripts/check-diagram-connectivity.mjs が検査する -->
@@ -17,7 +20,7 @@
 
   <!-- 抵抗 -->
   <rect x="140" y="90" width="60" height="20" fill="#f5deb3" stroke="#333" stroke-width="2"/>
-  <text x="170" y="105" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#333">330Ω</text>
+  <text x="170" y="105" text-anchor="middle" font-size="10" fill="#333">330Ω</text>
 
   <!-- 抵抗からLEDへの配線 -->
   <line class="wire" x1="200" y1="100" x2="240" y2="100" stroke="#333" stroke-width="2"/>
@@ -42,8 +45,8 @@
   <line x1="315" y1="154" x2="325" y2="154" stroke="#333" stroke-width="2"/>
 
   <!-- ラベル -->
-  <text x="320" y="175" text-anchor="middle" font-family="sans-serif" font-size="10" fill="#666">GND</text>
+  <text x="320" y="175" text-anchor="middle" font-size="10" fill="#666">GND</text>
 
   <!-- タイトル -->
-  <text x="200" y="25" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold" fill="#333">LED点滅回路</text>
+  <text x="200" y="25" text-anchor="middle" font-size="14" font-weight="bold" fill="#333">LED点滅回路</text>
 </svg>

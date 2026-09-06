@@ -951,6 +951,7 @@ techbook-template/
 │   ├── check-index.mjs        # 索引の参照と本文のアンカーの突合
 │   ├── check-contrast.mjs     # 配色のコントラスト比の検査
 │   ├── check-diagram-luminance.mjs # 図版 SVG の明度段パレットの検査
+│   ├── check-diagram-fonts.mjs # 図版 SVG の図中フォント指定の検査
 │   ├── check-diagram-connectivity.mjs # 回路図 SVG の配線の接続の検査
 │   ├── check-gradient-hardstops.mjs # ハードストップ透過の検査
 │   ├── check-icon-bake.mjs    # 焼いた枠アイコンと theme.css の一致の検査
@@ -1086,6 +1087,14 @@ Rec.601 輝度で 15 ポイント以上の差を機械検査する．実体配�
 既定は空であり，本ごとに足す．塗りを透明で薄める形は使わない．
 指定した色だけを読む検査が，実際に刷られる色を見逃すためである．
 合成後の色を焼いて登録する．
+
+図版の文字は，root の `<svg>` の `font-family` に本文と同じゴシック体スタック
+（`theme.css` の `--font-gothic`）を指定する．`img` で埋め込んだ SVG はページの
+CSS を継承しないため，指定が無いとブラウザ既定のフォントで描かれ，図ごとにぶれる．
+`scripts/check-diagram-fonts.mjs` が root の指定の有無と値の一致を `npm test` で検査する．
+量記号を明朝の斜体で組むなど，意図して使う別のスタックは
+`ALLOWED_EXTRA_FONT_STACKS` へ登録する．登録の無いスタックは違反として報告する．
+子要素にはフォントを書かず，root の値を継承させる．
 
 回路図は root の `<svg>` に `class="circuit"` を付け，配線には `class="wire"` を
 付ける（要素または祖先の `<g>`）．
