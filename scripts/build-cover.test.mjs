@@ -5,6 +5,7 @@ import zlib from 'zlib';
 import {
   BOX_TOLERANCE_MM,
   COVER_TARGETS,
+  assertSingleBleedSource,
   boxSizeMm,
   normalizeExtractedText,
   readPdfBoxes,
@@ -67,6 +68,23 @@ test('resolveBleedMm: ミリメートル以外の単位は読み取らない', (
 
 test('resolveBleedMm: 0 以下の量は塗り足しとして扱わない', () => {
   assert.throws(() => resolveBleedMm('--bleed: 0mm;'), /0 より大きい/);
+});
+
+// --- assertSingleBleedSource ---
+
+test('assertSingleBleedSource: 紙入稿用のスタイルに --bleed が無ければ通る', () => {
+  assert.doesNotThrow(() => assertSingleBleedSource('@page { bleed: var(--bleed); }'));
+});
+
+test('assertSingleBleedSource: コメント中の言及は宣言とみなさない', () => {
+  assert.doesNotThrow(() => assertSingleBleedSource('/* 旧: --bleed: 3mm; */ @page { bleed: var(--bleed); }'));
+});
+
+test('assertSingleBleedSource: 移行し忘れた --bleed の宣言は直し方を添えて止める', () => {
+  assert.throws(
+    () => assertSingleBleedSource(':root {\n  --bleed: 5mm;\n}'),
+    /print\.css に --bleed: 5mm .+theme\.css の --bleed だけで宣言/s
+  );
 });
 
 // --- verifySinglePage ---

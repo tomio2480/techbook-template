@@ -98,6 +98,20 @@ export function resolveBleedMm(cssText) {
   return bleed;
 }
 
+/* 紙入稿用のスタイルに --bleed の宣言が残っていないことを確かめる。
+   --bleed は theme.css へ移した。print.css 側に残ると，組むときはそちらの値が
+   カスケードで勝ち，検査だけが theme.css の値で行われて食い違う。
+   派生本が移行し忘れた状態を黙って通さず，直し方を添えて止める */
+export function assertSingleBleedSource(printCssText) {
+  const match = printCssText.replace(/\/\*[\s\S]*?\*\//g, '').match(BLEED_PATTERN);
+  if (match) {
+    throw new Error(
+      `${COVER_STYLE} に --bleed: ${match[1]}mm の宣言が残っています。` +
+        `塗り足しの幅は ${BLEED_SOURCE} の --bleed だけで宣言してください（${COVER_STYLE} 側の宣言を消す）。`
+    );
+  }
+}
+
 /* 誌面へ必ず現れる文字を，対象ごとに設定から引く。
    流し込みはどれも，値が無ければ警告だけで進んで出力から消える。
    入稿データが必要な記載を欠いたまま成功扱いになるのを防ぐ。
@@ -349,6 +363,7 @@ function inspectCoverPdf(target, bleedMm, expectedTexts) {
 }
 
 async function main() {
+  assertSingleBleedSource(fs.readFileSync(path.join(repoRoot, COVER_STYLE), 'utf-8'));
   const bleedMm = resolveBleedMm(fs.readFileSync(path.join(repoRoot, BLEED_SOURCE), 'utf-8'));
   const bookYaml =
     parse(fs.readFileSync(path.join(repoRoot, 'config', 'book.yaml'), 'utf-8')) ?? {};
