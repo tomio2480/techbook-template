@@ -51,6 +51,7 @@ import {
   toDocumentPageCounts,
 } from './print-layout.mjs';
 import { verifyNoIndexHtml, verifyConfigUsesMarkdown } from './verify-build.mjs';
+import { assertSingleBleedSource } from './build-cover.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -301,6 +302,11 @@ async function main() {
   for (const script of CHECK_SCRIPTS) {
     runScript(script);
   }
+
+  /* 塗り足しの幅は theme.css の --bleed が単一の出所である。print.css に宣言が
+     残っているとカスケードでそちらが勝ち，電子版と絵柄の位置が食い違う。
+     表紙単体のビルドと同じ検査を紙入稿用の経路にも掛ける */
+  assertSingleBleedSource(fs.readFileSync(path.join(repoRoot, PRINT_STYLE), 'utf-8'));
 
   let plan;
   let authoredDocuments = [];

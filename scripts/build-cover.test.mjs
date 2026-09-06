@@ -83,8 +83,17 @@ test('assertSingleBleedSource: コメント中の言及は宣言とみなさな�
 test('assertSingleBleedSource: 移行し忘れた --bleed の宣言は直し方を添えて止める', () => {
   assert.throws(
     () => assertSingleBleedSource(':root {\n  --bleed: 5mm;\n}'),
-    /print\.css に --bleed: 5mm .+theme\.css の --bleed だけで宣言/s
+    /print\.css に --bleed の宣言（--bleed: 5mm）.+theme\.css の --bleed だけで宣言/s
   );
+});
+
+test('assertSingleBleedSource: 値の構文が違う宣言（calc・大文字の単位）も検出する', () => {
+  assert.throws(() => assertSingleBleedSource(':root { --bleed: calc(5mm); }'), /--bleed の宣言/);
+  assert.throws(() => assertSingleBleedSource(':root { --BLEED:5MM; }'), /--bleed の宣言/);
+});
+
+test('assertSingleBleedSource: 似た名前の別のプロパティは宣言とみなさない', () => {
+  assert.doesNotThrow(() => assertSingleBleedSource(':root { --bleed-x: 3mm; }'));
 });
 
 // --- verifySinglePage ---
