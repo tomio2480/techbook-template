@@ -2,12 +2,13 @@
 /**
  * 図版 SVG の図中フォント指定の検査
  *
- * src/assets/diagrams/*.svg の root の <svg> に font-family が指定され，
- * その値がテーマの --font-gothic（本文のゴシック体スタック）と一致することを検査する．
- * img で埋め込んだ SVG はページの CSS を継承しないため，root に指定が無いと
- * 図中の和文ラベルはブラウザ既定のフォントで描かれ，図ごとにフォントがぶれる．
+ * src/assets/diagrams/*.svg の root の <svg> に font-family があることを検査する．
+ * その値はテーマの --font-gothic（本文のゴシック体スタック）と一致させる．
+ * img で埋め込んだ SVG はページの CSS を継承しない．
+ * root に指定が無いと図中の和文ラベルはブラウザ既定のフォントで描かれ，
+ * 図ごとにフォントがぶれる．
  *
- * root 以外（子要素の属性・style 属性・<style> 要素）の font-family は，
+ * root の font-family 属性以外の指定（子要素の属性・style 属性・<style> 要素）は，
  * テーマのスタックか ALLOWED_EXTRA_FONT_STACKS に登録したスタックだけを許す．
  * 量記号を明朝の斜体で組むための別スタックのように，意図して使う指定は登録する．
  * 登録の無い指定は，図ごとの差の発生源になるため違反として報告する．
@@ -88,8 +89,31 @@ function stripCssComments(cssText) {
 }
 
 /**
+ * CSS のエスケープ（\ の後ろ）を 1 つ復号し，消費した文字数を返す．
+ * 16 進エスケープは 1〜6 桁で，直後の空白 1 つを終端として飲み込む（CSS Syntax）．
+ * それ以外は次の 1 文字をそのまま採る．
+ * @param {string} value
+ * @param {number} index バックスラッシュの位置
+ * @returns {{ text: string, length: number }}
+ */
+function decodeCssEscape(value, index) {
+  const hex = value.slice(index + 1).match(/^[0-9a-f]{1,6}/i);
+  if (hex) {
+    const code = parseInt(hex[0], 16);
+    const text = code === 0 || code > 0x10ffff ? '�' : String.fromCodePoint(code);
+    const after = value[index + 1 + hex[0].length];
+    const terminator = after === ' ' || after === '\t' || after === '\n' ? 1 : 0;
+    return { text, length: 1 + hex[0].length + terminator };
+  }
+  if (index + 1 < value.length) {
+    return { text: value[index + 1], length: 2 };
+  }
+  return { text: '', length: 1 };
+}
+
+/**
  * フォントスタックをフォント名の配列へ分ける．
- * 引用符の中のカンマは区切りとして扱わず，引用符とバックスラッシュのエスケープを外す．
+ * 引用符の中のカンマは区切りとして扱わず，引用符と CSS のエスケープを外す．
  * @param {string} value font-family の値
  * @returns {string[]}
  */
@@ -99,11 +123,14 @@ export function splitFontStack(value) {
   let quote = null;
   for (let i = 0; i < value.length; i += 1) {
     const ch = value[i];
+    if (ch === '\\') {
+      const { text, length } = decodeCssEscape(value, i);
+      current += text;
+      i += length - 1;
+      continue;
+    }
     if (quote) {
-      if (ch === '\\' && i + 1 < value.length) {
-        current += value[i + 1];
-        i += 1;
-      } else if (ch === quote) {
+      if (ch === quote) {
         quote = null;
       } else {
         current += ch;
@@ -142,8 +169,14 @@ export function normalizeFontStack(value) {
  * @returns {string | null} 開始タグ全体．無ければ null
  */
 function findRootSvgTag(svgText) {
-  const match = stripXmlComments(svgText).match(/<svg\b[^>]*>/);
+  /* 属性値の中の > を開始タグの終端にしない．引用符の中は丸ごと読み飛ばす */
+  const match = stripXmlComments(svgText).match(/<svg\b(?:[^>"']|"[^"]*"|'[^']*')*>/);
   return match ? match[0] : null;
+}
+
+/** 宣言の優先指定（!important）は値ではないため，比較の前に切り離す． */
+function stripImportant(value) {
+  return value.replace(/\s*!\s*important\s*$/i, '').trim();
 }
 
 /* 属性名は直前が空白かタグ先頭に限る．\b では data-font-family や
@@ -186,17 +219,21 @@ export function extractOtherFontFamilies(svgText) {
   const body = rootTag
     ? withoutComments.replace(rootTag, rootTag.replace(FONT_FAMILY_ATTRIBUTE, ''))
     : withoutComments;
+  /* <style> の中身は属性の走査から外す．CSS コメントで無効化したセレクタ
+     （text[font-family="serif"] など）を属性と誤認しないためである */
+  const styleContents = [...body.matchAll(STYLE_ELEMENT)].map(match => match[1]);
+  const markup = body.replace(STYLE_ELEMENT, '');
   const found = [];
-  for (const match of body.matchAll(FONT_FAMILY_ATTRIBUTE)) {
+  for (const match of markup.matchAll(FONT_FAMILY_ATTRIBUTE)) {
     found.push({ value: decodeXmlEntities(match[1] ?? match[2]).trim(), source: 'attribute' });
   }
   const cssTexts = [
-    ...[...body.matchAll(STYLE_ELEMENT)].map(match => match[1]),
-    ...[...body.matchAll(STYLE_ATTRIBUTE)].map(match => decodeXmlEntities(match[1] ?? match[2])),
+    ...styleContents,
+    ...[...markup.matchAll(STYLE_ATTRIBUTE)].map(match => decodeXmlEntities(match[1] ?? match[2])),
   ];
   for (const cssText of cssTexts) {
     for (const match of stripCssComments(cssText).matchAll(FONT_FAMILY_DECLARATION)) {
-      found.push({ value: match[1].trim(), source: 'declaration' });
+      found.push({ value: stripImportant(match[1]), source: 'declaration' });
     }
   }
   return found;

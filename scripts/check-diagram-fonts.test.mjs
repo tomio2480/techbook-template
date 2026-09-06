@@ -50,6 +50,27 @@ test('splitFontStack: バックスラッシュのエスケープを外す', () =
   assert.deepEqual(splitFontStack('"Foo \\"Bar\\"", serif'), ['Foo "Bar"', 'serif']);
 });
 
+test('splitFontStack: CSS の 16 進エスケープを復号し，終端の空白を飲み込む', () => {
+  assert.deepEqual(splitFontStack('"A\\2c B", serif'), ['A,B', 'serif']);
+  assert.deepEqual(splitFontStack('"A\\2c  B", serif'), ['A, B', 'serif']);
+  assert.notEqual(normalizeFontStack('"A\\2c B", serif'), normalizeFontStack('"A2c B", serif'));
+});
+
+test('extractRootFontFamily: 属性値の中の > を開始タグの終端にしない', () => {
+  const svg = `<svg aria-label="input > output" font-family="${GOTHIC}"><text>a</text></svg>`;
+  assert.equal(extractRootFontFamily(svg), GOTHIC);
+});
+
+test('extractOtherFontFamilies: !important は値から切り離す', () => {
+  const svg = `<svg font-family="${GOTHIC}"><style>text { font-family: ${GOTHIC} !important; }</style></svg>`;
+  assert.deepEqual(extractOtherFontFamilies(svg).map(f => normalizeFontStack(f.value)), [normalizeFontStack(GOTHIC)]);
+});
+
+test('extractOtherFontFamilies: CSS コメントで無効化したセレクタを属性と誤認しない', () => {
+  const svg = `<svg font-family="${GOTHIC}"><style>/* text[font-family="serif"] {} */</style><text>a</text></svg>`;
+  assert.deepEqual(extractOtherFontFamilies(svg), []);
+});
+
 test('decodeXmlEntities: 名前付き・10 進・16 進の実体参照を復号する', () => {
   assert.equal(decodeXmlEntities('&quot;A&quot; &amp; &#39;B&#x27;'), '"A" & \'B\'');
   assert.equal(decodeXmlEntities('&unknown;'), '&unknown;');
