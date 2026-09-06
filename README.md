@@ -1091,7 +1091,7 @@ Rec.601 輝度で 15 ポイント以上の差を機械検査する．実体配�
 図版の文字は，root の `<svg>` の `font-family` に本文と同じゴシック体スタック
 （`theme.css` の `--font-gothic`）を指定する．`img` で埋め込んだ SVG はページの
 CSS を継承しないため，指定が無いとブラウザ既定のフォントで描かれ，図ごとにぶれる．
-`scripts/check-diagram-fonts.mjs` が root の指定の有無と値の一致を `npm test` で検査する．
+指定の有無と値は `scripts/check-diagram-fonts.mjs` が見る．`npm test` に組み込んである．
 量記号を明朝の斜体で組むなど，意図して使う別のスタックは
 `ALLOWED_EXTRA_FONT_STACKS` へ登録する．登録の無いスタックは違反として報告する．
 子要素にはフォントを書かず，root の値を継承させる．
