@@ -8,6 +8,8 @@ import {
   ALLOWED_EXTRA_FONT_STACKS,
   EXCLUDED_FILES,
   normalizeFontStack,
+  splitFontStack,
+  decodeXmlEntities,
   extractRootFontFamily,
   extractOtherFontFamilies,
   findMissingExcludedFiles,
@@ -37,6 +39,20 @@ test('normalizeFontStack: 引用符・大文字小文字・空白の違いを吸
 
 test('normalizeFontStack: 空の要素は落とす', () => {
   assert.equal(normalizeFontStack('serif, , '), 'serif');
+});
+
+test('normalizeFontStack: 引用符の中のカンマは区切りにしない', () => {
+  assert.equal(normalizeFontStack('"A,B", serif'), 'a,b, serif');
+  assert.notEqual(normalizeFontStack('"A,B", serif'), normalizeFontStack('A, B, serif'));
+});
+
+test('splitFontStack: バックスラッシュのエスケープを外す', () => {
+  assert.deepEqual(splitFontStack('"Foo \\"Bar\\"", serif'), ['Foo "Bar"', 'serif']);
+});
+
+test('decodeXmlEntities: 名前付き・10 進・16 進の実体参照を復号する', () => {
+  assert.equal(decodeXmlEntities('&quot;A&quot; &amp; &#39;B&#x27;'), '"A" & \'B\'');
+  assert.equal(decodeXmlEntities('&unknown;'), '&unknown;');
 });
 
 // --- extractRootFontFamily ---
@@ -87,6 +103,31 @@ test('extractOtherFontFamilies: コメント内の指定は数えない', () => 
   assert.deepEqual(extractOtherFontFamilies(svg), []);
 });
 
+test('extractOtherFontFamilies: CSS コメントで無効化した宣言は数えない', () => {
+  const svg = `<svg font-family="${GOTHIC}"><style>/* .old { font-family: serif; } */ .a { fill: #000; }</style></svg>`;
+  assert.deepEqual(extractOtherFontFamilies(svg), []);
+});
+
+test('extractOtherFontFamilies: root の style 属性の宣言は検査対象に含める', () => {
+  const svg = `<svg font-family="${GOTHIC}" style="font-family: serif"><text>a</text></svg>`;
+  assert.deepEqual(extractOtherFontFamilies(svg).map(f => [f.source, f.value]), [['declaration', 'serif']]);
+});
+
+test('extractOtherFontFamilies: data-font-family などの別属性は数えない', () => {
+  const svg = `<svg font-family="${GOTHIC}"><text data-font-family="serif" xml:font-family="serif">a</text></svg>`;
+  assert.deepEqual(extractOtherFontFamilies(svg), []);
+});
+
+test('extractOtherFontFamilies: style 属性の実体参照を復号する', () => {
+  const svg = `<svg font-family="${GOTHIC}"><text style="font-family: &quot;Times New Roman&quot;, serif">a</text></svg>`;
+  assert.deepEqual(extractOtherFontFamilies(svg).map(f => f.value), ['"Times New Roman", serif']);
+});
+
+test('extractRootFontFamily: data-font-family しか無い root は未指定として扱う', () => {
+  const svg = `<svg data-font-family="${GOTHIC}"><text>a</text></svg>`;
+  assert.equal(extractRootFontFamily(svg), null);
+});
+
 // --- checkDiagramFonts（合成データ） ---
 
 test('checkDiagramFonts: root がテーマと一致し，他に指定が無ければ違反なしになる', () => {
@@ -124,6 +165,20 @@ test('checkDiagramFonts: 登録の無い別スタックを違反として検出�
   assert.equal(violations.length, 1);
   assert.equal(violations[0].type, 'unregistered-font-stack');
   assert.equal(normalizeFontStack(violations[0].value), normalizeFontStack(SERIF));
+});
+
+test('checkDiagramFonts: root の inline style がテーマと違えば違反として検出する', () => {
+  const files = makeFiles({ 'a.svg': `<svg font-family="${GOTHIC}" style="font-family: serif"><text>a</text></svg>` });
+  const violations = checkDiagramFonts(files, THEME_CSS);
+  assert.equal(violations.length, 1);
+  assert.equal(violations[0].type, 'unregistered-font-stack');
+});
+
+test('checkDiagramFonts: 実体参照で書いた登録済みスタックは違反にならない', () => {
+  const files = makeFiles({
+    'a.svg': `<svg font-family="${GOTHIC}"><text style="font-family: &quot;Times New Roman&quot;, &quot;MS Mincho&quot;, serif">a</text></svg>`,
+  });
+  assert.deepEqual(checkDiagramFonts(files, THEME_CSS, { allowedExtraStacks: [SERIF] }), []);
 });
 
 test('checkDiagramFonts: 登録した別スタックは違反にならない', () => {

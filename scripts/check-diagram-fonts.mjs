@@ -53,17 +53,86 @@ function stripXmlComments(svgText) {
   }
 }
 
+const XML_ENTITIES = new Map([
+  ['quot', '"'],
+  ['apos', "'"],
+  ['amp', '&'],
+  ['lt', '<'],
+  ['gt', '>'],
+]);
+
+/**
+ * XML の属性値に含まれる実体参照を復号する．
+ * `style="font-family: &quot;Times New Roman&quot;, serif"` のように，
+ * 外側と同じ引用符をフォント名へ使うと実体参照になるためである．
+ * @param {string} value
+ * @returns {string}
+ */
+export function decodeXmlEntities(value) {
+  return value.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (whole, body) => {
+    if (body[0] === '#') {
+      const code = body[1].toLowerCase() === 'x' ? parseInt(body.slice(2), 16) : parseInt(body.slice(1), 10);
+      return Number.isFinite(code) ? String.fromCodePoint(code) : whole;
+    }
+    return XML_ENTITIES.get(body.toLowerCase()) ?? whole;
+  });
+}
+
+/**
+ * CSS コメントを除去する．無効化した宣言を検査対象から外す．
+ * @param {string} cssText
+ * @returns {string}
+ */
+function stripCssComments(cssText) {
+  return cssText.replace(/\/\*[\s\S]*?\*\//g, '');
+}
+
+/**
+ * フォントスタックをフォント名の配列へ分ける．
+ * 引用符の中のカンマは区切りとして扱わず，引用符とバックスラッシュのエスケープを外す．
+ * @param {string} value font-family の値
+ * @returns {string[]}
+ */
+export function splitFontStack(value) {
+  const families = [];
+  let current = '';
+  let quote = null;
+  for (let i = 0; i < value.length; i += 1) {
+    const ch = value[i];
+    if (quote) {
+      if (ch === '\\' && i + 1 < value.length) {
+        current += value[i + 1];
+        i += 1;
+      } else if (ch === quote) {
+        quote = null;
+      } else {
+        current += ch;
+      }
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      quote = ch;
+    } else if (ch === ',') {
+      families.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  families.push(current);
+  return families.map(family => family.trim()).filter(family => family.length > 0);
+}
+
 /**
  * フォントスタックを比較用に正規化する．
  * 引用符を外し，小文字にし，カンマ区切りの前後の空白を 1 つの形へそろえる．
+ * 引用符の中のカンマはフォント名の一部として保つ．
  * @param {string} value font-family の値
  * @returns {string} 例: `noto sans cjk jp, noto sans jp, sans-serif`
  */
 export function normalizeFontStack(value) {
-  return value
-    .split(',')
-    .map(family => family.trim().replace(/^["']|["']$/g, '').trim().toLowerCase())
-    .filter(family => family.length > 0)
+  return splitFontStack(value)
+    .map(family => family.toLowerCase())
     .join(', ');
 }
 
@@ -77,12 +146,14 @@ function findRootSvgTag(svgText) {
   return match ? match[0] : null;
 }
 
-const FONT_FAMILY_ATTRIBUTE = /\bfont-family\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
+/* 属性名は直前が空白かタグ先頭に限る．\b では data-font-family や
+   名前空間付き属性の末尾にも一致してしまう */
+const FONT_FAMILY_ATTRIBUTE = /(?<![\w:.-])font-family\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
 /* CSS の宣言．値には引用符付きのフォント名が入るため，区切りは ; と } だけにする．
    style 属性の値と <style> 要素の中身を切り出してから当てる */
-const FONT_FAMILY_DECLARATION = /\bfont-family\s*:\s*([^;}]+)/gi;
+const FONT_FAMILY_DECLARATION = /(?<![\w-])font-family\s*:\s*([^;}]+)/gi;
 const STYLE_ELEMENT = /<style\b[^>]*>([\s\S]*?)<\/style>/gi;
-const STYLE_ATTRIBUTE = /\bstyle\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
+const STYLE_ATTRIBUTE = /(?<![\w:.-])style\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
 
 /**
  * root の <svg> の font-family 属性の値を返す．
@@ -94,33 +165,37 @@ export function extractRootFontFamily(svgText) {
   if (!rootTag) {
     return null;
   }
-  const match = rootTag.match(/\bfont-family\s*=\s*(?:"([^"]*)"|'([^']*)')/);
+  const match = rootTag.match(/(?<![\w:.-])font-family\s*=\s*(?:"([^"]*)"|'([^']*)')/);
   if (!match) {
     return null;
   }
-  return (match[1] ?? match[2]).trim();
+  return decodeXmlEntities(match[1] ?? match[2]).trim();
 }
 
 /**
- * root 以外の font-family 指定を集める．
- * 子要素の属性，style 属性内の宣言，<style> 要素内の宣言を対象にする．
+ * root の font-family 属性以外の font-family 指定を集める．
+ * 子要素の属性，style 属性内の宣言（root のものを含む），<style> 要素内の宣言を対象にする．
+ * root の inline style は presentation attribute より優先されるため，除外しない．
  * @param {string} svgText
  * @returns {Array<{ value: string, source: 'attribute' | 'declaration' }>}
  */
 export function extractOtherFontFamilies(svgText) {
   const withoutComments = stripXmlComments(svgText);
   const rootTag = findRootSvgTag(svgText);
-  const body = rootTag ? withoutComments.replace(rootTag, '') : withoutComments;
+  /* root からは font-family 属性だけを取り除き，style 属性は残して検査する */
+  const body = rootTag
+    ? withoutComments.replace(rootTag, rootTag.replace(FONT_FAMILY_ATTRIBUTE, ''))
+    : withoutComments;
   const found = [];
   for (const match of body.matchAll(FONT_FAMILY_ATTRIBUTE)) {
-    found.push({ value: (match[1] ?? match[2]).trim(), source: 'attribute' });
+    found.push({ value: decodeXmlEntities(match[1] ?? match[2]).trim(), source: 'attribute' });
   }
   const cssTexts = [
     ...[...body.matchAll(STYLE_ELEMENT)].map(match => match[1]),
-    ...[...body.matchAll(STYLE_ATTRIBUTE)].map(match => match[1] ?? match[2]),
+    ...[...body.matchAll(STYLE_ATTRIBUTE)].map(match => decodeXmlEntities(match[1] ?? match[2])),
   ];
   for (const cssText of cssTexts) {
-    for (const match of cssText.matchAll(FONT_FAMILY_DECLARATION)) {
+    for (const match of stripCssComments(cssText).matchAll(FONT_FAMILY_DECLARATION)) {
       found.push({ value: match[1].trim(), source: 'declaration' });
     }
   }
