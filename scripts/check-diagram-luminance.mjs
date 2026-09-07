@@ -115,6 +115,23 @@ export function isChromatic(hex) {
 const CSS_COLOR_PROPERTY = /(?:fill|stroke|stop-color)\s*:/i;
 
 /**
+ * 透明の指定．属性形（opacity="0.5"）と CSS 宣言形（opacity: 0.5）を分けて持つ．
+ *
+ * 本検査は指定した色の値だけを読む．半透明で塗ると，合成後の見かけの明度が
+ * 登録した明度段から外れても検査を通る．透明そのものを図版へ持たせないことで
+ * この盲点を塞ぐ．合成後の色は焼いて DIAGRAM_WASH_COLORS へ登録する．
+ * 紙入稿でも透明効果は外す（docs/spec/print-layout.md を参照）．
+ *
+ * 値による場合分けはしない．opacity="1" も違反として報告する．
+ * 場合分けを始めると，どこまでを不透明とみなすかの解釈が要る．
+ *
+ * 接頭辞は fill-・stroke-・stop- の 3 つに限る．
+ * data-opacity のような別名を巻き込まないためである．
+ */
+const OPACITY_ATTRIBUTE = /(?:^|\s)(?:fill-|stroke-|stop-)?opacity\s*=\s*(?:"[^"]*"|'[^']*')/i;
+const OPACITY_PROPERTY = /(?:^|[\s;{"'])(?:fill-|stroke-|stop-)?opacity\s*:/i;
+
+/**
  * XML コメントを除去する．コメント内に残る色指定（無効化済みの記述）を
  * 検査対象から除外し，誤検出・誤通過の両方を防ぐ．
  * @param {string} svgText
@@ -252,7 +269,15 @@ export function checkDiagramColors(svgFiles, paletteCss, options = {}) {
         message: `${file} の色値 ${value} は hex へ解釈できず検査をすり抜けるため許可しない`,
       });
     }
-    if (CSS_COLOR_PROPERTY.test(stripXmlComments(svgText))) {
+    const withoutComments = stripXmlComments(svgText);
+    if (OPACITY_ATTRIBUTE.test(withoutComments) || OPACITY_PROPERTY.test(withoutComments)) {
+      violations.push({
+        type: 'opacity-used',
+        file,
+        message: `${file} に透明の指定がある（合成後の色を焼いて DIAGRAM_WASH_COLORS へ登録する）`,
+      });
+    }
+    if (CSS_COLOR_PROPERTY.test(withoutComments)) {
       violations.push({
         type: 'style-color',
         file,
