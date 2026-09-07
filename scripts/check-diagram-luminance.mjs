@@ -115,6 +115,44 @@ export function isChromatic(hex) {
 const CSS_COLOR_PROPERTY = /(?:fill|stroke|stop-color)\s*:/i;
 
 /**
+ * 透明の指定．属性形（opacity="0.5"）と CSS 宣言形（opacity: 0.5）を分けて持つ．
+ *
+ * 本検査は指定した色の値だけを読む．半透明で塗ると，合成後の見かけの明度が
+ * 登録した明度段から外れても検査を通る．透明そのものを図版へ持たせないことで
+ * この盲点を塞ぐ．合成後の色は焼いて DIAGRAM_WASH_COLORS へ登録する．
+ * 紙入稿でも透明効果は外す（docs/spec/print-layout.md を参照）．
+ *
+ * 値による場合分けはしない．opacity="1" も違反として報告する．
+ * 場合分けを始めると，どこまでを不透明とみなすかの解釈が要る．
+ *
+ * 接頭辞は fill-・stroke-・stop- の 3 つに限る．
+ * data-opacity のような別名を巻き込まないためである．
+ */
+const OPACITY_ATTRIBUTE = /(?:^|\s)(?:fill-|stroke-|stop-|flood-)?opacity\s*=\s*(?:"[^"]*"|'[^']*')/i;
+const OPACITY_PROPERTY = /(?:^|[\s;{])(?:fill-|stroke-|stop-|flood-)?opacity\s*:/i;
+
+/**
+ * opacity 以外で透明を生む指定．
+ *
+ * mask は灰色の内容でアルファを作る．filter は feFuncA や flood-opacity で
+ * 同じことができる．どちらも PDF ではソフトマスクになり，
+ * `scripts/check-print-transparency.mjs` が入稿データで数える対象である．
+ * mix-blend-mode は通常でない合成を行う．
+ * いずれも無彩色だけで組めば，色の検査にも掛からない．
+ *
+ * 値による場合分けはしない．opacity と同じ扱いである．
+ */
+const TRANSPARENCY_EFFECT_ATTRIBUTE = /(?:^|\s)(?:mask|filter|mix-blend-mode)\s*=\s*(?:"[^"]*"|'[^']*')/i;
+const TRANSPARENCY_EFFECT_PROPERTY = /(?:^|[\s;{])(?:mask|filter|mix-blend-mode)\s*:/i;
+
+/**
+ * SMIL アニメーションによる透明の指定．
+ * `<animate attributeName="opacity" to="0.5"/>` は属性形でも宣言形でもないが，
+ * 描画は半透明になる．合成後の色を見逃す点は同じため違反とする．
+ */
+const OPACITY_ANIMATION = /attributeName\s*=\s*(?:"|')(?:fill-|stroke-|stop-)?opacity(?:"|')/i;
+
+/**
  * XML コメントを除去する．コメント内に残る色指定（無効化済みの記述）を
  * 検査対象から除外し，誤検出・誤通過の両方を防ぐ．
  * @param {string} svgText
@@ -132,6 +170,56 @@ function stripXmlComments(svgText) {
     }
     text = next;
   }
+}
+
+/** CSS コメント．入れ子にならず，最初の閉じで終わる． */
+const CSS_COMMENT = /\/\*[\s\S]*?\*\//g;
+
+/**
+ * タグを拾う．属性値の中に > があっても途中で切らないよう引用符を見る．
+ * テキストノード（title・desc・text の中身）は含まれない．
+ */
+const TAG = /<[^>"']*(?:(?:"[^"]*"|'[^']*')[^>"']*)*>/g;
+
+/** <style> 要素の中身． */
+const STYLE_ELEMENT = /<style\b[^>]*>([\s\S]*?)<\/style>/gi;
+
+/** style 属性の値． */
+const STYLE_ATTRIBUTE = /\sstyle\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+
+/**
+ * 属性を書ける場所（タグの中）だけを集める．
+ *
+ * 文書の全文へ正規表現を当てると，テキストノードの文字列を指定と取り違える．
+ * 図には title・desc を付けるため，説明文に `opacity: 0.5` のような並びが
+ * 現れうる．描画へ影響しない文字列で適合する図を落とさないようにする．
+ * @param {string} svgText
+ * @returns {string}
+ */
+function extractTagText(svgText) {
+  return (svgText.match(TAG) ?? []).join('\n');
+}
+
+/**
+ * CSS の宣言を書ける場所だけを集める．
+ * 対象は <style> 要素の中身と style 属性の値の 2 か所である．
+ *
+ * CSS コメントは空白 1 字へ置き換える．取り除くと，
+ * `opac/**' + '/ity` のように別トークンだったものが連結し，
+ * ブラウザーでは効かない指定を違反として報告してしまう．
+ * CSS コメントはトークンの境界として働くためである．
+ * @param {string} svgText
+ * @returns {string}
+ */
+function extractStyleText(svgText) {
+  const parts = [];
+  for (const match of svgText.matchAll(STYLE_ELEMENT)) {
+    parts.push(match[1]);
+  }
+  for (const match of svgText.matchAll(STYLE_ATTRIBUTE)) {
+    parts.push(match[1] ?? match[2]);
+  }
+  return parts.map(part => part.replace(CSS_COMMENT, ' ')).join('\n');
 }
 
 /**
@@ -252,7 +340,23 @@ export function checkDiagramColors(svgFiles, paletteCss, options = {}) {
         message: `${file} の色値 ${value} は hex へ解釈できず検査をすり抜けるため許可しない`,
       });
     }
-    if (CSS_COLOR_PROPERTY.test(stripXmlComments(svgText))) {
+    const withoutComments = stripXmlComments(svgText);
+    const tagText = extractTagText(withoutComments);
+    const styleText = extractStyleText(withoutComments);
+    if (
+      OPACITY_ATTRIBUTE.test(tagText) ||
+      OPACITY_PROPERTY.test(styleText) ||
+      OPACITY_ANIMATION.test(tagText) ||
+      TRANSPARENCY_EFFECT_ATTRIBUTE.test(tagText) ||
+      TRANSPARENCY_EFFECT_PROPERTY.test(styleText)
+    ) {
+      violations.push({
+        type: 'opacity-used',
+        file,
+        message: `${file} に透明の指定がある（合成後の色を焼いて DIAGRAM_WASH_COLORS へ登録する）`,
+      });
+    }
+    if (CSS_COLOR_PROPERTY.test(styleText)) {
       violations.push({
         type: 'style-color',
         file,

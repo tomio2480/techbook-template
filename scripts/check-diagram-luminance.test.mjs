@@ -184,6 +184,243 @@ test('checkDiagramColors: CSS プロパティ名は大文字小文字を区別�
   assert.ok(violations.some(v => v.type === 'style-color' && v.file === 'a.svg'));
 });
 
+// --- 透明の指定 ---
+
+test('checkDiagramColors: opacity 属性は違反になる', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><rect fill="#5588bb" opacity="0.5"/></svg>',
+  });
+  const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+  assert.ok(violations.some(v => v.type === 'opacity-used' && v.file === 'a.svg'));
+});
+
+test('checkDiagramColors: fill-opacity・stroke-opacity・stop-opacity も違反になる', () => {
+  for (const attribute of ['fill-opacity', 'stroke-opacity', 'stop-opacity']) {
+    const files = makeFiles({
+      'base.svg': BASE_SVG,
+      'a.svg': `<svg><rect fill="#5588bb" ${attribute}="0.5"/></svg>`,
+    });
+    const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+    assert.ok(
+      violations.some(v => v.type === 'opacity-used' && v.file === 'a.svg'),
+      `${attribute} が検出されない`
+    );
+  }
+});
+
+test('checkDiagramColors: style 属性の透明の宣言は違反になる', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><path stroke="#5588bb" style="opacity:0.5"/></svg>',
+  });
+  const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+  assert.ok(violations.some(v => v.type === 'opacity-used' && v.file === 'a.svg'));
+});
+
+test('checkDiagramColors: style 要素の透明の宣言は違反になる', () => {
+  // style 属性と別のテストへ分ける．片方だけ壊れても検出できるようにするためである．
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><style>.x { fill-opacity: 0.5; }</style><path stroke="#5588bb"/></svg>',
+  });
+  const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+  assert.ok(violations.some(v => v.type === 'opacity-used' && v.file === 'a.svg'));
+});
+
+test('checkDiagramColors: シングルクォートの透明の属性も違反になる', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': "<svg><rect fill='#5588bb' opacity='0.5'/></svg>",
+  });
+  const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+  assert.ok(violations.some(v => v.type === 'opacity-used' && v.file === 'a.svg'));
+});
+
+test('checkDiagramColors: 不透明を意味する値でも指定そのものを違反とする', () => {
+  // 値による場合分けはしない．透明の指定を図版へ持たせない規約のためである．
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><rect fill="#5588bb" opacity="1"/></svg>',
+  });
+  const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+  assert.ok(violations.some(v => v.type === 'opacity-used' && v.file === 'a.svg'));
+});
+
+test('checkDiagramColors: SMIL アニメーションによる透明の指定も違反になる', () => {
+  // 属性形でも宣言形でもないが，描画は半透明になる．合成後の色を見逃す点は同じである．
+  for (const name of ['opacity', 'fill-opacity', 'stroke-opacity', 'stop-opacity']) {
+    const files = makeFiles({
+      'base.svg': BASE_SVG,
+      'a.svg': `<svg><rect fill="#5588bb"><animate attributeName="${name}" to="0.5"/></rect></svg>`,
+    });
+    const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+    assert.ok(
+      violations.some(v => v.type === 'opacity-used' && v.file === 'a.svg'),
+      `attributeName="${name}" が検出されない`
+    );
+  }
+});
+
+test('checkDiagramColors: 透明以外を動かすアニメーションは違反にしない', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><rect fill="#5588bb"><animate attributeName="x" to="10"/></rect></svg>',
+  });
+  assert.deepEqual(checkDiagramColors(files, VALID_PALETTE_CSS), []);
+});
+
+test('checkDiagramColors: CSS コメントの中の透明の宣言は違反にしない', () => {
+  // 無効化した旧指定をコメントで残しただけの図は，描画へ影響しない．
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><style>/* .x { opacity: 0.5; } */ .y { }</style><path stroke="#5588bb"/></svg>',
+  });
+  assert.deepEqual(checkDiagramColors(files, VALID_PALETTE_CSS), []);
+});
+
+test('checkDiagramColors: CSS コメントの中の色の宣言も違反にしない', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><style>/* .x { fill: #cc0000; } */</style><path stroke="#5588bb"/></svg>',
+  });
+  assert.deepEqual(checkDiagramColors(files, VALID_PALETTE_CSS), []);
+});
+
+test('checkDiagramColors: style 属性の中の CSS コメントも宣言として扱わない', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><rect fill="#5588bb" style="/* opacity:0.5 */"/></svg>',
+  });
+  assert.deepEqual(checkDiagramColors(files, VALID_PALETTE_CSS), []);
+});
+
+test('checkDiagramColors: style 属性でコメントの外に出した宣言は違反になる', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><rect fill="#5588bb" style="/* 旧 */ opacity:0.5"/></svg>',
+  });
+  const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+  assert.ok(violations.some(v => v.type === 'opacity-used' && v.file === 'a.svg'));
+});
+
+test('checkDiagramColors: コメントの外に出した宣言は違反のまま検出する', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><style>/* 旧 */ .y { opacity: 0.5; }</style><path stroke="#5588bb"/></svg>',
+  });
+  const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+  assert.ok(violations.some(v => v.type === 'opacity-used' && v.file === 'a.svg'));
+});
+
+test('checkDiagramColors: テキストノードの中の宣言らしい文字列は違反にしない', () => {
+  // 図には title・desc を付ける．説明文に宣言と同じ並びが現れても描画へ影響しない．
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><path stroke="#5588bb"/><title>Set opacity: 0.5</title></svg>',
+  });
+  assert.deepEqual(checkDiagramColors(files, VALID_PALETTE_CSS), []);
+});
+
+test('checkDiagramColors: テキストノードの中の色の宣言らしい文字列も違反にしない', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><path stroke="#5588bb"/><desc>fill: red</desc></svg>',
+  });
+  assert.deepEqual(checkDiagramColors(files, VALID_PALETTE_CSS), []);
+});
+
+test('checkDiagramColors: テキストノードの中の属性らしい文字列は違反にしない', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><path stroke="#5588bb"/><title>例として opacity="0.5" と書く</title></svg>',
+  });
+  assert.deepEqual(checkDiagramColors(files, VALID_PALETTE_CSS), []);
+});
+
+test('checkDiagramColors: 属性値に > を含むタグでも後続の属性を読み落とさない', () => {
+  // タグの切り出しで引用符を見ないと，ここで切れて opacity を見逃す．
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><path stroke="#5588bb" aria-label="a > b" opacity="0.5"/></svg>',
+  });
+  const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+  assert.ok(violations.some(v => v.type === 'opacity-used' && v.file === 'a.svg'));
+});
+
+test('checkDiagramColors: style 以外の属性の値にある宣言らしい文字列は違反にしない', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><path stroke="#5588bb" aria-label="opacity: 0.5"/></svg>',
+  });
+  assert.deepEqual(checkDiagramColors(files, VALID_PALETTE_CSS), []);
+});
+
+test('checkDiagramColors: コメントで割った識別子は宣言として扱わない', () => {
+  // CSS コメントはトークンの境界になる．opac/**/ity は opacity にならない．
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><style>.x { opac/**/ity: .5 }</style><path stroke="#5588bb"/></svg>',
+  });
+  assert.deepEqual(checkDiagramColors(files, VALID_PALETTE_CSS), []);
+});
+
+test('checkDiagramColors: mask・filter の参照は違反になる', () => {
+  for (const attribute of ['mask="url(#m)"', 'filter="url(#f)"']) {
+    const files = makeFiles({
+      'base.svg': BASE_SVG,
+      'a.svg': `<svg><rect fill="#5588bb" ${attribute}/></svg>`,
+    });
+    const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+    assert.ok(
+      violations.some(v => v.type === 'opacity-used' && v.file === 'a.svg'),
+      `${attribute} が検出されない`
+    );
+  }
+});
+
+test('checkDiagramColors: 通常でない合成モードは違反になる', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><rect fill="#5588bb" style="mix-blend-mode:multiply"/></svg>',
+  });
+  const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+  assert.ok(violations.some(v => v.type === 'opacity-used' && v.file === 'a.svg'));
+});
+
+test('checkDiagramColors: flood-opacity も違反になる', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><feFlood flood-color="#5588bb" flood-opacity="0.5"/></svg>',
+  });
+  const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+  assert.ok(violations.some(v => v.type === 'opacity-used' && v.file === 'a.svg'));
+});
+
+test('checkDiagramColors: 名前が opacity で終わるだけの属性は違反にしない', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><rect fill="#5588bb" data-opacity="0.5"/><g id="opacity"/></svg>',
+  });
+  assert.deepEqual(checkDiagramColors(files, VALID_PALETTE_CSS), []);
+});
+
+test('checkDiagramColors: XML コメント内の透明の指定は検査対象にしない', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><!-- <rect opacity="0.5"/> --><path stroke="#5588bb"/></svg>',
+  });
+  assert.deepEqual(checkDiagramColors(files, VALID_PALETTE_CSS), []);
+});
+
+test('checkDiagramColors: 除外ファイルは透明の検査の対象外になる', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'led-circuit.svg': '<svg><rect fill="#cc3333" opacity="0.5"/></svg>',
+  });
+  assert.deepEqual(checkDiagramColors(files, VALID_PALETTE_CSS), []);
+});
+
 test('checkDiagramColors: XML コメント内の色属性は検査対象にしない', () => {
   const files = makeFiles({
     'base.svg': BASE_SVG,
