@@ -4,11 +4,13 @@
  * 図版の検査は正規表現でタグと宣言の範囲を取る．
  * その作りは，範囲を確定できない壊れ方をした入力に対して黙って空振りする．
  * 違反 0 件で通るため，検査が壊れているのに合格と報告する状態になる．
+ * ブラウザーが XML として読めない図も，同じく検査を素通りする．
  * 本モジュールはその壊れ方を検出し，各検査へ共通の判定を渡す．
  *
  * 要求要件は docs/spec/diagram-style.md の「読み取れない入力」節を参照する．
- * XML の整形式そのものは判定しない．終了タグの対応・要素の入れ子・
- * 名前空間が崩れても，タグと宣言の範囲は確定でき，検査は空振りしないためである．
+ * 見るのは 2 つに限る．検査が走査の範囲を確定できるかと，
+ * ブラウザーが XML として読めるかである．
+ * 名前空間の解決や属性値の妥当性は，どちらにも当たらないため判定しない．
  */
 
 /**
@@ -34,9 +36,11 @@ export function stripXmlComments(svgText) {
 
 const COMMENT_OPEN = '<!--';
 const COMMENT_CLOSE = '-->';
+/* XML はコメントの中の -- を禁じる．Chromium は SVG を XML として読むため，
+   1 つでもあると図が描画されず，最初のエラーまでの表示になる． */
+const DOUBLE_HYPHEN = '--';
 const CDATA_OPEN = '<![CDATA[';
 const CDATA_CLOSE = ']]>';
-const STYLE_ELEMENT_NAME = 'style';
 
 /** タグ名として読む文字．XML の Name より緩く取り，判定は用途側に委ねる． */
 const TAG_NAME_CHARS = /[\w:.-]/;
@@ -96,7 +100,8 @@ export function findUnreadableMarkup(svgText) {
   };
 
   let cursor = 0;
-  let openStyleIndex = -1;
+  /** 開いたまま閉じていない要素．末尾が最も内側． */
+  const openElements = [];
 
   while (cursor < svgText.length) {
     const start = svgText.indexOf('<', cursor);
@@ -113,11 +118,18 @@ export function findUnreadableMarkup(svgText) {
           'コメントが閉じておらず，以降の全体がコメントとして捨てられる'
         );
       }
-      if (svgText.slice(start + COMMENT_OPEN.length, close).includes(COMMENT_OPEN)) {
+      const body = svgText.slice(start + COMMENT_OPEN.length, close);
+      if (body.includes(COMMENT_OPEN)) {
         violations.push({
           kind: 'nested-comment-marker',
           index: start,
           message: 'コメントの中に <!-- があり，入れ子に見える記述が最初の --> で閉じている',
+        });
+      } else if (body.includes(DOUBLE_HYPHEN)) {
+        violations.push({
+          kind: 'double-hyphen-in-comment',
+          index: start,
+          message: 'コメントの中に -- があり，XML パーサが読めず図が描画されない',
         });
       }
       cursor = close + COMMENT_CLOSE.length;
@@ -145,23 +157,35 @@ export function findUnreadableMarkup(svgText) {
     }
     cursor = tag.end;
 
-    if (tag.name.toLowerCase() !== STYLE_ELEMENT_NAME) {
+    /* 名前が空なのは XML 宣言・DOCTYPE であり，要素の入れ子には数えない． */
+    if (tag.name === '') {
       continue;
     }
-    if (tag.isEnd) {
-      openStyleIndex = -1;
-    } else if (!tag.selfClosing) {
-      openStyleIndex = start;
+    if (tag.selfClosing) {
+      continue;
+    }
+    if (!tag.isEnd) {
+      openElements.push({ name: tag.name, index: start });
+      continue;
+    }
+    const innermost = openElements.pop();
+    if (innermost === undefined || innermost.name !== tag.name) {
+      return stop(
+        'mismatched-end-tag',
+        start,
+        `</${tag.name}> に対応する開始タグが直前に無く，要素の範囲を確定できない`
+      );
     }
   }
 
-  if (openStyleIndex !== -1) {
-    /* 打ち切らずに末尾まで読み切った場合にだけ判定する．
-       閉じ忘れで途中打ち切りになった図へ，重ねて報告しないためである． */
+  /* 打ち切らずに末尾まで読み切った場合にだけ判定する．
+     閉じ忘れで途中打ち切りになった図へ，重ねて報告しないためである． */
+  const unclosed = openElements.pop();
+  if (unclosed !== undefined) {
     violations.push({
-      kind: 'unclosed-style',
-      index: openStyleIndex,
-      message: '<style> が閉じておらず，中の宣言がまとめて走査から外れる',
+      kind: 'unclosed-element',
+      index: unclosed.index,
+      message: `<${unclosed.name}> が閉じておらず，中の記述がまとめて走査から外れる`,
     });
   }
   return violations;

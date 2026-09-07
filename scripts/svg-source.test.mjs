@@ -66,19 +66,24 @@ test('findUnreadableMarkup: 大文字の STYLE も対応する閉じタグとし
   assert.deepEqual(kinds('<svg><STYLE>.l { fill: #cc0000; }</STYLE></svg>'), []);
 });
 
-test('findUnreadableMarkup: 終了タグの対応が崩れていても違反にしない', () => {
-  /* 走査の範囲は確定できるため，検査が空振りする形ではない．
-     本部品は XML の整形式そのものを判定しない． */
-  assert.deepEqual(kinds('<svg><g><text>あ</g></text></svg>'), []);
-  assert.deepEqual(kinds('<svg><g></svg>'), []);
+test('findUnreadableMarkup: 終了タグの対応崩れを違反にする', () => {
+  /* Chromium は SVG を XML として読み，Opening and ending tag mismatch を出す．
+     図が描画されないまま，どの検査も違反 0 件で通る形である． */
+  assert.deepEqual(kinds('<svg><g><text>あ</g></text></svg>'), ['mismatched-end-tag']);
+  assert.deepEqual(kinds('<svg><g></svg>'), ['mismatched-end-tag']);
+});
+
+test('findUnreadableMarkup: 要素の閉じ忘れを違反にする', () => {
+  assert.deepEqual(kinds('<svg><g><rect width="10" height="10"/></g>'), ['unclosed-element']);
 });
 
 // --- findUnreadableMarkup: 読み取れない入力 ---
 
 test('findUnreadableMarkup: <style> の閉じ忘れを違反にする', () => {
-  /* STYLE_ELEMENT が非マッチとなり，中の宣言がまとめて走査から外れる． */
+  /* STYLE_ELEMENT が非マッチとなり，中の宣言がまとめて走査から外れる．
+     開いたままの <style> を </svg> が閉じにくるため，対応崩れとして現れる． */
   assert.deepEqual(kinds('<svg font-family="A"><style>.l { font-family: serif; }</svg>'), [
-    'unclosed-style',
+    'mismatched-end-tag',
   ]);
 });
 
@@ -109,10 +114,12 @@ test('findUnreadableMarkup: コメントの中の <!-- を違反にする', () =
   ]);
 });
 
-test('findUnreadableMarkup: コメントの中の -- だけでは違反にしない', () => {
-  /* XML はコメントの中の -- を禁じるが，本部品は範囲の確定だけを見る．
-     CSS 変数名を説明するコメントで正当に現れるため，落とさない． */
-  assert.deepEqual(kinds('<svg><!-- theme.css の --font-gothic を継承させる --><g/></svg>'), []);
+test('findUnreadableMarkup: コメントの中の -- を違反にする', () => {
+  /* 走査の範囲は確定できるが，Chromium は Comment must not contain '--' を出し，
+     図が描画されない．CSS 変数名をコメントで説明すると踏む形である． */
+  assert.deepEqual(kinds('<svg><!-- theme.css の --font-gothic を継承させる --><g/></svg>'), [
+    'double-hyphen-in-comment',
+  ]);
 });
 
 test('findUnreadableMarkup: CDATA の閉じ忘れを違反にする', () => {
@@ -131,7 +138,7 @@ test('findUnreadableMarkup: 違反は壊れた位置と説明を持つ', () => {
 test('findUnreadableMarkup: 壊れ方が複数あればすべて返す', () => {
   assert.deepEqual(kinds('<svg><!-- a <!-- b --><style>.l { fill: #cc0000; }</svg>'), [
     'nested-comment-marker',
-    'unclosed-style',
+    'mismatched-end-tag',
   ]);
 });
 
