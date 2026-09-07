@@ -41,6 +41,9 @@ const COMMENT_CLOSE = '-->';
 const DOUBLE_HYPHEN = '--';
 const CDATA_OPEN = '<![CDATA[';
 const CDATA_CLOSE = ']]>';
+const PI_OPEN = '<?';
+const PI_CLOSE = '?>';
+const DOCTYPE_OPEN = '<!DOCTYPE';
 
 /** タグ名として読む文字．XML の Name より緩く取り，判定は用途側に委ねる． */
 const TAG_NAME_CHARS = /[\w:.-]/;
@@ -49,9 +52,11 @@ const TAG_NAME_CHARS = /[\w:.-]/;
  * `<` から始まるタグを読む．属性値の中の `>` で切らないよう引用符を見る．
  * @param {string} svgText SVG の中身
  * @param {number} start `<` の位置
- * @returns {{ name: string, isEnd: boolean, selfClosing: boolean, end: number, openQuote: string | null }}
+ * @returns {{ name: string, isEnd: boolean, selfClosing: boolean, end: number,
+ *   openQuote: string | null, lessThanIndex: number }}
  *   `end` は `>` の次の位置．`>` が無ければ `end` は -1 とし，
- *   そのとき `openQuote` に閉じていない引用符が入る
+ *   そのとき `openQuote` に閉じていない引用符が入る．
+ *   `lessThanIndex` は属性値の中に現れた生の `<` の位置．無ければ -1
  */
 function readTag(svgText, start) {
   let cursor = start + 1;
@@ -66,21 +71,62 @@ function readTag(svgText, start) {
   }
   let quote = null;
   let previous = '';
+  let lessThanIndex = -1;
   while (cursor < svgText.length) {
     const character = svgText[cursor];
     if (quote) {
       if (character === quote) {
         quote = null;
+      } else if (character === '<' && lessThanIndex === -1) {
+        /* 属性値の中の > は XML で許されるが，< は許されない． */
+        lessThanIndex = cursor;
       }
     } else if (character === '"' || character === "'") {
       quote = character;
     } else if (character === '>') {
-      return { name, isEnd, selfClosing: previous === '/', end: cursor + 1, openQuote: null };
+      return {
+        name,
+        isEnd,
+        selfClosing: previous === '/',
+        end: cursor + 1,
+        openQuote: null,
+        lessThanIndex,
+      };
     }
     previous = character;
     cursor += 1;
   }
-  return { name, isEnd, selfClosing: false, end: -1, openQuote: quote };
+  return { name, isEnd, selfClosing: false, end: -1, openQuote: quote, lessThanIndex };
+}
+
+/**
+ * `<!DOCTYPE` を読む．内部サブセット（`[` … `]`）の中の `>` で切らない．
+ * @param {string} svgText SVG の中身
+ * @param {number} start `<` の位置
+ * @returns {number} `>` の次の位置．閉じていなければ -1
+ */
+function readDoctype(svgText, start) {
+  let quote = null;
+  let inSubset = false;
+  for (let cursor = start + DOCTYPE_OPEN.length; cursor < svgText.length; cursor += 1) {
+    const character = svgText[cursor];
+    if (quote) {
+      if (character === quote) {
+        quote = null;
+      }
+      continue;
+    }
+    if (character === '"' || character === "'") {
+      quote = character;
+    } else if (character === '[') {
+      inSubset = true;
+    } else if (character === ']') {
+      inSubset = false;
+    } else if (character === '>' && !inSubset) {
+      return cursor + 1;
+    }
+  }
+  return -1;
 }
 
 /**
@@ -125,7 +171,9 @@ export function findUnreadableMarkup(svgText) {
           index: start,
           message: 'コメントの中に <!-- があり，入れ子に見える記述が最初の --> で閉じている',
         });
-      } else if (body.includes(DOUBLE_HYPHEN)) {
+      } else if (body.includes(DOUBLE_HYPHEN) || body.endsWith('-')) {
+        /* 本文の末尾が - の形（<!-- a --->）は，閉じ区切りと合わせて --- になる．
+           切り出した本文に -- は残らないが，XML パーサは同じく拒む． */
         violations.push({
           kind: 'double-hyphen-in-comment',
           index: start,
@@ -145,7 +193,37 @@ export function findUnreadableMarkup(svgText) {
       continue;
     }
 
+    /* 処理命令は ?> までを一体として読む．最初の > で切ると，
+       中の要素らしき文字列を実要素として数えてしまう． */
+    if (svgText.startsWith(PI_OPEN, start)) {
+      const close = svgText.indexOf(PI_CLOSE, start + PI_OPEN.length);
+      if (close === -1) {
+        return stop(
+          'unclosed-processing-instruction',
+          start,
+          '処理命令が ?> で閉じておらず，範囲を確定できない'
+        );
+      }
+      cursor = close + PI_CLOSE.length;
+      continue;
+    }
+
+    if (svgText.startsWith(DOCTYPE_OPEN, start)) {
+      const end = readDoctype(svgText, start);
+      if (end === -1) {
+        return stop(
+          'unclosed-doctype',
+          start,
+          'DOCTYPE が閉じておらず，内部サブセットの範囲を確定できない'
+        );
+      }
+      cursor = end;
+      continue;
+    }
+
     const tag = readTag(svgText, start);
+    /* 引用符が閉じないまま末尾へ達した場合を先に見る．
+       閉じない引用符は以降の < も飲み込むため，そちらが根本の壊れ方である． */
     if (tag.end === -1) {
       return tag.openQuote
         ? stop(
@@ -155,9 +233,17 @@ export function findUnreadableMarkup(svgText) {
           )
         : stop('unclosed-tag', start, 'タグが閉じておらず，そのタグの属性が走査から外れる');
     }
+    if (tag.lessThanIndex !== -1) {
+      return stop(
+        'unescaped-lt-in-attribute',
+        tag.lessThanIndex,
+        '属性値の中に生の < があり，XML パーサが読めず図が描画されない'
+      );
+    }
     cursor = tag.end;
 
-    /* 名前が空なのは XML 宣言・DOCTYPE であり，要素の入れ子には数えない． */
+    /* 名前が空なのは <!ENTITY 等の宣言であり，要素の入れ子には数えない．
+       処理命令と DOCTYPE は上で消費済みのため，ここへは来ない． */
     if (tag.name === '') {
       continue;
     }

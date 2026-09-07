@@ -46,8 +46,11 @@ test('findUnreadableMarkup: 属性値の中の > とテキストの中の > を�
   assert.deepEqual(kinds('<svg><desc>a > b</desc><path d="M0 0" aria-label="x > y"/></svg>'), []);
 });
 
-test('findUnreadableMarkup: テキストの中のアポストロフィを引用符と見なさない', () => {
+test('findUnreadableMarkup: アポストロフィを引用符の開始と取り違えない', () => {
+  /* タグの外（テキストノード）は引用符を見ない．
+     二重引用符の中のアポストロフィも，開いている引用符とだけ照合する． */
   assert.deepEqual(kinds("<svg><desc>it's a diagram</desc></svg>"), []);
+  assert.deepEqual(kinds(`<svg><text aria-label="it's here">あ</text></svg>`), []);
 });
 
 test('findUnreadableMarkup: 宣言・コメント・CDATA を含む SVG を通す', () => {
@@ -148,8 +151,75 @@ test('findUnreadableMarkup: 実際の図版 SVG はすべて読み取れる', ()
   if (!fs.existsSync(DIAGRAMS_DIR)) {
     return;
   }
-  for (const name of fs.readdirSync(DIAGRAMS_DIR).filter(n => n.endsWith('.svg'))) {
+  const names = fs.readdirSync(DIAGRAMS_DIR).filter(n => n.endsWith('.svg'));
+  /* 図版が 1 件も無ければループが空になり，何も検証せずに通る．
+     テンプレートは同梱サンプルを必ず持つため，件数を先に確かめる． */
+  assert.ok(names.length > 0, '図版 SVG が 1 件も見つからない');
+  for (const name of names) {
     const svgText = fs.readFileSync(path.join(DIAGRAMS_DIR, name), 'utf-8');
     assert.deepEqual(findUnreadableMarkup(svgText), [], `${name} が読み取れない入力とされた`);
+  }
+});
+
+// --- レビュー指摘で足した壊れ方 ---
+
+test('findUnreadableMarkup: 属性値の中の生の < を違反にする', () => {
+  /* Chromium は Unescaped '<' not allowed in attributes values を出す．
+     属性値の中の > は XML で許されるため，そちらは違反にしない． */
+  assert.deepEqual(kinds('<svg><path aria-label="a < b" d="M0 0"/></svg>'), [
+    'unescaped-lt-in-attribute',
+  ]);
+  assert.deepEqual(kinds('<svg><path aria-label="a &lt; b" d="M0 0"/></svg>'), []);
+});
+
+test('findUnreadableMarkup: 処理命令は ?> まで一体として読む', () => {
+  /* 最初の > で切ると，中の要素らしき文字列を実要素として数えてしまう． */
+  assert.deepEqual(kinds('<?tool x > <fake> ?><svg/>'), []);
+});
+
+test('findUnreadableMarkup: 閉じていない処理命令を違反にする', () => {
+  /* Chromium は PI tail never end を出す． */
+  assert.deepEqual(kinds('<?tool unterminated><svg/>'), ['unclosed-processing-instruction']);
+});
+
+test('findUnreadableMarkup: DOCTYPE の内部サブセットを ]> まで読む', () => {
+  assert.deepEqual(kinds('<!DOCTYPE svg [ <!ENTITY nb "&#160;"> ]><svg><g/></svg>'), []);
+  assert.deepEqual(
+    kinds('<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "svg11.dtd"><svg><g/></svg>'),
+    []
+  );
+});
+
+test('findUnreadableMarkup: 閉じていない内部サブセットを違反にする', () => {
+  /* Chromium は Content error in the internal subset を出す．
+     ]> を閉じ忘れると，以降の要素を走査しても違反の有無を保証できない． */
+  assert.deepEqual(kinds('<!DOCTYPE svg [<!ELEMENT svg ANY>><svg/>'), ['unclosed-doctype']);
+});
+
+test('findUnreadableMarkup: コメント本文の末尾のハイフンを違反にする', () => {
+  /* <!-- a ---> は本文が「a -」となり -- を含まないが，
+     Chromium は Double hyphen within comment を出す． */
+  assert.deepEqual(kinds('<svg><!-- a ---><g/></svg>'), ['double-hyphen-in-comment']);
+});
+
+// --- 作図ツールが書き出す記法（陰性対照） ---
+
+test('findUnreadableMarkup: 作図ツールの記法を違反にしない', () => {
+  const notations = {
+    '名前空間付きの要素名': '<svg><inkscape:group><rect width="1" height="1"/></inkscape:group></svg>',
+    'xml:space と xml:lang': '<svg xml:space="preserve" xml:lang="ja"><text>あ</text></svg>',
+    'CDATA の中の <': '<svg><style><![CDATA[text { fill: #000; } /* a < b */]]></style></svg>',
+    'style の中の > セレクタ': '<svg><style>g > text { fill: #000; }</style><g><text>a</text></g></svg>',
+    '属性値の中のもう一方の引用符': `<svg><text font-family='"MS Mincho", serif'>あ</text></svg>`,
+    '属性値の中の > と /': '<svg><path d="M0 0 L1 1" aria-label="a > b / c"/></svg>',
+    'foreignObject の中の HTML':
+      '<svg><foreignObject width="1" height="1"><div xmlns="http://www.w3.org/1999/xhtml"><p>a</p></div></foreignObject></svg>',
+    '大文字小文字の混在した要素名':
+      '<svg><linearGradient id="g"><stop offset="0"/></linearGradient></svg>',
+    'コメントの中のタグ': '<svg><!-- <rect width="1"/> --><g/></svg>',
+    'コメントの中の未閉じ引用符': '<svg><!-- fill=" --><g/></svg>',
+  };
+  for (const [label, svgText] of Object.entries(notations)) {
+    assert.deepEqual(findUnreadableMarkup(svgText), [], `${label} を違反にした`);
   }
 });
