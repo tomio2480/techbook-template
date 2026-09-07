@@ -13,6 +13,11 @@
  * 量記号を明朝の斜体で組むための別スタックのように，意図して使う指定は登録する．
  * 登録の無い指定は，図ごとの差の発生源になるため違反として報告する．
  *
+ * 書体を root から動かす一括指定も違反とする．font の短縮記法
+ * （`font: 20px Courier`・`font="20px Impact"`）と all の一括指定（`all: initial`）が
+ * 当たる．登録済みのスタックを書いた場合も含める．図版では font-family と
+ * font-size を分けて書く規約とし，一括指定の値を解析する経路そのものを持たない．
+ *
  * ALLOWED_EXTRA_FONT_STACKS・EXCLUDED_FILES は本ごとに差し替える定数として
  * 先頭に集約している．
  */
@@ -206,6 +211,49 @@ const FONT_FAMILY_ATTRIBUTE = /(?<![\w:.-])font-family\s*=\s*(?:"([^"]*)"|'([^']
 const FONT_FAMILY_DECLARATION = /(?<![\w-])font-family\s*:\s*([^;}]+)/gi;
 const STYLE_ELEMENT = /<style\b[^>]*>([\s\S]*?)<\/style>/gi;
 const STYLE_ATTRIBUTE = /(?<![\w:.-])style\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
+/* 書体を root から動かしうる一括指定．font-family などの個別プロパティは
+   直後がハイフンのため一致しない．値としての all（transition: all）にも一致しない */
+const TYPEFACE_OVERRIDE_DECLARATION = /(?<![\w-])(font|all)\s*:\s*([^;}]+)/gi;
+/* font 属性の短縮記法．Chromium は無視するが，書き手の意図が誌面へ出ないため報告する．
+   all は presentation attribute に無いため，属性としては見ない */
+const FONT_SHORTHAND_ATTRIBUTE = /(?<![\w:.-])font\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
+
+/* 開始タグ．属性の走査はこの中だけで行う．図の本文に現れる文字列
+   （例: `<text>ここへ font="20px Impact" と書く</text>`）を属性と誤認しない
+   ためである．閉じタグ・XML 宣言・DOCTYPE は先頭 1 文字で外れる */
+const OPENING_TAG = /<[a-zA-Z_][\w:.-]*(?:[^>"']|"[^"]*"|'[^']*')*>/g;
+/* at-rule の前置き．@ から，ブロックを開く { か文を閉じる ; の手前までを指す．
+   @supports (all: initial) の条件を宣言と誤認しないため，宣言の走査から外す．
+   ブロックの中身は残るため，@media に包んだ宣言は従来どおり拾える */
+const AT_RULE_PRELUDE = /@[\w-]+[^{;]*/g;
+
+/**
+ * SVG テキストを，属性を走査する開始タグと CSS のテキストへ分ける．
+ * <style> の中身は属性の走査から外す．CSS コメントで無効化したセレクタ
+ * （text[font-family="serif"] など）を属性と誤認しないためである．
+ * @param {string} source XML コメントを除いた SVG テキスト
+ * @returns {{ tags: string, cssTexts: string[] }}
+ */
+function splitMarkupAndCss(source) {
+  const styleContents = [...source.matchAll(STYLE_ELEMENT)].map(match => match[1]);
+  const tags = (stripStyleElements(source).match(OPENING_TAG) ?? []).join('\n');
+  const cssTexts = [
+    ...styleContents,
+    ...[...tags.matchAll(STYLE_ATTRIBUTE)].map(match => decodeXmlEntities(match[1] ?? match[2])),
+  ];
+  return { tags, cssTexts };
+}
+
+/**
+ * CSS のテキストから宣言だけを残す．コメントと at-rule の前置きを外す．
+ * 順序は入れ替えない．コメントを先に外さないと，コメント内の @ が
+ * 前置きとして扱われ，後続の宣言まで消える．
+ * @param {string} cssText
+ * @returns {string}
+ */
+function stripToDeclarations(cssText) {
+  return stripCssComments(cssText).replace(AT_RULE_PRELUDE, '');
+}
 
 /**
  * root の <svg> の font-family 属性の値を返す．
@@ -238,21 +286,61 @@ export function extractOtherFontFamilies(svgText) {
   const body = rootTag
     ? withoutComments.replace(rootTag, rootTag.replace(FONT_FAMILY_ATTRIBUTE, ''))
     : withoutComments;
-  /* <style> の中身は属性の走査から外す．CSS コメントで無効化したセレクタ
-     （text[font-family="serif"] など）を属性と誤認しないためである */
-  const styleContents = [...body.matchAll(STYLE_ELEMENT)].map(match => match[1]);
-  const markup = stripStyleElements(body);
+  const { tags, cssTexts } = splitMarkupAndCss(body);
   const found = [];
-  for (const match of markup.matchAll(FONT_FAMILY_ATTRIBUTE)) {
+  for (const match of tags.matchAll(FONT_FAMILY_ATTRIBUTE)) {
     found.push({ value: decodeXmlEntities(match[1] ?? match[2]).trim(), source: 'attribute' });
   }
-  const cssTexts = [
-    ...styleContents,
-    ...[...markup.matchAll(STYLE_ATTRIBUTE)].map(match => decodeXmlEntities(match[1] ?? match[2])),
-  ];
   for (const cssText of cssTexts) {
-    for (const match of stripCssComments(cssText).matchAll(FONT_FAMILY_DECLARATION)) {
+    for (const match of stripToDeclarations(cssText).matchAll(FONT_FAMILY_DECLARATION)) {
       found.push({ value: stripImportant(match[1]), source: 'declaration' });
+    }
+  }
+  return found;
+}
+
+/**
+ * 書体を root の指定から動かしうる一括指定を集める．対象は 2 つある．
+ *
+ * 1 つは font の短縮記法である．font-family を含むため root の指定を覆す．
+ * 値の並びは省略可能な要素を含み，family だけを取り出す解析は誤りやすい．
+ * 図版では font-family と font-size を分けて書く規約とし，短縮記法そのものを
+ * 違反として報告する．登録済みのスタックを短縮記法で書いた場合も含む．
+ *
+ * もう 1 つは all である．CSS Cascade 3 は all を shorthand と定め，
+ * direction と unicode-bidi を除く全プロパティを戻すとする．
+ * font-family も戻るため，root の指定が効かなくなる．
+ *
+ * 覆り方は Chromium で実測した．font は <style> の規則も style 属性も
+ * root の値を覆す．at-rule に包んでも，2 つ目以降の <style> でも覆る．
+ * font 属性だけは無視され，root の値のまま描かれる．
+ * all は initial のときだけ覆る．font-family は継承プロパティであり，
+ * CSS Cascade 3 が unset を inherit と定めるためである．revert も同様に残る．
+ *
+ * それでも一律に報告する．値のキーワードで場合分けすると，font の短縮記法で
+ * 避けたはずの値の解析へ戻るためである．また font 属性のように誌面が
+ * 変わらない場合も，指定したつもりの書体が出ない状態を残さない．
+ * root も対象とする．例外にすると同じ抜け道が root に残るためである．
+ * @param {string} svgText
+ * @returns {Array<{ property: 'font' | 'all', value: string, source: 'attribute' | 'declaration' }>}
+ */
+export function extractTypefaceOverrides(svgText) {
+  const { tags, cssTexts } = splitMarkupAndCss(stripXmlComments(svgText));
+  const found = [];
+  for (const match of tags.matchAll(FONT_SHORTHAND_ATTRIBUTE)) {
+    found.push({
+      property: 'font',
+      value: decodeXmlEntities(match[1] ?? match[2]).trim(),
+      source: 'attribute',
+    });
+  }
+  for (const cssText of cssTexts) {
+    for (const match of stripToDeclarations(cssText).matchAll(TYPEFACE_OVERRIDE_DECLARATION)) {
+      found.push({
+        property: match[1].toLowerCase(),
+        value: stripImportant(match[2]),
+        source: 'declaration',
+      });
     }
   }
   return found;
@@ -315,6 +403,18 @@ export function checkDiagramFonts(svgFiles, themeCss, options = {}) {
           message: `${file} の font-family「${value}」（${source}）は登録が無い（ALLOWED_EXTRA_FONT_STACKS へ登録するか，指定を外して root の値を継承させる）`,
         });
       }
+    }
+    for (const { property, value, source } of extractTypefaceOverrides(svgText)) {
+      const remedy =
+        property === 'font'
+          ? 'font-family と font-size を分けて書く'
+          : '書体を戻す必要があれば font-family を明示する';
+      violations.push({
+        type: `${property}-shorthand`,
+        file,
+        value,
+        message: `${file} の ${property} 一括指定「${value}」（${source}）は使わない（${remedy}）`,
+      });
     }
   }
 
