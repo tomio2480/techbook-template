@@ -953,6 +953,7 @@ techbook-template/
 │   ├── check-diagram-luminance.mjs # 図版 SVG の明度段パレットの検査
 │   ├── check-diagram-fonts.mjs # 図版 SVG の図中フォント指定の検査
 │   ├── check-diagram-connectivity.mjs # 回路図 SVG の配線の接続の検査
+│   ├── svg-source.mjs # 図版 SVG を読む共通部品（読み取れない入力の検出）
 │   ├── check-gradient-hardstops.mjs # ハードストップ透過の検査
 │   ├── check-icon-bake.mjs    # 焼いた枠アイコンと theme.css の一致の検査
 │   ├── check-print-transparency.mjs # 入稿データの透明効果の検査
@@ -1112,6 +1113,18 @@ Rec.601 輝度で 15 ポイント以上の差を機械検査する．実体配�
 どちらの印も無い図（グラフなど）は未対応として表示するだけで，違反にしない．
 `translate` 以外の `transform` を持つ図形と，`<use>` で置いた図形は
 判定できないため報告する．`<defs>`・`<symbol>` の中の図形は集めない．
+
+上の 3 つの検査は，読み取れない図版をそろって違反として報告する．
+判定は `scripts/svg-source.mjs` が共通で担う．
+対象は，検査が走査の範囲を確定できない形と，ブラウザーが XML として
+読めない形である．
+閉じ忘れは，タグ・要素・コメント・CDATA 節・処理命令・DOCTYPE が当たる．
+ほかに終了タグの対応崩れ，引用符の対応崩れ，属性値へ書いた生の `<` がある．
+コメントの中の `<!--` と `--` も同じく当たる．
+一覧は `docs/spec/diagram-style.md` の表 2 にある．
+とくにコメントの中の `--` は XML が禁じており，1 つあるだけで図が描画されない．
+CSS 変数名をコメントで説明すると踏むため，接頭辞のハイフン 2 つは書かない．
+読み取れない図は，その図の他の検査を続けない．
 
 ### 表紙・裏表紙の変更
 

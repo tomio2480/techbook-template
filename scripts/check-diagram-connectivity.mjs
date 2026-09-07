@@ -31,6 +31,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
+import { stripXmlComments, findUnreadableMarkup, toUnreadableViolation } from './svg-source.mjs';
 
 /** 端点が触れているとみなす距離（ユーザー座標単位）．本ごとに差し替える． */
 export const TOLERANCE = 0.5;
@@ -49,22 +50,6 @@ const COLOR_KEYWORDS = new Map([
   ['white', '#ffffff'],
   ['currentcolor', '#000000'],
 ]);
-
-/**
- * XML コメントを除去する．変化がなくなるまで繰り返し，破損した境界の取り残しを防ぐ．
- * @param {string} svgText
- * @returns {string}
- */
-function stripXmlComments(svgText) {
-  let text = svgText;
-  for (;;) {
-    const next = text.replace(/<!--[\s\S]*?-->/g, '');
-    if (next === text) {
-      return next;
-    }
-    text = next;
-  }
-}
 
 /**
  * 色値の Rec.601 輝度（%）を返す．解釈できない値は null を返す．
@@ -552,6 +537,13 @@ export function checkDiagramConnectivity(svgFiles, options = {}) {
 
   for (const [file, svgText] of svgFiles) {
     if (excludedFiles.includes(file)) {
+      continue;
+    }
+    /* 走査の範囲を確定できない図は，配線の印が見つからなくても
+       印の無い図として捨てない．捨てると違反 0 件で通る． */
+    const unreadable = findUnreadableMarkup(svgText);
+    if (unreadable.length > 0) {
+      violations.push(...unreadable.map(item => toUnreadableViolation(file, item)));
       continue;
     }
     const { shapes, unsupported, isCircuit } = parseShapes(svgText);

@@ -432,14 +432,20 @@ test('checkDiagramColors: XML コメント内の色属性は検査対象にし�
 test('checkDiagramColors: 破損した入れ子コメントで色指定を隠しても検出から漏れない', () => {
   // XML に入れ子コメントは存在しないため，このような記述自体が不正である．
   // 1 回限りの置換だと除去処理の境界判定を悪用して違反を検出から
-  // 隠せてしまう懸念（CodeQL: incomplete-multi-character-sanitization）があるため，
-  // 除去後に有彩色が残る＝検出側で捕捉されることを fail-closed の観点で確認する．
+  // 隠せてしまう懸念（CodeQL: incomplete-multi-character-sanitization）がある．
+  // この形は「読み取れない入力」として入口で捕捉する（Issue #221）．
+  // 色の収集の結果に依らないため，走査を構造へ寄せても保証が消えない．
   const files = makeFiles({
     'base.svg': BASE_SVG,
     'a.svg': '<svg><!-- a <!-- b --> fill="#cc0000" --></svg>',
   });
   const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
-  assert.ok(violations.some(v => v.type === 'unregistered-chromatic' && v.file === 'a.svg'));
+  assert.ok(
+    violations.some(
+      v =>
+        v.type === 'unreadable-markup' && v.file === 'a.svg' && v.kind === 'nested-comment-marker'
+    )
+  );
 });
 
 test('checkDiagramColors: トークンの色が除外ファイルのみで使われていても未使用扱いにしない', () => {
@@ -589,4 +595,51 @@ test(ANNOTATION_TOKEN + ': コメント中の言及だけでは宣言とみな�
   const commentOnlyCss = `/* ${ANNOTATION_TOKEN} の説明コメント */\n:root {\n}`;
   const vars = parseCssVariables(commentOnlyCss);
   assert.throws(() => resolveVar(vars, ANNOTATION_TOKEN), new RegExp(ANNOTATION_TOKEN));
+});
+
+// --- 読み取れない入力 ---
+
+test('checkDiagramColors: 読み取れない入力を違反として報告する', () => {
+  const broken = {
+    'style-unclosed.svg': '<svg><style>.l { fill: #cc0000; }</svg>',
+    'tag-unclosed.svg': '<svg><path fill="#cc0000"',
+    'quote-unbalanced.svg': '<svg><path d=1" fill="#cc0000"/></svg>',
+    'comment-unclosed.svg': '<svg><!-- <path fill="#cc0000"/></svg>',
+    'comment-nested.svg': '<svg><!-- a <!-- b --> fill="#cc0000" --></svg>',
+  };
+  for (const [file, svgText] of Object.entries(broken)) {
+    const files = makeFiles({ 'base.svg': BASE_SVG, [file]: svgText });
+    const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+    assert.ok(
+      violations.some(v => v.type === 'unreadable-markup' && v.file === file),
+      `${file} が読み取れない入力として報告されない`
+    );
+  }
+});
+
+test('checkDiagramColors: 読み取れない入力の図は他の検査を続けない', () => {
+  const files = makeFiles({ 'base.svg': BASE_SVG, 'a.svg': '<svg><path fill="#cc0000"' });
+  const forFile = checkDiagramColors(files, VALID_PALETTE_CSS).filter(v => v.file === 'a.svg');
+  assert.deepEqual(
+    forFile.map(v => v.type),
+    ['unreadable-markup']
+  );
+});
+
+test('checkDiagramColors: 読み取れない図の色は使用済みの証拠にしない', () => {
+  /* 走査の範囲を確定できない図から拾った色で，未使用のトークンを
+     使用済みと判定してしまわないようにする． */
+  const files = makeFiles({ 'a.svg': '<svg><path stroke="#5588bb"' });
+  const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+  assert.ok(violations.some(v => v.type === 'unreadable-markup' && v.file === 'a.svg'));
+  assert.ok(violations.some(v => v.type === 'token-unused'));
+});
+
+test('checkDiagramColors: 除外したファイルは読み取れない入力の対象にしない', () => {
+  const files = makeFiles({ 'base.svg': BASE_SVG, 'a.svg': '<svg><path fill="#cc0000"' });
+  const violations = checkDiagramColors(files, VALID_PALETTE_CSS, { excludedFiles: ['a.svg'] });
+  assert.deepEqual(
+    violations.filter(v => v.file === 'a.svg'),
+    []
+  );
 });

@@ -2,7 +2,9 @@
 <!-- 回路図は root に class="circuit" を付ける．配線の印（class="wire"）が
      1 つも無ければ scripts/check-diagram-connectivity.mjs が違反として報告する．
      図中のフォントは root の font-family で本文と同じゴシック体スタック（theme.css の
-     --font-gothic）を指定する．子要素には書かず継承させる．scripts/check-diagram-fonts.mjs が検査する -->
+     font-gothic トークン）を指定する．子要素には書かず継承させる．
+     scripts/check-diagram-fonts.mjs が検査する．
+     なお XML はコメントの中のハイフン 2 つを禁じるため，トークン名の接頭辞は書かない -->
 <svg xmlns="http://www.w3.org/2000/svg" class="circuit" viewBox="0 0 400 200" width="400" height="200"
   font-family="'Noto Sans CJK JP', 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif">
   <!-- 背景 -->

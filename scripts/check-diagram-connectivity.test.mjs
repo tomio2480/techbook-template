@@ -373,3 +373,40 @@ test(
     assert.deepEqual(missing, [], `除外リストの ${missing.join('・')} が見つからない`);
   }
 );
+
+// --- 読み取れない入力 ---
+
+test('checkDiagramConnectivity: 読み取れない入力を違反として報告する', () => {
+  const broken = {
+    'tag-unclosed.svg': '<svg viewBox="0 0 200 100"><line class="wire" x1="20" y1="50" x2="40" y2="50"',
+    'quote-unbalanced.svg': '<svg viewBox="0 0 200 100"><line class="wire" x1=2" y1="50" x2="40" y2="50"/></svg>',
+    'comment-unclosed.svg': '<svg viewBox="0 0 200 100"><!-- <line class="wire" x1="20" y1="50" x2="40" y2="50"/></svg>',
+  };
+  for (const [file, svgText] of Object.entries(broken)) {
+    const { violations } = checkDiagramConnectivity(makeFiles({ [file]: svgText }));
+    assert.ok(
+      violations.some(v => v.type === 'unreadable-markup' && v.file === file),
+      `${file} が読み取れない入力として報告されない`
+    );
+  }
+});
+
+test('checkDiagramConnectivity: 読み取れない入力を印なしとして黙って飛ばさない', () => {
+  /* 配線の印が見つからないのは走査が空振りしたためであり，
+     印を付けていない図と同じ扱いにすると違反 0 件で通る． */
+  const svgText = '<svg viewBox="0 0 200 100"><line class="wire" x1="20" y1="50" x2="40" y2="50"';
+  const { violations, unmarkedFiles } = checkDiagramConnectivity(makeFiles({ 'a.svg': svgText }));
+  assert.deepEqual(unmarkedFiles, []);
+  assert.deepEqual(
+    violations.map(v => v.type),
+    ['unreadable-markup']
+  );
+});
+
+test('checkDiagramConnectivity: 除外したファイルは読み取れない入力の対象にしない', () => {
+  const svgText = '<svg viewBox="0 0 200 100"><line class="wire" x1="20" y1="50" x2="40" y2="50"';
+  const { violations } = checkDiagramConnectivity(makeFiles({ 'a.svg': svgText }), {
+    excludedFiles: ['a.svg'],
+  });
+  assert.deepEqual(violations, []);
+});

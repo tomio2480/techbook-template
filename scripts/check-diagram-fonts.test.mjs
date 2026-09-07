@@ -611,3 +611,39 @@ test('実ファイル: ' + FONT_TOKEN + ' が theme.css で宣言されている
   const value = resolveVar(vars, FONT_TOKEN);
   assert.ok(value.includes(','), `${FONT_TOKEN} の値 ${value} がフォントスタックの形をしていない`);
 });
+
+// --- 読み取れない入力 ---
+
+const READABLE_ROOT = `<svg font-family="${GOTHIC}">`;
+
+test('checkDiagramFonts: 読み取れない入力を違反として報告する', () => {
+  const broken = {
+    'style-unclosed.svg': `${READABLE_ROOT}<style>.l { font-family: ${SERIF}; }</svg>`,
+    'tag-unclosed.svg': `${READABLE_ROOT}<text font-family="${SERIF}"`,
+    'quote-unbalanced.svg': `${READABLE_ROOT}<text y=2" font-family="${SERIF}">あ</text></svg>`,
+    'comment-unclosed.svg': `${READABLE_ROOT}<!-- <text font-family="${SERIF}">あ</text></svg>`,
+    'comment-nested.svg': `${READABLE_ROOT}<!-- a <!-- b --> font-family="${SERIF}" --></svg>`,
+  };
+  for (const [file, svgText] of Object.entries(broken)) {
+    const violations = checkDiagramFonts(makeFiles({ [file]: svgText }), THEME_CSS);
+    assert.ok(
+      violations.some(v => v.type === 'unreadable-markup' && v.file === file),
+      `${file} が読み取れない入力として報告されない`
+    );
+  }
+});
+
+test('checkDiagramFonts: 読み取れない入力の図は他の検査を続けない', () => {
+  /* 走査の範囲を確定できない以上，続けた結果は違反の有無を保証しない．
+     root の font-family が無い図でも root-font-missing を重ねて出さない． */
+  const files = makeFiles({ 'a.svg': '<svg><style>.l { font-family: serif; }</svg>' });
+  assert.deepEqual(
+    checkDiagramFonts(files, THEME_CSS).map(v => v.type),
+    ['unreadable-markup']
+  );
+});
+
+test('checkDiagramFonts: 除外したファイルは読み取れない入力の対象にしない', () => {
+  const files = makeFiles({ 'a.svg': '<svg><style>.l { font-family: serif; }</svg>' });
+  assert.deepEqual(checkDiagramFonts(files, THEME_CSS, { excludedFiles: ['a.svg'] }), []);
+});
