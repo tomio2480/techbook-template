@@ -32,7 +32,7 @@
 
 これは適合する図を落とす．次の 3 つが違反になった．
 
-```
+```xml
 <title>Set opacity: 0.5</title>
 <desc>fill: red</desc>
 <path aria-label="opacity: 0.5"/>
@@ -59,7 +59,7 @@
 
 ただし取り除くと別の誤検出を生む．
 
-```
+```xml
 <style>.x { opac/**/ity: .5 }</style>
 ```
 
@@ -87,7 +87,7 @@ CSS コメントはトークンの境界として働く．
 
 同じ構造の直しを `parseColorValues` へも当てようとしたが，既存テストが落ちた．
 
-```
+```xml
 <svg><!-- a <!-- b --> fill="#cc0000" --></svg>
 ```
 
