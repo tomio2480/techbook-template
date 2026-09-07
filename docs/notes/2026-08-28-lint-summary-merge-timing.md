@@ -46,7 +46,7 @@ PR #193 の Actions ログで checkout を確認すると，
 | 23:41 | #192 が main へマージ |
 | 23:47 | #193 が main へマージ |
 
-#192 適用前の `docs/spec/pdf-tagging.md` を単体で検査した．
+PR #192 適用前の `docs/spec/pdf-tagging.md` を単体で検査した．
 再現したのは 68 行目の `ja-no-space-around-parentheses` 1 件だけである．
 CI が数えた 1 件は #192 が直した指摘そのものである．
 main には残っておらず，原稿側の追加修正は要らない．
