@@ -118,7 +118,7 @@
 - `opacity` 以外で透明を生む指定も違反とする．
   対象は `mask`・`filter`・`mix-blend-mode` である．
   `mask` は灰色の内容でアルファを作り，`filter` は `feFuncA` や
-  `flood-opacity` で同じことができる．`mix-blend-mode` は通常でない合成を行う．
+  `flood-opacity` で同じことができる．`mix-blend-mode` は通常でない合成をする．
   いずれも無彩色だけで組めば，配色の検査にも掛からない．
 - CSS コメントは宣言として扱わない．
   無効化した旧指定をコメントで残しただけの図は，描画へ影響しないためである．
