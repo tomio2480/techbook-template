@@ -51,7 +51,6 @@ const COLOR_KEYWORDS = new Map([
   ['currentcolor', '#000000'],
 ]);
 
-
 /**
  * 色値の Rec.601 輝度（%）を返す．解釈できない値は null を返す．
  * @param {string | undefined} value
