@@ -13,9 +13,10 @@
  * 量記号を明朝の斜体で組むための別スタックのように，意図して使う指定は登録する．
  * 登録の無い指定は，図ごとの差の発生源になるため違反として報告する．
  *
- * font の短縮記法（`font: 20px Courier`・`font="20px Impact"`）は，登録済みの
- * スタックを書いた場合も含めて違反とする．図版では font-family と font-size を
- * 分けて書く規約とし，短縮記法の値を解析する経路そのものを持たない．
+ * 書体を root から動かす一括指定も違反とする．font の短縮記法
+ * （`font: 20px Courier`・`font="20px Impact"`）と all の一括指定（`all: initial`）が
+ * 当たる．登録済みのスタックを書いた場合も含める．図版では font-family と
+ * font-size を分けて書く規約とし，一括指定の値を解析する経路そのものを持たない．
  *
  * ALLOWED_EXTRA_FONT_STACKS・EXCLUDED_FILES は本ごとに差し替える定数として
  * 先頭に集約している．
@@ -210,9 +211,11 @@ const FONT_FAMILY_ATTRIBUTE = /(?<![\w:.-])font-family\s*=\s*(?:"([^"]*)"|'([^']
 const FONT_FAMILY_DECLARATION = /(?<![\w-])font-family\s*:\s*([^;}]+)/gi;
 const STYLE_ELEMENT = /<style\b[^>]*>([\s\S]*?)<\/style>/gi;
 const STYLE_ATTRIBUTE = /(?<![\w:.-])style\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
-/* CSS の font 短縮記法．font-family などの個別プロパティは直後がハイフンのため一致しない */
-const FONT_SHORTHAND_DECLARATION = /(?<![\w-])font\s*:\s*([^;}]+)/gi;
-/* font 属性の短縮記法．Chromium は無視するが，書き手の意図が誌面へ出ないため報告する */
+/* 書体を root から動かしうる一括指定．font-family などの個別プロパティは
+   直後がハイフンのため一致しない．値としての all（transition: all）にも一致しない */
+const TYPEFACE_OVERRIDE_DECLARATION = /(?<![\w-])(font|all)\s*:\s*([^;}]+)/gi;
+/* font 属性の短縮記法．Chromium は無視するが，書き手の意図が誌面へ出ないため報告する．
+   all は presentation attribute に無いため，属性としては見ない */
 const FONT_SHORTHAND_ATTRIBUTE = /(?<![\w:.-])font\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
 
 /**
@@ -277,28 +280,46 @@ export function extractOtherFontFamilies(svgText) {
 }
 
 /**
- * font の短縮記法による指定を集める．
- * 短縮記法は font-family を含むため root の指定を覆す．値の並びは省略可能な
- * 要素を含み，family だけを取り出す解析は誤りやすい．
+ * 書体を root の指定から動かしうる一括指定を集める．対象は 2 つある．
+ *
+ * 1 つは font の短縮記法である．font-family を含むため root の指定を覆す．
+ * 値の並びは省略可能な要素を含み，family だけを取り出す解析は誤りやすい．
  * 図版では font-family と font-size を分けて書く規約とし，短縮記法そのものを
  * 違反として報告する．登録済みのスタックを短縮記法で書いた場合も含む．
  *
- * 覆ることは Chromium で実測した．<style> の規則と style 属性はどちらも
- * root の値を覆す．font 属性だけは無視され，root の値のまま描かれる．
- * それでも報告するのは，書き手が指定したつもりの書体が誌面へ出ないためである．
- * root の font 属性も対象とする．root を例外にすると同じ抜け道が残るためである．
+ * もう 1 つは all の一括指定である．all は font-family を含む
+ * ほぼ全プロパティを CSS 全域キーワードへ戻す．
+ *
+ * 覆り方は Chromium で実測した．font は <style> の規則も style 属性も
+ * root の値を覆す．at-rule に包んでも，2 つ目以降の <style> でも覆る．
+ * font 属性だけは無視され，root の値のまま描かれる．
+ * all は initial のときだけ覆る．font-family は継承プロパティのため，
+ * unset と revert では root の値が残る．
+ *
+ * それでも一律に報告する．値のキーワードで場合分けすると，font の短縮記法で
+ * 避けたはずの値の解析へ戻るためである．また font 属性のように誌面が
+ * 変わらない場合も，指定したつもりの書体が出ない状態を残さない．
+ * root も対象とする．例外にすると同じ抜け道が root に残るためである．
  * @param {string} svgText
- * @returns {Array<{ value: string, source: 'attribute' | 'declaration' }>}
+ * @returns {Array<{ property: 'font' | 'all', value: string, source: 'attribute' | 'declaration' }>}
  */
-export function extractFontShorthands(svgText) {
+export function extractTypefaceOverrides(svgText) {
   const { markup, cssTexts } = splitMarkupAndCss(stripXmlComments(svgText));
   const found = [];
   for (const match of markup.matchAll(FONT_SHORTHAND_ATTRIBUTE)) {
-    found.push({ value: decodeXmlEntities(match[1] ?? match[2]).trim(), source: 'attribute' });
+    found.push({
+      property: 'font',
+      value: decodeXmlEntities(match[1] ?? match[2]).trim(),
+      source: 'attribute',
+    });
   }
   for (const cssText of cssTexts) {
-    for (const match of stripCssComments(cssText).matchAll(FONT_SHORTHAND_DECLARATION)) {
-      found.push({ value: stripImportant(match[1]), source: 'declaration' });
+    for (const match of stripCssComments(cssText).matchAll(TYPEFACE_OVERRIDE_DECLARATION)) {
+      found.push({
+        property: match[1].toLowerCase(),
+        value: stripImportant(match[2]),
+        source: 'declaration',
+      });
     }
   }
   return found;
@@ -362,12 +383,16 @@ export function checkDiagramFonts(svgFiles, themeCss, options = {}) {
         });
       }
     }
-    for (const { value, source } of extractFontShorthands(svgText)) {
+    for (const { property, value, source } of extractTypefaceOverrides(svgText)) {
+      const remedy =
+        property === 'font'
+          ? 'font-family と font-size を分けて書く'
+          : '書体を戻す必要があれば font-family を明示する';
       violations.push({
-        type: 'font-shorthand',
+        type: `${property}-shorthand`,
         file,
         value,
-        message: `${file} の font 短縮記法「${value}」（${source}）は使わない（font-family と font-size を分けて書く）`,
+        message: `${file} の ${property} 一括指定「${value}」（${source}）は使わない（${remedy}）`,
       });
     }
   }

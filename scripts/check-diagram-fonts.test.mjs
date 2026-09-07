@@ -12,7 +12,7 @@ import {
   decodeXmlEntities,
   extractRootFontFamily,
   extractOtherFontFamilies,
-  extractFontShorthands,
+  extractTypefaceOverrides,
   findMissingExcludedFiles,
   checkDiagramFonts,
 } from './check-diagram-fonts.mjs';
@@ -155,9 +155,9 @@ test('extractOtherFontFamilies: font shorthand は font-family として集め�
   assert.deepEqual(extractOtherFontFamilies(svg), []);
 });
 
-// --- extractFontShorthands ---
+// --- extractTypefaceOverrides ---
 
-test('extractFontShorthands: <style> 要素・style 属性・font 属性の shorthand を集める', () => {
+test('extractTypefaceOverrides: <style> 要素・style 属性・font 属性の shorthand を集める', () => {
   const svg = [
     `<svg font-family="${GOTHIC}">`,
     '<style>.label { font: 20px Courier; }</style>',
@@ -166,45 +166,96 @@ test('extractFontShorthands: <style> 要素・style 属性・font 属性の shor
     '</svg>',
   ].join('\n');
   assert.deepEqual(
-    extractFontShorthands(svg).map(f => [f.source, f.value]),
+    extractTypefaceOverrides(svg).map(f => [f.property, f.source, f.value]),
     [
-      ['attribute', '20px Impact'],
-      ['declaration', '20px Courier'],
-      ['declaration', 'italic 12px Papyrus'],
+      ['font', 'attribute', '20px Impact'],
+      ['font', 'declaration', '20px Courier'],
+      ['font', 'declaration', 'italic 12px Papyrus'],
     ]
   );
 });
 
-test('extractFontShorthands: root の font 属性も集める', () => {
+test('extractTypefaceOverrides: root の font 属性も集める', () => {
   const svg = '<svg font="20px Impact"><text>a</text></svg>';
-  assert.deepEqual(extractFontShorthands(svg).map(f => [f.source, f.value]), [['attribute', '20px Impact']]);
+  assert.deepEqual(extractTypefaceOverrides(svg).map(f => [f.source, f.value]), [['attribute', '20px Impact']]);
 });
 
-test('extractFontShorthands: font-family・font-size などの個別プロパティは拾わない', () => {
+test('extractTypefaceOverrides: at-rule に包んだ font 宣言も集める', () => {
+  const svg = `<svg font-family="${GOTHIC}"><style>@media screen { .label { font: 20px Courier; } }</style></svg>`;
+  assert.deepEqual(
+    extractTypefaceOverrides(svg).map(f => [f.property, f.value]),
+    [['font', '20px Courier']]
+  );
+});
+
+test('extractTypefaceOverrides: 2 つ目以降の <style> 要素の中身も集める', () => {
+  const svg = [
+    `<svg font-family="${GOTHIC}">`,
+    '<style>.a { fill: #000; }</style>',
+    '<style>.b { font: 20px Impact; }</style>',
+    '</svg>',
+  ].join('\n');
+  assert.deepEqual(
+    extractTypefaceOverrides(svg).map(f => [f.property, f.value]),
+    [['font', '20px Impact']]
+  );
+});
+
+test('extractTypefaceOverrides: all の一括指定を集める', () => {
+  const svg = [
+    `<svg font-family="${GOTHIC}">`,
+    '<style>.reset { all: initial; }</style>',
+    '<text style="all: initial">a</text>',
+    '</svg>',
+  ].join('\n');
+  assert.deepEqual(
+    extractTypefaceOverrides(svg).map(f => [f.property, f.source, f.value]),
+    [
+      ['all', 'declaration', 'initial'],
+      ['all', 'declaration', 'initial'],
+    ]
+  );
+});
+
+test('extractTypefaceOverrides: 値としての all は拾わない', () => {
+  const svg = [
+    `<svg font-family="${GOTHIC}">`,
+    '<style>.a { transition: all 0.3s; transition-property: all; }</style>',
+    '</svg>',
+  ].join('\n');
+  assert.deepEqual(extractTypefaceOverrides(svg), []);
+});
+
+test('extractTypefaceOverrides: all は属性としては拾わない', () => {
+  const svg = `<svg font-family="${GOTHIC}"><text all="initial">a</text></svg>`;
+  assert.deepEqual(extractTypefaceOverrides(svg), []);
+});
+
+test('extractTypefaceOverrides: font-family・font-size などの個別プロパティは拾わない', () => {
   const svg = [
     `<svg font-family="${GOTHIC}">`,
     '<style>.label { font-family: serif; font-size: 20px; font-weight: bold; }</style>',
     `<text font-family="${GOTHIC}" font-size="12">a</text>`,
     '</svg>',
   ].join('\n');
-  assert.deepEqual(extractFontShorthands(svg), []);
+  assert.deepEqual(extractTypefaceOverrides(svg), []);
 });
 
-test('extractFontShorthands: data-font などの別属性は拾わない', () => {
+test('extractTypefaceOverrides: data-font などの別属性は拾わない', () => {
   const svg = `<svg font-family="${GOTHIC}"><text data-font="20px Impact" xml:font="20px Impact">a</text></svg>`;
-  assert.deepEqual(extractFontShorthands(svg), []);
+  assert.deepEqual(extractTypefaceOverrides(svg), []);
 });
 
-test('extractFontShorthands: XML コメント・CSS コメントで無効化した shorthand は拾わない', () => {
+test('extractTypefaceOverrides: XML コメント・CSS コメントで無効化した指定は拾わない', () => {
   const commented = `<svg font-family="${GOTHIC}"><!-- <text font="20px Impact"/> --></svg>`;
-  assert.deepEqual(extractFontShorthands(commented), []);
-  const cssCommented = `<svg font-family="${GOTHIC}"><style>/* .label { font: 20px Courier; } */</style></svg>`;
-  assert.deepEqual(extractFontShorthands(cssCommented), []);
+  assert.deepEqual(extractTypefaceOverrides(commented), []);
+  const cssCommented = `<svg font-family="${GOTHIC}"><style>/* .label { font: 20px Courier; all: initial; } */</style></svg>`;
+  assert.deepEqual(extractTypefaceOverrides(cssCommented), []);
 });
 
-test('extractFontShorthands: !important と実体参照を外して値を返す', () => {
+test('extractTypefaceOverrides: !important と実体参照を外して値を返す', () => {
   const svg = `<svg font-family="${GOTHIC}"><text style="font: 12px &quot;MS Mincho&quot; !important">a</text></svg>`;
-  assert.deepEqual(extractFontShorthands(svg).map(f => f.value), ['12px "MS Mincho"']);
+  assert.deepEqual(extractTypefaceOverrides(svg).map(f => f.value), ['12px "MS Mincho"']);
 });
 
 // --- checkDiagramFonts（合成データ） ---
@@ -326,6 +377,34 @@ test('checkDiagramFonts: font-size と font-family を分けて書けば違反�
 
 test('checkDiagramFonts: system font キーワードの shorthand も違反として検出する', () => {
   const files = makeFiles({ 'a.svg': `<svg font-family="${GOTHIC}"><text style="font: menu">a</text></svg>` });
+  assert.deepEqual(
+    checkDiagramFonts(files, THEME_CSS).map(v => v.type),
+    ['font-shorthand']
+  );
+});
+
+test('checkDiagramFonts: all の一括指定を違反として検出する', () => {
+  const files = makeFiles({ 'a.svg': `<svg font-family="${GOTHIC}"><text style="all: initial">a</text></svg>` });
+  const violations = checkDiagramFonts(files, THEME_CSS);
+  assert.equal(violations.length, 1);
+  assert.equal(violations[0].type, 'all-shorthand');
+  assert.equal(violations[0].value, 'initial');
+});
+
+test('checkDiagramFonts: at-rule に包んだ font 宣言を違反として検出する', () => {
+  const files = makeFiles({
+    'a.svg': `<svg font-family="${GOTHIC}"><style>@media print { .l { font: 20px Courier; } }</style></svg>`,
+  });
+  assert.deepEqual(
+    checkDiagramFonts(files, THEME_CSS).map(v => v.type),
+    ['font-shorthand']
+  );
+});
+
+test('checkDiagramFonts: 2 つ目の <style> 要素の font 宣言を違反として検出する', () => {
+  const files = makeFiles({
+    'a.svg': `<svg font-family="${GOTHIC}"><style>.a{fill:#000}</style><style>.b{font:20px Impact}</style></svg>`,
+  });
   assert.deepEqual(
     checkDiagramFonts(files, THEME_CSS).map(v => v.type),
     ['font-shorthand']

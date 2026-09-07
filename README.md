@@ -1106,6 +1106,13 @@ root も例外にしない．例外にすると同じ抜け道が root へ残る
 `font` 属性は Chromium が無視するため誌面の書体は変わらない．
 それでも報告する．指定したつもりの書体が出ない状態を残さないためである．
 
+`all` の一括指定も違反として報告する．
+`all: initial` はほぼ全プロパティを初期値へ戻す．
+`font-family` も戻るため，root の指定が効かなくなる．
+`all: unset` と `all: revert` では root の値が残る．
+`font-family` が継承プロパティのためである．
+値による場合分けはしない．短縮記法で避けた値の解析へ戻るためである．
+
 回路図は root の `<svg>` に `class="circuit"` を付け，配線には `class="wire"` を
 付ける（要素または祖先の `<g>`）．
 `scripts/check-diagram-connectivity.mjs` が `npm test` で検査する．
