@@ -132,6 +132,13 @@ const OPACITY_ATTRIBUTE = /(?:^|\s)(?:fill-|stroke-|stop-)?opacity\s*=\s*(?:"[^"
 const OPACITY_PROPERTY = /(?:^|[\s;{"'])(?:fill-|stroke-|stop-)?opacity\s*:/i;
 
 /**
+ * SMIL アニメーションによる透明の指定．
+ * `<animate attributeName="opacity" to="0.5"/>` は属性形でも宣言形でもないが，
+ * 描画は半透明になる．合成後の色を見逃す点は同じため違反とする．
+ */
+const OPACITY_ANIMATION = /attributeName\s*=\s*(?:"|')(?:fill-|stroke-|stop-)?opacity(?:"|')/i;
+
+/**
  * XML コメントを除去する．コメント内に残る色指定（無効化済みの記述）を
  * 検査対象から除外し，誤検出・誤通過の両方を防ぐ．
  * @param {string} svgText
@@ -149,6 +156,25 @@ function stripXmlComments(svgText) {
     }
     text = next;
   }
+}
+
+/**
+ * <style> 要素の中の CSS コメントを取り除く．
+ *
+ * 無効化した宣言をコメントで残しただけの図を違反にしないためである．
+ * コメントは描画へ影響せず，本検査が見る「宣言」にも当たらない．
+ *
+ * 対象を <style> の中に限るのは，属性値や path データにある `/*` を
+ * 巻き込まないためである．CSS コメントは入れ子にならず，最初の閉じで終わる．
+ * XML コメントのような繰り返しの除去は要らない．
+ * @param {string} svgText
+ * @returns {string}
+ */
+function stripCssComments(svgText) {
+  return svgText.replace(
+    /(<style\b[^>]*>)([\s\S]*?)(<\/style>)/gi,
+    (_, open, body, close) => `${open}${body.replace(/\/\*[\s\S]*?\*\//g, '')}${close}`
+  );
 }
 
 /**
@@ -269,8 +295,12 @@ export function checkDiagramColors(svgFiles, paletteCss, options = {}) {
         message: `${file} の色値 ${value} は hex へ解釈できず検査をすり抜けるため許可しない`,
       });
     }
-    const withoutComments = stripXmlComments(svgText);
-    if (OPACITY_ATTRIBUTE.test(withoutComments) || OPACITY_PROPERTY.test(withoutComments)) {
+    const withoutComments = stripCssComments(stripXmlComments(svgText));
+    if (
+      OPACITY_ATTRIBUTE.test(withoutComments) ||
+      OPACITY_PROPERTY.test(withoutComments) ||
+      OPACITY_ANIMATION.test(withoutComments)
+    ) {
       violations.push({
         type: 'opacity-used',
         file,
