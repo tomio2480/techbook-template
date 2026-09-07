@@ -158,23 +158,35 @@ function stripXmlComments(svgText) {
   }
 }
 
+/** CSS コメント．入れ子にならず，最初の閉じで終わる． */
+const CSS_COMMENT = /\/\*[\s\S]*?\*\//g;
+
 /**
- * <style> 要素の中の CSS コメントを取り除く．
+ * CSS を書ける場所から，その中の CSS コメントを取り除く．
+ * 対象は <style> 要素の中身と style 属性の値の 2 か所である．
  *
  * 無効化した宣言をコメントで残しただけの図を違反にしないためである．
  * コメントは描画へ影響せず，本検査が見る「宣言」にも当たらない．
  *
- * 対象を <style> の中に限るのは，属性値や path データにある `/*` を
- * 巻き込まないためである．CSS コメントは入れ子にならず，最初の閉じで終わる．
+ * 場所を 2 か所へ限るのは，path データや他の属性値にある `/*` を
+ * 巻き込まないためである．CSS コメントは入れ子にならないため，
  * XML コメントのような繰り返しの除去は要らない．
  * @param {string} svgText
  * @returns {string}
  */
 function stripCssComments(svgText) {
-  return svgText.replace(
-    /(<style\b[^>]*>)([\s\S]*?)(<\/style>)/gi,
-    (_, open, body, close) => `${open}${body.replace(/\/\*[\s\S]*?\*\//g, '')}${close}`
-  );
+  return svgText
+    .replace(
+      /(<style\b[^>]*>)([\s\S]*?)(<\/style>)/gi,
+      (_, open, body, close) => `${open}${body.replace(CSS_COMMENT, '')}${close}`
+    )
+    .replace(
+      /(\sstyle\s*=\s*")([^"]*)(")|(\sstyle\s*=\s*')([^']*)(')/gi,
+      (match, dqOpen, dqBody, dqClose, sqOpen, sqBody, sqClose) =>
+        dqOpen === undefined
+          ? `${sqOpen}${sqBody.replace(CSS_COMMENT, '')}${sqClose}`
+          : `${dqOpen}${dqBody.replace(CSS_COMMENT, '')}${dqClose}`
+    );
 }
 
 /**

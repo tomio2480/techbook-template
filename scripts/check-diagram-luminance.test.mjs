@@ -287,6 +287,23 @@ test('checkDiagramColors: CSS コメントの中の色の宣言も違反にし�
   assert.deepEqual(checkDiagramColors(files, VALID_PALETTE_CSS), []);
 });
 
+test('checkDiagramColors: style 属性の中の CSS コメントも宣言として扱わない', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><rect fill="#5588bb" style="/* opacity:0.5 */"/></svg>',
+  });
+  assert.deepEqual(checkDiagramColors(files, VALID_PALETTE_CSS), []);
+});
+
+test('checkDiagramColors: style 属性でコメントの外に出した宣言は違反になる', () => {
+  const files = makeFiles({
+    'base.svg': BASE_SVG,
+    'a.svg': '<svg><rect fill="#5588bb" style="/* 旧 */ opacity:0.5"/></svg>',
+  });
+  const violations = checkDiagramColors(files, VALID_PALETTE_CSS);
+  assert.ok(violations.some(v => v.type === 'opacity-used' && v.file === 'a.svg'));
+});
+
 test('checkDiagramColors: コメントの外に出した宣言は違反のまま検出する', () => {
   const files = makeFiles({
     'base.svg': BASE_SVG,
