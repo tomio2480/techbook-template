@@ -128,8 +128,22 @@ const CSS_COLOR_PROPERTY = /(?:fill|stroke|stop-color)\s*:/i;
  * 接頭辞は fill-・stroke-・stop- の 3 つに限る．
  * data-opacity のような別名を巻き込まないためである．
  */
-const OPACITY_ATTRIBUTE = /(?:^|\s)(?:fill-|stroke-|stop-)?opacity\s*=\s*(?:"[^"]*"|'[^']*')/i;
-const OPACITY_PROPERTY = /(?:^|[\s;{"'])(?:fill-|stroke-|stop-)?opacity\s*:/i;
+const OPACITY_ATTRIBUTE = /(?:^|\s)(?:fill-|stroke-|stop-|flood-)?opacity\s*=\s*(?:"[^"]*"|'[^']*')/i;
+const OPACITY_PROPERTY = /(?:^|[\s;{])(?:fill-|stroke-|stop-|flood-)?opacity\s*:/i;
+
+/**
+ * opacity 以外で透明を生む指定．
+ *
+ * mask は灰色の内容でアルファを作る．filter は feFuncA や flood-opacity で
+ * 同じことができる．どちらも PDF ではソフトマスクになり，
+ * `scripts/check-print-transparency.mjs` が入稿データで数える対象である．
+ * mix-blend-mode は通常でない合成を行う．
+ * いずれも無彩色だけで組めば，色の検査にも掛からない．
+ *
+ * 値による場合分けはしない．opacity と同じ扱いである．
+ */
+const TRANSPARENCY_EFFECT_ATTRIBUTE = /(?:^|\s)(?:mask|filter|mix-blend-mode)\s*=\s*(?:"[^"]*"|'[^']*')/i;
+const TRANSPARENCY_EFFECT_PROPERTY = /(?:^|[\s;{])(?:mask|filter|mix-blend-mode)\s*:/i;
 
 /**
  * SMIL アニメーションによる透明の指定．
@@ -162,31 +176,50 @@ function stripXmlComments(svgText) {
 const CSS_COMMENT = /\/\*[\s\S]*?\*\//g;
 
 /**
- * CSS を書ける場所から，その中の CSS コメントを取り除く．
- * 対象は <style> 要素の中身と style 属性の値の 2 か所である．
+ * タグを拾う．属性値の中に > があっても途中で切らないよう引用符を見る．
+ * テキストノード（title・desc・text の中身）は含まれない．
+ */
+const TAG = /<[^>"']*(?:(?:"[^"]*"|'[^']*')[^>"']*)*>/g;
+
+/** <style> 要素の中身． */
+const STYLE_ELEMENT = /<style\b[^>]*>([\s\S]*?)<\/style>/gi;
+
+/** style 属性の値． */
+const STYLE_ATTRIBUTE = /\sstyle\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+
+/**
+ * 属性を書ける場所（タグの中）だけを集める．
  *
- * 無効化した宣言をコメントで残しただけの図を違反にしないためである．
- * コメントは描画へ影響せず，本検査が見る「宣言」にも当たらない．
- *
- * 場所を 2 か所へ限るのは，path データや他の属性値にある `/*` を
- * 巻き込まないためである．CSS コメントは入れ子にならないため，
- * XML コメントのような繰り返しの除去は要らない．
+ * 文書の全文へ正規表現を当てると，テキストノードの文字列を指定と取り違える．
+ * 図には title・desc を付けるため，説明文に `opacity: 0.5` のような並びが
+ * 現れうる．描画へ影響しない文字列で適合する図を落とさないようにする．
  * @param {string} svgText
  * @returns {string}
  */
-function stripCssComments(svgText) {
-  return svgText
-    .replace(
-      /(<style\b[^>]*>)([\s\S]*?)(<\/style>)/gi,
-      (_, open, body, close) => `${open}${body.replace(CSS_COMMENT, '')}${close}`
-    )
-    .replace(
-      /(\sstyle\s*=\s*")([^"]*)(")|(\sstyle\s*=\s*')([^']*)(')/gi,
-      (match, dqOpen, dqBody, dqClose, sqOpen, sqBody, sqClose) =>
-        dqOpen === undefined
-          ? `${sqOpen}${sqBody.replace(CSS_COMMENT, '')}${sqClose}`
-          : `${dqOpen}${dqBody.replace(CSS_COMMENT, '')}${dqClose}`
-    );
+function extractTagText(svgText) {
+  return (svgText.match(TAG) ?? []).join('\n');
+}
+
+/**
+ * CSS の宣言を書ける場所だけを集める．
+ * 対象は <style> 要素の中身と style 属性の値の 2 か所である．
+ *
+ * CSS コメントは空白 1 字へ置き換える．取り除くと，
+ * `opac/**' + '/ity` のように別トークンだったものが連結し，
+ * ブラウザーでは効かない指定を違反として報告してしまう．
+ * CSS コメントはトークンの境界として働くためである．
+ * @param {string} svgText
+ * @returns {string}
+ */
+function extractStyleText(svgText) {
+  const parts = [];
+  for (const match of svgText.matchAll(STYLE_ELEMENT)) {
+    parts.push(match[1]);
+  }
+  for (const match of svgText.matchAll(STYLE_ATTRIBUTE)) {
+    parts.push(match[1] ?? match[2]);
+  }
+  return parts.map(part => part.replace(CSS_COMMENT, ' ')).join('\n');
 }
 
 /**
@@ -307,11 +340,15 @@ export function checkDiagramColors(svgFiles, paletteCss, options = {}) {
         message: `${file} の色値 ${value} は hex へ解釈できず検査をすり抜けるため許可しない`,
       });
     }
-    const withoutComments = stripCssComments(stripXmlComments(svgText));
+    const withoutComments = stripXmlComments(svgText);
+    const tagText = extractTagText(withoutComments);
+    const styleText = extractStyleText(withoutComments);
     if (
-      OPACITY_ATTRIBUTE.test(withoutComments) ||
-      OPACITY_PROPERTY.test(withoutComments) ||
-      OPACITY_ANIMATION.test(withoutComments)
+      OPACITY_ATTRIBUTE.test(tagText) ||
+      OPACITY_PROPERTY.test(styleText) ||
+      OPACITY_ANIMATION.test(tagText) ||
+      TRANSPARENCY_EFFECT_ATTRIBUTE.test(tagText) ||
+      TRANSPARENCY_EFFECT_PROPERTY.test(styleText)
     ) {
       violations.push({
         type: 'opacity-used',
@@ -319,7 +356,7 @@ export function checkDiagramColors(svgFiles, paletteCss, options = {}) {
         message: `${file} に透明の指定がある（合成後の色を焼いて DIAGRAM_WASH_COLORS へ登録する）`,
       });
     }
-    if (CSS_COLOR_PROPERTY.test(withoutComments)) {
+    if (CSS_COLOR_PROPERTY.test(styleText)) {
       violations.push({
         type: 'style-color',
         file,
