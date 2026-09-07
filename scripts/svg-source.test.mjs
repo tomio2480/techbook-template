@@ -169,7 +169,19 @@ test('findUnreadableMarkup: 属性値の中の生の < を違反にする', () =
   assert.deepEqual(kinds('<svg><path aria-label="a < b" d="M0 0"/></svg>'), [
     'unescaped-lt-in-attribute',
   ]);
+  assert.deepEqual(kinds("<svg><path aria-label='a < b' d='M0 0'/></svg>"), [
+    'unescaped-lt-in-attribute',
+  ]);
   assert.deepEqual(kinds('<svg><path aria-label="a &lt; b" d="M0 0"/></svg>'), []);
+});
+
+test('findUnreadableMarkup: 属性値の中の生の < は走査を打ち切らない', () => {
+  /* タグは閉じており走査の範囲は確定できる．描画されない形ではあるが，
+     位置の確定できる壊れ方は，コメントの -- と同じく走査を続ける． */
+  assert.deepEqual(kinds('<svg><path aria-label="a < b"/><g></svg>'), [
+    'unescaped-lt-in-attribute',
+    'mismatched-end-tag',
+  ]);
 });
 
 test('findUnreadableMarkup: 処理命令は ?> まで一体として読む', () => {
@@ -186,6 +198,10 @@ test('findUnreadableMarkup: DOCTYPE の内部サブセットを ]> まで読む'
   assert.deepEqual(kinds('<!DOCTYPE svg [ <!ENTITY nb "&#160;"> ]><svg><g/></svg>'), []);
   assert.deepEqual(
     kinds('<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "svg11.dtd"><svg><g/></svg>'),
+    []
+  );
+  assert.deepEqual(
+    kinds("<!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'svg11.dtd'><svg><g/></svg>"),
     []
   );
 });

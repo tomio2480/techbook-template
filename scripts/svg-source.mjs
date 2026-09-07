@@ -41,6 +41,7 @@ const COMMENT_CLOSE = '-->';
 const DOUBLE_HYPHEN = '--';
 const CDATA_OPEN = '<![CDATA[';
 const CDATA_CLOSE = ']]>';
+/* 処理命令（Processing Instruction）．XML 宣言 <?xml … ?> もこの形である． */
 const PI_OPEN = '<?';
 const PI_CLOSE = '?>';
 const DOCTYPE_OPEN = '<!DOCTYPE';
@@ -132,8 +133,10 @@ function readDoctype(svgText, start) {
 /**
  * 検査が走査の範囲を確定できない壊れ方を集める．
  *
- * 位置の確定できない壊れ方（閉じ忘れ）は，そこから先の解釈が定まらないため
- * 打ち切る．位置の確定できる壊れ方（コメントの中の `--`）は走査を続ける．
+ * 位置の確定できない壊れ方（閉じ忘れ・対応崩れ）は，そこから先の解釈が
+ * 定まらないため打ち切る．位置の確定できる壊れ方は走査を続ける．
+ * 後者はコメントの中の `--` と，属性値の中の生の `<` である．
+ * どちらも描画されない形だが，範囲は確定できるため後続の壊れ方も報告できる．
  * @param {string} svgText SVG の中身
  * @returns {Array<{ kind: string, index: number, message: string }>}
  *   違反の一覧．読み取れれば空
@@ -234,11 +237,13 @@ export function findUnreadableMarkup(svgText) {
         : stop('unclosed-tag', start, 'タグが閉じておらず，そのタグの属性が走査から外れる');
     }
     if (tag.lessThanIndex !== -1) {
-      return stop(
-        'unescaped-lt-in-attribute',
-        tag.lessThanIndex,
-        '属性値の中に生の < があり，XML パーサが読めず図が描画されない'
-      );
+      /* タグは閉じており，走査の範囲は確定できる．
+         位置の確定できる壊れ方として，打ち切らずに続ける． */
+      violations.push({
+        kind: 'unescaped-lt-in-attribute',
+        index: tag.lessThanIndex,
+        message: '属性値の中に生の < があり，XML パーサが読めず図が描画されない',
+      });
     }
     cursor = tag.end;
 
