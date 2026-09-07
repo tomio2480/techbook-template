@@ -251,7 +251,7 @@ function splitMarkupAndCss(source) {
  * @param {string} cssText
  * @returns {string}
  */
-function cssDeclarations(cssText) {
+function stripToDeclarations(cssText) {
   return stripCssComments(cssText).replace(AT_RULE_PRELUDE, '');
 }
 
@@ -292,7 +292,7 @@ export function extractOtherFontFamilies(svgText) {
     found.push({ value: decodeXmlEntities(match[1] ?? match[2]).trim(), source: 'attribute' });
   }
   for (const cssText of cssTexts) {
-    for (const match of cssDeclarations(cssText).matchAll(FONT_FAMILY_DECLARATION)) {
+    for (const match of stripToDeclarations(cssText).matchAll(FONT_FAMILY_DECLARATION)) {
       found.push({ value: stripImportant(match[1]), source: 'declaration' });
     }
   }
@@ -335,7 +335,7 @@ export function extractTypefaceOverrides(svgText) {
     });
   }
   for (const cssText of cssTexts) {
-    for (const match of cssDeclarations(cssText).matchAll(TYPEFACE_OVERRIDE_DECLARATION)) {
+    for (const match of stripToDeclarations(cssText).matchAll(TYPEFACE_OVERRIDE_DECLARATION)) {
       found.push({
         property: match[1].toLowerCase(),
         value: stripImportant(match[2]),

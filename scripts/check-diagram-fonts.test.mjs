@@ -157,6 +157,15 @@ test('extractOtherFontFamilies: 本文の文字列に現れる属性を誤認し
   assert.deepEqual(extractOtherFontFamilies(style), []);
 });
 
+test('extractOtherFontFamilies: at-rule の条件部を宣言と誤認せず，中身は拾う', () => {
+  /* 下ごしらえは extractTypefaceOverrides と共有する．
+     片方だけにテストを置くと，もう片方が壊れたときに気づけない */
+  const prelude = `<svg font-family="${GOTHIC}"><style>@supports (font-family: serif) { .l { fill: black; } }</style></svg>`;
+  assert.deepEqual(extractOtherFontFamilies(prelude), []);
+  const inside = `<svg font-family="${GOTHIC}"><style>@media print { .l { font-family: serif; } }</style></svg>`;
+  assert.deepEqual(extractOtherFontFamilies(inside).map(f => f.value), ['serif']);
+});
+
 test('extractOtherFontFamilies: font shorthand は font-family として集めない', () => {
   const svg = `<svg font-family="${GOTHIC}"><text style="font: 20px Courier">a</text></svg>`;
   assert.deepEqual(extractOtherFontFamilies(svg), []);
@@ -294,6 +303,25 @@ test('extractTypefaceOverrides: 条件部を外してもブロックの中身は
   const svg = [
     `<svg font-family="${GOTHIC}">`,
     '<style>@media screen and (min-width: 30em) { .l { font: 20px Courier; } }</style>',
+    '</svg>',
+  ].join('\n');
+  assert.deepEqual(
+    extractTypefaceOverrides(svg).map(f => [f.property, f.value]),
+    [['font', '20px Courier']]
+  );
+});
+
+test('extractTypefaceOverrides: 条件部が複数行でも 2 行目以降を宣言と誤認しない', () => {
+  /* 前置きの走査が改行で止まると，条件の残りが宣言として読まれる．
+     判別できるよう，2 行目以降へ font: と all: を置く．
+     条件を min-width などにすると，走査が途中で止まっても
+     宣言に見える文字列が残らず，変異を当てても落ちない */
+  const svg = [
+    `<svg font-family="${GOTHIC}">`,
+    '<style>@supports (font: menu)',
+    '  and (all: initial) {',
+    '  .l { font: 20px Courier; }',
+    '}</style>',
     '</svg>',
   ].join('\n');
   assert.deepEqual(
