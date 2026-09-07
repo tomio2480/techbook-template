@@ -26,6 +26,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { parseCssVariables, resolveVar } from './check-contrast.mjs';
+import { stripXmlComments, findUnreadableMarkup, toUnreadableViolation } from './svg-source.mjs';
 
 /** テーマ側の対応トークン．root の font-family はこの値と一致させる． */
 export const FONT_TOKEN = '--font-gothic';
@@ -39,25 +40,6 @@ export const ALLOWED_EXTRA_FONT_STACKS = [];
 
 /** 検査から除外するファイル．本ごとに差し替える．既定は空とする． */
 export const EXCLUDED_FILES = [];
-
-/**
- * XML コメントを除去する．コメント内に残る指定（無効化済みの記述）を
- * 検査対象から除外し，誤検出・誤通過の両方を防ぐ．
- * 入れ子・破損したコメント境界では 1 回の置換で取り残しが生じ得るため，
- * 変化がなくなるまで繰り返す．
- * @param {string} svgText
- * @returns {string}
- */
-function stripXmlComments(svgText) {
-  let text = svgText;
-  for (;;) {
-    const next = text.replace(/<!--[\s\S]*?-->/g, '');
-    if (next === text) {
-      return next;
-    }
-    text = next;
-  }
-}
 
 const XML_ENTITIES = new Map([
   ['quot', '"'],
@@ -183,7 +165,7 @@ function findRootSvgTag(svgText) {
  * <style> 要素を取り除く．入れ子や破損した境界（例: `<style><style>…</style>`）では
  * 1 回の置換で取り残しが生じ得るため，変化がなくなるまで繰り返す．
  * CodeQL js/incomplete-multi-character-sanitization への対応で，
- * check-diagram-luminance.mjs の stripXmlComments と同じ形にしている．
+ * svg-source.mjs の stripXmlComments と同じ形にしている．
  * @param {string} text
  * @returns {string}
  */
@@ -377,6 +359,11 @@ export function checkDiagramFonts(svgFiles, themeCss, options = {}) {
 
   for (const [file, svgText] of svgFiles) {
     if (excludedFiles.includes(file)) {
+      continue;
+    }
+    const unreadable = findUnreadableMarkup(svgText);
+    if (unreadable.length > 0) {
+      violations.push(...unreadable.map(item => toUnreadableViolation(file, item)));
       continue;
     }
     const rootValue = extractRootFontFamily(svgText);

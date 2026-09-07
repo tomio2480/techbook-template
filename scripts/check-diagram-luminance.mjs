@@ -21,6 +21,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { parseCssVariables, resolveVar } from './check-contrast.mjs';
+import { stripXmlComments, findUnreadableMarkup, toUnreadableViolation } from './svg-source.mjs';
 
 /** 図版で許可する有彩色（明度段パレット）．暗い順に並べる．本ごとに差し替える． */
 export const DIAGRAM_TIER_COLORS = ['#2f5b8c', '#5588bb', '#8cb2d8'];
@@ -151,26 +152,6 @@ const TRANSPARENCY_EFFECT_PROPERTY = /(?:^|[\s;{])(?:mask|filter|mix-blend-mode)
  * 描画は半透明になる．合成後の色を見逃す点は同じため違反とする．
  */
 const OPACITY_ANIMATION = /attributeName\s*=\s*(?:"|')(?:fill-|stroke-|stop-)?opacity(?:"|')/i;
-
-/**
- * XML コメントを除去する．コメント内に残る色指定（無効化済みの記述）を
- * 検査対象から除外し，誤検出・誤通過の両方を防ぐ．
- * @param {string} svgText
- * @returns {string}
- */
-function stripXmlComments(svgText) {
-  // 入れ子・破損したコメント境界（例: `<!-- a <!-- b -->`）では 1 回の
-  // 置換では取り残しが生じ得るため，変化がなくなるまで繰り返す．
-  // CodeQL js/incomplete-multi-character-sanitization の指摘への対応．
-  let text = svgText;
-  for (;;) {
-    const next = text.replace(/<!--[\s\S]*?-->/g, '');
-    if (next === text) {
-      return next;
-    }
-    text = next;
-  }
-}
 
 /** CSS コメント．入れ子にならず，最初の閉じで終わる． */
 const CSS_COMMENT = /\/\*[\s\S]*?\*\//g;
@@ -325,6 +306,15 @@ export function checkDiagramColors(svgFiles, paletteCss, options = {}) {
 
   const usedColors = new Set();
   for (const [file, svgText] of svgFiles) {
+    /* 走査の範囲を確定できない図は，色の収集より先に打ち切る．
+       拾った色でトークンを使用済みと判定してしまわないためである． */
+    if (!excludedFiles.includes(file)) {
+      const unreadable = findUnreadableMarkup(svgText);
+      if (unreadable.length > 0) {
+        violations.push(...unreadable.map(item => toUnreadableViolation(file, item)));
+        continue;
+      }
+    }
     const { colors, unsupported } = parseColorValues(svgText);
     for (const color of colors) {
       usedColors.add(color);
