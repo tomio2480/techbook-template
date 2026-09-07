@@ -22,6 +22,11 @@ Claude が作業する際の必須事項を定める．
   着手前に必ず読むこと．
 - 索引（`99-index.md`・`npm run gen:index`・`npm run check:index`）は
   `docs/spec/index-page.md` が扱う．着手前に必ず読むこと．
+- 図版 SVG（`src/assets/diagrams/*.svg`）の様式は
+  `docs/spec/diagram-style.md` が扱う．配色の明度段・図中フォント・
+  検査からの除外と，閾値の根拠が範囲である．
+  `check-diagram-luminance.mjs`・`check-diagram-fonts.mjs` の定数へ
+  手を入れる作業も含む．着手前に必ず読むこと．
 - `config/isdn.yaml` へ申請フォームのパスワード等の認証情報を書かない．
   氏名・メールアドレスなどの個人情報も既定では書かない．
 - 出版・版番号の変更・正誤を追記したら，`npm run check:errata` で
