@@ -299,7 +299,10 @@ test('extractTypefaceOverrides: コメント内の @ で後続の宣言が消え
   );
 });
 
-test('extractTypefaceOverrides: 条件部を外してもブロックの中身は拾う', () => {
+test('extractTypefaceOverrides: 前置きを外す処理がブロックの中身を消さない', () => {
+  /* 守るのは行きすぎの方向である．前置きの走査が { を越えると，
+     このテストが落ちる．止まらなさすぎる方向は，2 行目以降へ font: と all: を
+     置いた複数行のテストが守る */
   const svg = [
     `<svg font-family="${GOTHIC}">`,
     '<style>@media screen and (min-width: 30em) { .l { font: 20px Courier; } }</style>',
