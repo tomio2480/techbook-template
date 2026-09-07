@@ -250,6 +250,25 @@ test('extractTypefaceOverrides: 本文の文字列に現れる font= を属性�
   assert.deepEqual(extractTypefaceOverrides(svg), []);
 });
 
+test('extractTypefaceOverrides: 開始タグの書き方が変わっても属性を取りこぼさない', () => {
+  /* 走査を開始タグへ限ったため，タグの形を取りこぼすと検査が素通りする．
+     見逃しは誤検出より危ないため，代表的な形を固定する */
+  const variants = {
+    '自己終了タグ': '<text font="20px Impact" />',
+    '名前空間付きのタグ名': '<svg:text font="20px Impact">a</svg:text>',
+    '属性値に > を含むタグ': '<text aria-label="input > output" font="20px Impact">a</text>',
+    '改行をまたぐタグ': '<text\n  font="20px Impact"\n>a</text>',
+  };
+  for (const [name, markup] of Object.entries(variants)) {
+    const svg = `<svg font-family="${GOTHIC}">${markup}</svg>`;
+    assert.deepEqual(
+      extractTypefaceOverrides(svg).map(f => [f.source, f.value]),
+      [['attribute', '20px Impact']],
+      `${name} で取りこぼした`
+    );
+  }
+});
+
 test('extractTypefaceOverrides: at-rule の条件部を宣言と誤認しない', () => {
   const svg = [
     `<svg font-family="${GOTHIC}">`,
