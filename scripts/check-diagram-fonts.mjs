@@ -218,21 +218,41 @@ const TYPEFACE_OVERRIDE_DECLARATION = /(?<![\w-])(font|all)\s*:\s*([^;}]+)/gi;
    all は presentation attribute に無いため，属性としては見ない */
 const FONT_SHORTHAND_ATTRIBUTE = /(?<![\w:.-])font\s*=\s*(?:"([^"]*)"|'([^']*)')/g;
 
+/* 開始タグ．属性の走査はこの中だけで行う．図の本文に現れる文字列
+   （例: `<text>ここへ font="20px Impact" と書く</text>`）を属性と誤認しない
+   ためである．閉じタグ・XML 宣言・DOCTYPE は先頭 1 文字で外れる */
+const OPENING_TAG = /<[a-zA-Z_][\w:.-]*(?:[^>"']|"[^"]*"|'[^']*')*>/g;
+/* at-rule の前置き．@ から，ブロックを開く { か文を閉じる ; の手前までを指す．
+   @supports (all: initial) の条件を宣言と誤認しないため，宣言の走査から外す．
+   ブロックの中身は残るため，@media に包んだ宣言は従来どおり拾える */
+const AT_RULE_PRELUDE = /@[\w-]+[^{;]*/g;
+
 /**
- * SVG テキストを，属性を走査するマークアップと CSS のテキストへ分ける．
+ * SVG テキストを，属性を走査する開始タグと CSS のテキストへ分ける．
  * <style> の中身は属性の走査から外す．CSS コメントで無効化したセレクタ
  * （text[font-family="serif"] など）を属性と誤認しないためである．
  * @param {string} source XML コメントを除いた SVG テキスト
- * @returns {{ markup: string, cssTexts: string[] }}
+ * @returns {{ tags: string, cssTexts: string[] }}
  */
 function splitMarkupAndCss(source) {
   const styleContents = [...source.matchAll(STYLE_ELEMENT)].map(match => match[1]);
-  const markup = stripStyleElements(source);
+  const tags = (stripStyleElements(source).match(OPENING_TAG) ?? []).join('\n');
   const cssTexts = [
     ...styleContents,
-    ...[...markup.matchAll(STYLE_ATTRIBUTE)].map(match => decodeXmlEntities(match[1] ?? match[2])),
+    ...[...tags.matchAll(STYLE_ATTRIBUTE)].map(match => decodeXmlEntities(match[1] ?? match[2])),
   ];
-  return { markup, cssTexts };
+  return { tags, cssTexts };
+}
+
+/**
+ * CSS のテキストから宣言だけを残す．コメントと at-rule の前置きを外す．
+ * 順序は入れ替えない．コメントを先に外さないと，コメント内の @ が
+ * 前置きとして扱われ，後続の宣言まで消える．
+ * @param {string} cssText
+ * @returns {string}
+ */
+function cssDeclarations(cssText) {
+  return stripCssComments(cssText).replace(AT_RULE_PRELUDE, '');
 }
 
 /**
@@ -266,13 +286,13 @@ export function extractOtherFontFamilies(svgText) {
   const body = rootTag
     ? withoutComments.replace(rootTag, rootTag.replace(FONT_FAMILY_ATTRIBUTE, ''))
     : withoutComments;
-  const { markup, cssTexts } = splitMarkupAndCss(body);
+  const { tags, cssTexts } = splitMarkupAndCss(body);
   const found = [];
-  for (const match of markup.matchAll(FONT_FAMILY_ATTRIBUTE)) {
+  for (const match of tags.matchAll(FONT_FAMILY_ATTRIBUTE)) {
     found.push({ value: decodeXmlEntities(match[1] ?? match[2]).trim(), source: 'attribute' });
   }
   for (const cssText of cssTexts) {
-    for (const match of stripCssComments(cssText).matchAll(FONT_FAMILY_DECLARATION)) {
+    for (const match of cssDeclarations(cssText).matchAll(FONT_FAMILY_DECLARATION)) {
       found.push({ value: stripImportant(match[1]), source: 'declaration' });
     }
   }
@@ -305,9 +325,9 @@ export function extractOtherFontFamilies(svgText) {
  * @returns {Array<{ property: 'font' | 'all', value: string, source: 'attribute' | 'declaration' }>}
  */
 export function extractTypefaceOverrides(svgText) {
-  const { markup, cssTexts } = splitMarkupAndCss(stripXmlComments(svgText));
+  const { tags, cssTexts } = splitMarkupAndCss(stripXmlComments(svgText));
   const found = [];
-  for (const match of markup.matchAll(FONT_SHORTHAND_ATTRIBUTE)) {
+  for (const match of tags.matchAll(FONT_SHORTHAND_ATTRIBUTE)) {
     found.push({
       property: 'font',
       value: decodeXmlEntities(match[1] ?? match[2]).trim(),
@@ -315,7 +335,7 @@ export function extractTypefaceOverrides(svgText) {
     });
   }
   for (const cssText of cssTexts) {
-    for (const match of stripCssComments(cssText).matchAll(TYPEFACE_OVERRIDE_DECLARATION)) {
+    for (const match of cssDeclarations(cssText).matchAll(TYPEFACE_OVERRIDE_DECLARATION)) {
       found.push({
         property: match[1].toLowerCase(),
         value: stripImportant(match[2]),

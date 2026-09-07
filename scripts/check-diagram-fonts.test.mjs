@@ -150,6 +150,13 @@ test('extractRootFontFamily: data-font-family しか無い root は未指定と�
   assert.equal(extractRootFontFamily(svg), null);
 });
 
+test('extractOtherFontFamilies: 本文の文字列に現れる属性を誤認しない', () => {
+  const attr = `<svg font-family="${GOTHIC}"><text>ここへ font-family="serif" と書く</text></svg>`;
+  assert.deepEqual(extractOtherFontFamilies(attr), []);
+  const style = `<svg font-family="${GOTHIC}"><text>ここへ style="font-family: serif" と書く</text></svg>`;
+  assert.deepEqual(extractOtherFontFamilies(style), []);
+});
+
 test('extractOtherFontFamilies: font shorthand は font-family として集めない', () => {
   const svg = `<svg font-family="${GOTHIC}"><text style="font: 20px Courier">a</text></svg>`;
   assert.deepEqual(extractOtherFontFamilies(svg), []);
@@ -235,6 +242,44 @@ test('extractTypefaceOverrides: 誌面の書体が変わらない値でも all �
       ['all', 'unset'],
       ['all', 'revert'],
     ]
+  );
+});
+
+test('extractTypefaceOverrides: 本文の文字列に現れる font= を属性と誤認しない', () => {
+  const svg = `<svg font-family="${GOTHIC}"><text>ここへ font="20px Impact" と書く</text></svg>`;
+  assert.deepEqual(extractTypefaceOverrides(svg), []);
+});
+
+test('extractTypefaceOverrides: at-rule の条件部を宣言と誤認しない', () => {
+  const svg = [
+    `<svg font-family="${GOTHIC}">`,
+    '<style>@supports (all: initial) { .l { fill: black; } }</style>',
+    '<style>@supports (font: menu) { .l { fill: black; } }</style>',
+    '</svg>',
+  ].join('\n');
+  assert.deepEqual(extractTypefaceOverrides(svg), []);
+});
+
+test('extractTypefaceOverrides: コメント内の @ で後続の宣言が消えない', () => {
+  /* at-rule の前置きを外す前に，CSS コメントを外す順序であることを固定する．
+     逆順にすると，コメント内の @ が前置きとして後続の宣言まで飲み込む．
+     style 属性には { も ; も無いため，前置きの走査が値の末尾まで届く */
+  const svg = `<svg font-family="${GOTHIC}"><text style="/* @media の話 */ font: 20px Courier">a</text></svg>`;
+  assert.deepEqual(
+    extractTypefaceOverrides(svg).map(f => [f.property, f.value]),
+    [['font', '20px Courier']]
+  );
+});
+
+test('extractTypefaceOverrides: 条件部を外してもブロックの中身は拾う', () => {
+  const svg = [
+    `<svg font-family="${GOTHIC}">`,
+    '<style>@media screen and (min-width: 30em) { .l { font: 20px Courier; } }</style>',
+    '</svg>',
+  ].join('\n');
+  assert.deepEqual(
+    extractTypefaceOverrides(svg).map(f => [f.property, f.value]),
+    [['font', '20px Courier']]
   );
 });
 
