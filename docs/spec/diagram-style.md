@@ -262,6 +262,9 @@ PDF のグレースケール変換に近い単純輝度であり，紙で起き�
 - 2026-09-07: 初版（[Issue #211](https://github.com/tomio2480/techbook-template/issues/211)）．
   既存の実装と `README.md` の記述から，要求・要件・用語・閾値の根拠を集約した．
   実装は `check-diagram-luminance.mjs` と `check-diagram-fonts.mjs` である．
-  `opacity` 系の検出は「透明を使わない」節へ置いた本仕様の新規要件である．
-  実装は同 Issue の後続 PR で行う．
   機械検査を持たない要件は「機械検査の範囲」節の表 2 にまとめた．
+- 2026-09-07: [PR #224](https://github.com/tomio2480/techbook-template/pull/224)
+  で「透明を使わない」節を実装とともに確定した．
+  初版では新規要件として置き，実装を後続へ回していた．
+  `opacity` 系・SMIL・`mask`・`filter`・`mix-blend-mode` の検出を実装した．
+  検査が文書の構造に沿って読むことと，CSS コメントの扱いも同じ PR で決めた．
