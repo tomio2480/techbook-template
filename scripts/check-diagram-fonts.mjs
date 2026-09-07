@@ -287,14 +287,15 @@ export function extractOtherFontFamilies(svgText) {
  * 図版では font-family と font-size を分けて書く規約とし，短縮記法そのものを
  * 違反として報告する．登録済みのスタックを短縮記法で書いた場合も含む．
  *
- * もう 1 つは all の一括指定である．all は font-family を含む
- * ほぼ全プロパティを CSS 全域キーワードへ戻す．
+ * もう 1 つは all である．CSS Cascade 3 は all を shorthand と定め，
+ * direction と unicode-bidi を除く全プロパティを戻すとする．
+ * font-family も戻るため，root の指定が効かなくなる．
  *
  * 覆り方は Chromium で実測した．font は <style> の規則も style 属性も
  * root の値を覆す．at-rule に包んでも，2 つ目以降の <style> でも覆る．
  * font 属性だけは無視され，root の値のまま描かれる．
- * all は initial のときだけ覆る．font-family は継承プロパティのため，
- * unset と revert では root の値が残る．
+ * all は initial のときだけ覆る．font-family は継承プロパティであり，
+ * CSS Cascade 3 が unset を inherit と定めるためである．revert も同様に残る．
  *
  * それでも一律に報告する．値のキーワードで場合分けすると，font の短縮記法で
  * 避けたはずの値の解析へ戻るためである．また font 属性のように誌面が

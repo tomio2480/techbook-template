@@ -177,7 +177,10 @@ test('extractTypefaceOverrides: <style> 要素・style 属性・font 属性の s
 
 test('extractTypefaceOverrides: root の font 属性も集める', () => {
   const svg = '<svg font="20px Impact"><text>a</text></svg>';
-  assert.deepEqual(extractTypefaceOverrides(svg).map(f => [f.source, f.value]), [['attribute', '20px Impact']]);
+  assert.deepEqual(
+    extractTypefaceOverrides(svg).map(f => [f.property, f.source, f.value]),
+    [['font', 'attribute', '20px Impact']]
+  );
 });
 
 test('extractTypefaceOverrides: at-rule に包んだ font 宣言も集める', () => {
@@ -217,10 +220,29 @@ test('extractTypefaceOverrides: all の一括指定を集める', () => {
   );
 });
 
+test('extractTypefaceOverrides: 誌面の書体が変わらない値でも all を集める', () => {
+  /* unset と revert は，font-family が継承プロパティのため root の値を残す．
+     それでも集める．値で場合分けすると，font の短縮記法で避けた値の解析へ戻る */
+  const svg = [
+    `<svg font-family="${GOTHIC}">`,
+    '<style>.a { all: unset; }</style>',
+    '<text style="all: revert">a</text>',
+    '</svg>',
+  ].join('\n');
+  assert.deepEqual(
+    extractTypefaceOverrides(svg).map(f => [f.property, f.value]),
+    [
+      ['all', 'unset'],
+      ['all', 'revert'],
+    ]
+  );
+});
+
 test('extractTypefaceOverrides: 値としての all は拾わない', () => {
   const svg = [
     `<svg font-family="${GOTHIC}">`,
-    '<style>.a { transition: all 0.3s; transition-property: all; }</style>',
+    '<style>.a { transition: all 0.3s; transition-property: all; cursor: all-scroll; }</style>',
+    '<style>.b { overall: 1; }</style>',
     '</svg>',
   ].join('\n');
   assert.deepEqual(extractTypefaceOverrides(svg), []);
@@ -389,6 +411,19 @@ test('checkDiagramFonts: all の一括指定を違反として検出する', () 
   assert.equal(violations.length, 1);
   assert.equal(violations[0].type, 'all-shorthand');
   assert.equal(violations[0].value, 'initial');
+});
+
+test('checkDiagramFonts: all は誌面の書体が変わらない値でも違反として検出する', () => {
+  const files = makeFiles({
+    'a.svg': `<svg font-family="${GOTHIC}"><style>.a { all: unset; } .b { all: revert; }</style></svg>`,
+  });
+  assert.deepEqual(
+    checkDiagramFonts(files, THEME_CSS).map(v => [v.type, v.value]),
+    [
+      ['all-shorthand', 'unset'],
+      ['all-shorthand', 'revert'],
+    ]
+  );
 });
 
 test('checkDiagramFonts: at-rule に包んだ font 宣言を違反として検出する', () => {
