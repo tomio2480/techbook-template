@@ -46,7 +46,7 @@ Vivliostyle を使用した技術書執筆のためのテンプレートリポ�
 
 ## 📦 必要環境
 
-- Node.js 18.0.0 以上
+- Node.js 22 以上
 - npm
 - Java 11 以上（紙入稿・表紙の検査に使う `@opendataloader/pdf` の実行に必要）
   - `npm run build` だけなら Java は不要
