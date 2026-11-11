@@ -15,6 +15,12 @@ on:
 permissions:
   contents: read
 
+# Vivliostyle CLI 8 系が使う Playwright 1.51 は Ubuntu 26.04 向けのブラウザを持たない．
+# ubuntu-latest が 26.04 へ移ったため，24.04 向けのビルドを取得させる．
+# CLI を Playwright に依存しない版（10 系以降）へ上げたら外す．
+env:
+  PLAYWRIGHT_HOST_PLATFORM_OVERRIDE: ubuntu24.04-x64
+
 # 連続 push では古い実行を打ち切る．
 # ただしタグ実行（Release）は打ち切らない．
 concurrency:
