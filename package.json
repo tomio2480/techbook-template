@@ -25,12 +25,12 @@
   "devDependencies": {
     "@opendataloader/pdf": "^2.4.7",
     "@u1f992/rehype-spectroscope": "github:u1f992/rehype-spectroscope#v0.1.0",
-    "@vivliostyle/cli": "^8.16.1",
+    "@vivliostyle/cli": "^11.5.0",
     "pdf-lib": "^1.17.1",
     "rimraf": "^5.0.0",
     "yaml": "^2.9.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.12.0"
   }
 }
