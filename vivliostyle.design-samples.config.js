@@ -13,6 +13,8 @@ export default {
   output: [
     'dist/design-samples.pdf',
   ],
+  /* 中間 HTML を原稿の隣へ出す（vivliostyle.config.js と同じ理由） */
+  workspaceDir: '.',
   documentProcessor: (opts, meta) =>
     VFM(opts, meta)
       .use(joinCjkLineBreaksPlugin),

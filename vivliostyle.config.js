@@ -56,6 +56,10 @@ export default {
   output: [
     'dist/book.pdf',
   ],
+  /* 中間 HTML を原稿の隣（src/chapters/）へ出す．CLI 8 系の既定と同じ置き場所で，
+     add-line-numbers.mjs などは，ここへ出た HTML を読み書きする．
+     CLI 10 系以降は既定の置き場所が変わったため，明示する */
+  workspaceDir: '.',
   documentProcessor: (opts, meta) =>
     VFM(opts, meta)
       .use(joinCjkLineBreaksPlugin)
